@@ -7,7 +7,7 @@ class Perceptron:
     def __init__(self,
                  input_initial_value: Tensor,
                  feedback_initial_value: Tensor,
-                 output_initial_value: float,
+                 output_initial_value: Tensor,
                  input_hidden: Tensor,
                  hidden_feedback: Tensor,
                  feedback_hidden: Tensor,
@@ -32,6 +32,7 @@ class Perceptron:
         hidden = self.activation(tf.matmul(hidden_in, hidden_wts))
         self.feedback.assign(tf.squeeze(self.activation(tf.matmul(hidden, self.hidden_feedback))))
         self.output.assign(tf.squeeze(self.activation(tf.matmul(hidden, self.hidden_output))))
+
 
     def get_output(self):
         return self.output

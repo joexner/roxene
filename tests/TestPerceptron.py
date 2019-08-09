@@ -16,7 +16,7 @@ class TestPerceptron(unittest.TestCase):
         tf.set_random_seed(SEED)
 
 
-    def test_update_does_not_explode(self):
+    def test_update_updates(self):
         input_sz = 3
         hidden_sz = 7
         feedback_sz = 5
@@ -33,7 +33,16 @@ class TestPerceptron(unittest.TestCase):
         )
 
         perceptron.update()
-        print(perceptron.get_output())
+        output_after_first_update = perceptron.get_output().numpy()
+        print(output_after_first_update)
+
+        perceptron.update()
+        output_after_another_update = perceptron.get_output().numpy()
+        print(output_after_another_update)
+
+        self.assertNotEqual(output_after_first_update, output_after_another_update)
+
+
 
     def test_random_seed(self):
         input_initial_value=random_tensor([1])

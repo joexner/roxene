@@ -14,8 +14,8 @@ precision = tf.dtypes.float16
 class Perceptron_test(unittest.TestCase):
 
     def setUp(self) -> None:
-        tf.enable_eager_execution()
-        tf.set_random_seed(SEED)
+        tf.compat.v1.enable_eager_execution()
+        tf.compat.v1.set_random_seed(SEED)
 
 
     def test_update_updates(self):

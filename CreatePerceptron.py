@@ -1,37 +1,36 @@
-import tensorflow as tf
+from tensorflow import Tensor
 
-precision = tf.float16
+from Organism import Organism
+from Perceptron import Perceptron
+
 
 class CreatePerceptron:
-    def __init__(self, input_sz, hidden_sz, feedback_sz):
+    def __init__(self,
+        input_initial_value: Tensor,
+        feedback_initial_value: Tensor,
+        output_initial_value: Tensor,
+        input_hidden: Tensor,
+        hidden_feedback: Tensor,
+        feedback_hidden: Tensor,
+        hidden_output: Tensor):
 
-        self.input = tf.random.uniform(
-            shape=[input_sz],
-            minval=-1,
-            maxval=1,
-            dtype=precision);
+        self.input_initial_value    = input_initial_value
+        self.feedback_initial_value = feedback_initial_value
+        self.output_initial_value   = output_initial_value
+        self.input_hidden           = input_hidden
+        self.hidden_feedback        = hidden_feedback
+        self.feedback_hidden        = feedback_hidden
+        self.hidden_output          = hidden_output
 
-        self.hidden = tf.random.uniform(
-            shape=[hidden_sz],
-            minval=-1,
-            maxval=1,
-            dtype=precision);
 
-        self.feedback = tf.random.uniform(
-            shape=[feedback_sz],
-            minval=-1,
-            maxval=1,
-            dtype=precision);
-
-        self.input_hidden = tf.random.uniform(
-            shape=[input_sz, hidden_sz],
-            minval=-1,
-            maxval=1,
-            dtype=precision);
-
-        self.input_hidden = tf.random.uniform(
-            shape=[input_sz, hidden_sz],
-            minval=-1,
-            maxval=1,
-            dtype=precision);
-
+    def execute(self, organism: Organism):
+        perceptron = Perceptron(
+            input_initial_value=self.input_initial_value,
+            feedback_initial_value=self.feedback_initial_value,
+            output_initial_value=self.output_initial_value,
+            input_hidden=self.input_hidden,
+            hidden_feedback=self.hidden_feedback,
+            feedback_hidden=self.feedback_hidden,
+            hidden_output=self.hidden_output
+        )
+        organism.add(perceptron)

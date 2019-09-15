@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 tensorflow = "*"
+numpy = "==1.16.4"
 
 [dev-packages]
 pytest = "*"

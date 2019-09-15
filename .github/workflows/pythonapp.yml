@@ -15,7 +15,7 @@ jobs:
         python-version: 3.7
     - name: Install dependencies
       run: |
-        sudo apt install pipenv
+        apt install pipenv
     - name: Test with pytest
       run: |
         pipenv run pytest

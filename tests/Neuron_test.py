@@ -2,7 +2,7 @@ import unittest
 import tensorflow as tf
 from tensorflow import Tensor
 # // maya smells...fine
-from Perceptron import Perceptron
+from Neuron import Neuron
 import numpy as np
 
 SEED = 732478534
@@ -11,7 +11,7 @@ activation = tf.nn.tanh
 precision = tf.dtypes.float16
 
 
-class Perceptron_test(unittest.TestCase):
+class Neuron_test(unittest.TestCase):
 
     def setUp(self) -> None:
         tf.compat.v1.enable_eager_execution()
@@ -31,7 +31,7 @@ class Perceptron_test(unittest.TestCase):
         feedback_hidden = random_tensor([feedback_sz, hidden_sz])
         hidden_output = random_tensor([hidden_sz, 1])
 
-        perceptron = Perceptron(
+        neuron = Neuron(
             input_initial_value=input_initial_value,
             feedback_initial_value=feedback_initial_value,
             output_initial_value=output_initial_value,
@@ -41,15 +41,15 @@ class Perceptron_test(unittest.TestCase):
             hidden_output=hidden_output
         )
 
-        output_before_update = perceptron.get_output().numpy()
+        output_before_update = neuron.get_output().numpy()
         self.assertEqual(output_before_update, output_initial_value.numpy())
 
-        perceptron.update()
-        output_after_first_update = perceptron.get_output().numpy()
+        neuron.update()
+        output_after_first_update = neuron.get_output().numpy()
         self.assertNotEqual(output_before_update, output_after_first_update)
 
-        perceptron.update()
-        output_after_another_update = perceptron.get_output().numpy()
+        neuron.update()
+        output_after_another_update = neuron.get_output().numpy()
         self.assertNotEqual(output_after_first_update, output_after_another_update)
 
     def test_check_math_linear(self):
@@ -61,7 +61,7 @@ class Perceptron_test(unittest.TestCase):
         feedback_hidden = random_tensor([1, 1])
         hidden_output = random_tensor([1, 1])
 
-        perceptron = Perceptron(
+        neuron = Neuron(
             input_initial_value=input_initial_value,
             feedback_initial_value=feedback_initial_value,
             output_initial_value=output_initial_value,
@@ -71,7 +71,7 @@ class Perceptron_test(unittest.TestCase):
             hidden_output=hidden_output
         )
 
-        perceptron.update()
+        neuron.update()
 
         input_val = input_initial_value.numpy()[0]
         input_weight = input_hidden.numpy()[0][0]
@@ -83,11 +83,11 @@ class Perceptron_test(unittest.TestCase):
 
         hidden_feedback_weight = hidden_feedback.numpy()[0][0]
         expected_feedback_val = np.tanh(hidden_val * hidden_feedback_weight)
-        self.assertAlmostEqual(perceptron.feedback.numpy(), expected_feedback_val)
+        self.assertAlmostEqual(neuron.feedback.numpy(), expected_feedback_val)
 
         hidden_out_weight = hidden_output.numpy()[0][0]
         expected_output_val = np.tanh(hidden_val * hidden_out_weight)
-        self.assertAlmostEqual(perceptron.get_output().numpy(), expected_output_val)
+        self.assertAlmostEqual(neuron.get_output().numpy(), expected_output_val)
 
 
 def random_tensor(size) -> Tensor:

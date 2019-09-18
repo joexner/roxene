@@ -4,7 +4,7 @@ from tensorflow import Tensor
 from Cell import Cell
 
 
-class Perceptron(Cell):
+class Neuron(Cell):
     PRECISION = tf.dtypes.float16
     ACTIVATION = tf.nn.tanh
 

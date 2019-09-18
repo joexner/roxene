@@ -1,10 +1,10 @@
 from tensorflow import Tensor
 
 from Organism import Organism
-from Perceptron import Perceptron
+from Neuron import Neuron
 
 
-class CreatePerceptron:
+class CreateNeuron:
     def __init__(self,
         input_initial_value: Tensor,
         feedback_initial_value: Tensor,
@@ -24,7 +24,7 @@ class CreatePerceptron:
 
 
     def execute(self, organism: Organism):
-        perceptron = Perceptron(
+        neuron = Neuron(
             input_initial_value=self.input_initial_value,
             feedback_initial_value=self.feedback_initial_value,
             output_initial_value=self.output_initial_value,
@@ -33,4 +33,4 @@ class CreatePerceptron:
             feedback_hidden=self.feedback_hidden,
             hidden_output=self.hidden_output
         )
-        organism.add(perceptron)
+        organism.add(neuron)

@@ -3,7 +3,7 @@ import abc
 from Organism import Organism
 
 
-class Gene(abc.ABCMeta):
+class Gene(abc.ABC):
 
     @abc.abstractmethod
     def execute(self, organism: Organism):

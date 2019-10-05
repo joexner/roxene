@@ -1,10 +1,11 @@
 from tensorflow import Tensor
 
+from Gene import Gene
 from Organism import Organism
 from Neuron import Neuron
 
 
-class CreateNeuron:
+class CreateNeuron(Gene):
     def __init__(self,
         input_initial_value: Tensor,
         feedback_initial_value: Tensor,

@@ -1,9 +1,14 @@
 import unittest
-import tensorflow as tf
-from tensorflow import Tensor
-# // maya smells...fine
-from Neuron import Neuron
+from random import Random
+
 import numpy as np
+import tensorflow as tf
+# // maya smells...fine
+from parameterized import parameterized
+from tensorflow import Tensor
+
+from InputCell import InputCell
+from Neuron import Neuron
 
 SEED = 732478534
 
@@ -17,11 +22,18 @@ class Neuron_test(unittest.TestCase):
         tf.compat.v1.enable_eager_execution()
         tf.compat.v1.set_random_seed(SEED)
 
+    @parameterized.expand([
+        (2, 2, 4),
+        (2, 3, 8),
+        (1, 9, 1),
+        (50, 9, 2),
+    ])
+    def test_update_updates(
+            self,
+            input_sz,
+            hidden_sz,
+            feedback_sz):
 
-    def test_update_updates(self):
-        input_sz = 3
-        hidden_sz = 7
-        feedback_sz = 5
 
         input_initial_value = random_tensor([input_sz])
         feedback_initial_value = random_tensor([feedback_sz])
@@ -89,6 +101,60 @@ class Neuron_test(unittest.TestCase):
         expected_output_val = np.tanh(hidden_val * hidden_out_weight)
         self.assertAlmostEqual(neuron.get_output().numpy(), expected_output_val)
 
+
+    @parameterized.expand([
+        (2, 2, 4),
+        (2, 3, 8),
+        (1, 9, 1),
+        (50, 9, 2),
+    ])
+    def test_input(
+            self,
+            input_sz,
+            hidden_sz,
+            feedback_sz,
+    ):
+
+        rng = Random()
+
+        input_initial_value = random_tensor([input_sz])
+        feedback_initial_value = random_tensor([feedback_sz])
+        output_initial_value = random_tensor([])
+        input_hidden = random_tensor([input_sz, hidden_sz])
+        hidden_feedback = random_tensor([hidden_sz, feedback_sz])
+        feedback_hidden = random_tensor([feedback_sz, hidden_sz])
+        hidden_output = random_tensor([hidden_sz, 1])
+
+        neuron = Neuron(
+            input_initial_value=input_initial_value,
+            feedback_initial_value=feedback_initial_value,
+            output_initial_value=output_initial_value,
+            input_hidden=input_hidden,
+            hidden_feedback=hidden_feedback,
+            feedback_hidden=feedback_hidden,
+            hidden_output=hidden_output
+        )
+
+        # Connect some input ports
+        num_to_connect = rng.randint(0, input_sz)
+        ports_to_connect = rng.sample(range(input_sz), num_to_connect)
+        connected_ports = {}
+        for port in ports_to_connect:
+            new_input_cell = InputCell(np.float16(rng.random()))
+            neuron.add_input_connection(new_input_cell, port)
+            connected_ports[port] = new_input_cell
+
+        neuron.update()
+
+        neuron_input_value: np.ndarray = neuron.input.numpy()
+        for port_num in range(0, neuron_input_value.shape[0]):
+            if port_num in connected_ports.keys():
+                input_cell = connected_ports[port_num]
+                expected_value = input_cell.get_output()
+            else:
+                expected_value = input_initial_value.numpy()[port_num]
+            actual_value = neuron_input_value.flat[port_num]
+            self.assertEqual(expected_value, actual_value)
 
 def random_tensor(size) -> Tensor:
     return tf.random.uniform(

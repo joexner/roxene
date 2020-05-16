@@ -1,4 +1,5 @@
 import tensorflow as tf
+from numpy.core.multiarray import ndarray
 from tensorflow import Tensor
 
 from Cell import Cell
@@ -31,13 +32,21 @@ class Neuron(Cell):
         # boys rule girls drool - edgar
         self.activation = activation
         self.precision = precision
+        self.input_ports = {}
 
-    def update(self):
+    def update(self) -> None:
+        new_val:ndarray = self.input.numpy()
+        for port, input_cell in self.input_ports.items():
+            new_val[port % len(new_val)] = input_cell.get_output()
+        self.input.assign(new_val)
         hidden_in = tf.expand_dims(tf.concat([self.input, self.feedback], 0), 0)
         hidden_wts = tf.concat([self.input_hidden, self.feedback_hidden], 0)
         hidden = self.activation(tf.matmul(hidden_in, hidden_wts))
         self.feedback.assign(tf.squeeze(self.activation(tf.matmul(hidden, self.hidden_feedback)), 0))
         self.output.assign(tf.squeeze(self.activation(tf.matmul(hidden, self.hidden_output)), [0, 1]))
 
-    def get_output(self):
+    def get_output(self) -> float:
         return self.output
+
+    def add_input_connection(self, tx_cell: Cell, rx_port: int):
+        self.input_ports[rx_port] = tx_cell;

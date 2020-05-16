@@ -1,5 +1,5 @@
 import abc
-from numpy import float16
+from tensorflow import float16
 
 class Cell(abc.ABC):
 

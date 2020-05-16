@@ -1,6 +1,6 @@
 import tensorflow as tf
 from numpy.core.multiarray import ndarray
-from tensorflow import Tensor
+from tensorflow import Tensor, float16
 
 from Cell import Cell
 
@@ -45,7 +45,7 @@ class Neuron(Cell):
         self.feedback.assign(tf.squeeze(self.activation(tf.matmul(hidden, self.hidden_feedback)), 0))
         self.output.assign(tf.squeeze(self.activation(tf.matmul(hidden, self.hidden_output)), [0, 1]))
 
-    def get_output(self) -> float:
+    def get_output(self) -> float16:
         return self.output
 
     def add_input_connection(self, tx_cell: Cell, rx_port: int):

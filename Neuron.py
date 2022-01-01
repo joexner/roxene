@@ -1,6 +1,5 @@
 import tensorflow as tf
 from numpy.core.multiarray import ndarray
-from tensorflow import Tensor, float16
 
 from Cell import Cell
 
@@ -10,13 +9,13 @@ class Neuron(Cell):
     ACTIVATION = tf.nn.tanh
 
     def __init__(self,
-                 input_initial_value: Tensor,
-                 feedback_initial_value: Tensor,
-                 output_initial_value: Tensor,
-                 input_hidden: Tensor,
-                 hidden_feedback: Tensor,
-                 feedback_hidden: Tensor,
-                 hidden_output: Tensor,
+                 input_initial_value: tf.Tensor,
+                 feedback_initial_value: tf.Tensor,
+                 output_initial_value: tf.Tensor,
+                 input_hidden: tf.Tensor,
+                 hidden_feedback: tf.Tensor,
+                 feedback_hidden: tf.Tensor,
+                 hidden_output: tf.Tensor,
                  activation=ACTIVATION,
                  precision=PRECISION):
         self.input = tf.Variable(initial_value=input_initial_value)
@@ -35,7 +34,7 @@ class Neuron(Cell):
         self.input_ports = {}
 
     def update(self) -> None:
-        new_val:ndarray = self.input.numpy()
+        new_val: ndarray = self.input.numpy()
         for port, input_cell in self.input_ports.items():
             new_val[port % len(new_val)] = input_cell.get_output()
         self.input.assign(new_val)
@@ -45,8 +44,13 @@ class Neuron(Cell):
         self.feedback.assign(tf.squeeze(self.activation(tf.matmul(hidden, self.hidden_feedback)), 0))
         self.output.assign(tf.squeeze(self.activation(tf.matmul(hidden, self.hidden_output)), [0, 1]))
 
-    def get_output(self) -> float16:
-        return self.output
+    def get_output(self) -> PRECISION:
+        return self.output.numpy()
 
-    def add_input_connection(self, tx_cell: Cell, rx_port: int):
-        self.input_ports[rx_port] = tx_cell;
+    def add_input_connection(self, tx_cell: Cell, req_port: int):
+        num_ports = self.input.shape[0]
+        for offset in range(num_ports):
+            rx_port = (req_port + offset) % num_ports
+            if rx_port not in self.input_ports:
+                self.input_ports[rx_port] = tx_cell
+                return

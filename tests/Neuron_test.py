@@ -5,10 +5,11 @@ import numpy as np
 import tensorflow as tf
 # // maya smells...fine
 from parameterized import parameterized
-from tensorflow import Tensor
 
 from InputCell import InputCell
 from Neuron import Neuron
+
+from . import random_tensor
 
 SEED = 732478534
 
@@ -34,73 +35,39 @@ class Neuron_test(unittest.TestCase):
             hidden_sz,
             feedback_sz):
 
-
-        input_initial_value = random_tensor([input_sz])
-        feedback_initial_value = random_tensor([feedback_sz])
-        output_initial_value = random_tensor([])
-        input_hidden = random_tensor([input_sz, hidden_sz])
-        hidden_feedback = random_tensor([hidden_sz, feedback_sz])
-        feedback_hidden = random_tensor([feedback_sz, hidden_sz])
-        hidden_output = random_tensor([hidden_sz, 1])
-
-        neuron = Neuron(
-            input_initial_value=input_initial_value,
-            feedback_initial_value=feedback_initial_value,
-            output_initial_value=output_initial_value,
-            input_hidden=input_hidden,
-            hidden_feedback=hidden_feedback,
-            feedback_hidden=feedback_hidden,
-            hidden_output=hidden_output
-        )
-
-        output_before_update = neuron.get_output().numpy()
-        self.assertEqual(output_before_update, output_initial_value.numpy())
+        neuron = make_neuron(input_sz, hidden_sz, feedback_sz)
+        output_before_update = neuron.get_output()
 
         neuron.update()
-        output_after_first_update = neuron.get_output().numpy()
+        output_after_first_update = neuron.get_output()
         self.assertNotEqual(output_before_update, output_after_first_update)
 
         neuron.update()
-        output_after_another_update = neuron.get_output().numpy()
+        output_after_another_update = neuron.get_output()
         self.assertNotEqual(output_after_first_update, output_after_another_update)
 
     def test_check_math_linear(self):
-        input_initial_value = random_tensor([1])
-        feedback_initial_value = random_tensor([1])
-        output_initial_value = random_tensor([])
-        input_hidden = random_tensor([1, 1])
-        hidden_feedback = random_tensor([1, 1])
-        feedback_hidden = random_tensor([1, 1])
-        hidden_output = random_tensor([1, 1])
+        neuron: Neuron = make_neuron(1, 1, 1)
 
-        neuron = Neuron(
-            input_initial_value=input_initial_value,
-            feedback_initial_value=feedback_initial_value,
-            output_initial_value=output_initial_value,
-            input_hidden=input_hidden,
-            hidden_feedback=hidden_feedback,
-            feedback_hidden=feedback_hidden,
-            hidden_output=hidden_output
-        )
+        initial_input_val = neuron.input.numpy()[0]
+        initial_feedback_val = neuron.feedback.numpy()[0]
+
+        input_hidden_weight = neuron.input_hidden.numpy()[0][0]
+        feedback_hidden_weight = neuron.feedback_hidden.numpy()[0][0]
 
         neuron.update()
 
-        input_val = input_initial_value.numpy()[0]
-        input_weight = input_hidden.numpy()[0][0]
+        expected_hidden_val = np.tanh(initial_input_val * input_hidden_weight + initial_feedback_val * feedback_hidden_weight)
 
-        feedback_val = feedback_initial_value.numpy()[0]
-        feedback_weight = feedback_hidden.numpy()[0][0]
+        hidden_feedback_weight = neuron.hidden_feedback.numpy()[0][0]
+        expected_feedback_val = np.tanh(expected_hidden_val * hidden_feedback_weight)
+        actual_feedback_val = neuron.feedback.numpy()[0]
+        self.assertAlmostEqual(actual_feedback_val, expected_feedback_val)
 
-        hidden_val = np.tanh(input_val * input_weight + feedback_val * feedback_weight)
-
-        hidden_feedback_weight = hidden_feedback.numpy()[0][0]
-        expected_feedback_val = np.tanh(hidden_val * hidden_feedback_weight)
-        self.assertAlmostEqual(neuron.feedback.numpy(), expected_feedback_val)
-
-        hidden_out_weight = hidden_output.numpy()[0][0]
-        expected_output_val = np.tanh(hidden_val * hidden_out_weight)
-        self.assertAlmostEqual(neuron.get_output().numpy(), expected_output_val)
-
+        hidden_out_weight = neuron.hidden_output.numpy()[0][0]
+        expected_output_val = np.tanh(expected_hidden_val * hidden_out_weight)
+        actual_output_val = neuron.get_output()
+        self.assertAlmostEqual(actual_output_val, expected_output_val)
 
     @parameterized.expand([
         (2, 2, 4),
@@ -115,7 +82,7 @@ class Neuron_test(unittest.TestCase):
             feedback_sz,
     ):
 
-        rng = Random()
+        rng = Random(SEED)
 
         input_initial_value = random_tensor([input_sz])
         feedback_initial_value = random_tensor([feedback_sz])
@@ -156,9 +123,28 @@ class Neuron_test(unittest.TestCase):
             actual_value = neuron_input_value.flat[port_num]
             self.assertEqual(expected_value, actual_value)
 
-def random_tensor(size) -> Tensor:
-    return tf.random.uniform(
-        shape=size,
-        minval=-1,
-        maxval=1,
-        dtype=precision)
+    # def test_add_input_connection(self, input_sz, genes, exepcted_connections):
+    #     self.fail()
+
+def make_neuron(input_sz,
+                hidden_sz,
+                feedback_sz):
+
+    input_initial_value = random_tensor([input_sz])
+    feedback_initial_value = random_tensor([feedback_sz])
+    output_initial_value = random_tensor([])
+    input_hidden = random_tensor([input_sz, hidden_sz])
+    hidden_feedback = random_tensor([hidden_sz, feedback_sz])
+    feedback_hidden = random_tensor([feedback_sz, hidden_sz])
+    hidden_output = random_tensor([hidden_sz, 1])
+
+    return Neuron(
+        input_initial_value=input_initial_value,
+        feedback_initial_value=feedback_initial_value,
+        output_initial_value=output_initial_value,
+        input_hidden=input_hidden,
+        hidden_feedback=hidden_feedback,
+        feedback_hidden=feedback_hidden,
+        hidden_output=hidden_output
+    )
+

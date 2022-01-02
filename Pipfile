@@ -5,11 +5,10 @@ name = "pypi"
 
 [packages]
 tensorflow = "*"
-numpy = "==1.16.4"
 
 [dev-packages]
 pytest = "*"
 parameterized = "*"
 
 [requires]
-python_version = "3.7"
+python_version = "3.9"

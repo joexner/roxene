@@ -1,8 +1,10 @@
 import abc
-from tensorflow import float16
+
+from roxene import PRECISION
+
 
 class Cell(abc.ABC):
 
     @abc.abstractmethod
-    def get_output(self)-> float16:
+    def get_output(self)-> PRECISION:
         pass

@@ -1,8 +1,6 @@
 import tensorflow as tf
 
-from CreateNeuron import CreateNeuron
-from Organism import Organism
-from Neuron import Neuron
+from roxene import CreateNeuron, Organism, Neuron
 
 
 class CreateNeuron_test(tf.test.TestCase):

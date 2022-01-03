@@ -1,7 +1,4 @@
-from Gene import Gene
-from Neuron import Neuron
-from Organism import Organism
-from Cell import Cell
+from roxene import Cell, Gene, Neuron, Organism
 
 
 class ConnectNeurons(Gene):

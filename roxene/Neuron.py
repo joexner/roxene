@@ -1,7 +1,6 @@
-import tensorflow as tf
-from numpy.core.multiarray import ndarray
+from numpy import ndarray
 
-from Cell import Cell
+from roxene import Cell, tf
 
 
 class Neuron(Cell):

@@ -3,9 +3,7 @@ from unittest import TestCase
 import tensorflow as tf
 from parameterized import parameterized
 
-from ConnectNeurons import ConnectNeurons
-from Neuron import Neuron
-from Organism import Organism
+from roxene import ConnectNeurons, Neuron, Organism
 from . import random_tensor
 
 SEED = 8484856303

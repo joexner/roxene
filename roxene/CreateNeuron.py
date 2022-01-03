@@ -1,8 +1,6 @@
 from tensorflow import Tensor
 
-from Gene import Gene
-from Organism import Organism
-from Neuron import Neuron
+from roxene import Gene, Organism, Neuron
 
 
 class CreateNeuron(Gene):

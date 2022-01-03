@@ -2,7 +2,14 @@ import abc
 from collections import deque
 from typing import Deque
 
-from roxene import PRECISION, Cell
+from roxene import PRECISION
+
+
+class Cell(abc.ABC):
+
+    @abc.abstractmethod
+    def get_output(self)-> PRECISION:
+        pass
 
 
 class Organism(object):

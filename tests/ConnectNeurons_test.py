@@ -74,7 +74,7 @@ class ConnectNeurons_test(TestCase):
         self.assertEqual(num_connected_ports_after_connection, expected_num_connected_ports)
 
 
-def build_organism(num_neurons=20, neuron_input_size=17):
+def build_organism(num_neurons: int = 20, neuron_input_size: int = 17) -> Organism:
     organism = Organism()
     for i in range(num_neurons):
         neuron = build_Neuron(neuron_input_size)

@@ -13,6 +13,7 @@ class RotateCells_test(unittest.TestCase):
         (-1,),
         (4,),
         (7,),
+        (-27,),
     ])
     def test_execute(self, direction):
         num_neurons = 5

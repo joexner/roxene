@@ -2,8 +2,7 @@ import tensorflow as tf
 
 PRECISION = tf.dtypes.float16
 
-from .Gene import Gene
-from .Organism import Organism
+from .core import Gene, Organism
 from .Cell import Cell
 from .Neuron import Neuron
 from .InputCell import InputCell

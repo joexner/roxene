@@ -1,4 +1,4 @@
-from Cell import Cell
+from roxene import Cell
 
 
 class InputCell(Cell):

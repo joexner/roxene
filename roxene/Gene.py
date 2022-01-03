@@ -1,6 +1,6 @@
 import abc
 
-from Organism import Organism
+from roxene import Organism
 
 
 class Gene(abc.ABC):

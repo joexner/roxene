@@ -1,5 +1,4 @@
-from Gene import Gene
-from Organism import Organism
+from roxene import Gene, Organism
 
 
 class RotateCells(Gene):

@@ -1,6 +1,6 @@
 import unittest
 from tests.ConnectNeurons_test import build_organism
-from RotateCells import RotateCells
+from roxene.RotateCells import RotateCells
 
 
 class RotateCells_test(unittest.TestCase):

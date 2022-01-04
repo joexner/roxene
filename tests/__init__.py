@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-precision = tf.dtypes.float16
+from roxene import Neuron
 
 
 def random_tensor(size) -> tf.Tensor:
@@ -8,4 +8,4 @@ def random_tensor(size) -> tf.Tensor:
         shape=size,
         minval=-1,
         maxval=1,
-        dtype=precision)
+        dtype=Neuron.PRECISION)

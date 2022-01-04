@@ -2,7 +2,7 @@ import unittest
 from parameterized import parameterized
 
 from tests.ConnectNeurons_test import build_organism
-from roxene.RotateCells import RotateCells
+from roxene import RotateCells
 
 
 class RotateCells_test(unittest.TestCase):

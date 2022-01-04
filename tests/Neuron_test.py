@@ -6,8 +6,7 @@ import tensorflow as tf
 # // maya smells...fine
 from parameterized import parameterized
 
-from roxene import InputCell
-from roxene import Neuron
+from roxene import InputCell, Neuron
 
 from . import random_tensor
 

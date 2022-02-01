@@ -29,11 +29,11 @@ class CreateNeuron_test(tf.test.TestCase):
         self.assertAllEqual(params1["hidden_feedback"], neuron1.hidden_feedback)
         self.assertAllEqual(params1["hidden_output"], neuron1.hidden_output)
 
-        # CreateNeuron adds a neuron to the *end* of the organisms's cells list
+        # CreateNeuron adds a neuron to the *beginning* of the organisms's cells list
         cn1.execute(org)
         self.assertLen(org.cells, 2)
-        self.assertIs(org.cells[0], neuron1)
-        neuron2 = org.cells[1]
+        self.assertIs(org.cells[1], neuron1)
+        neuron2 = org.cells[0]
         self.assertIsNot(neuron2, neuron1)
         self.assertAllEqual(params1["input_initial_value"], neuron2.input.value())
         self.assertAllEqual(params1["feedback_initial_value"], neuron2.feedback.value())
@@ -55,10 +55,10 @@ class CreateNeuron_test(tf.test.TestCase):
         
         cn2.execute(org)
         self.assertLen(org.cells, 3)
-        self.assertIs(org.cells[0], neuron1)
+        self.assertIs(org.cells[2], neuron1)
         self.assertIs(org.cells[1], neuron2)
 
-        neuron3 = org.cells[2]
+        neuron3 = org.cells[0]
         self.assertIsNot(neuron3, neuron1)
         self.assertIsNot(neuron3, neuron2)
         self.assertAllEqual(params2["input_initial_value"], neuron3.input.value())

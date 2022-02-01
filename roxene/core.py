@@ -8,17 +8,21 @@ from roxene import PRECISION
 class Cell(abc.ABC):
 
     @abc.abstractmethod
-    def get_output(self)-> PRECISION:
+    def get_output(self) -> PRECISION:
         pass
 
 
 class Organism(object):
 
-    def __init__(self):
-        self.cells: Deque[Cell] = deque()
-
-    def add(self, cell: Cell):
-        self.cells.append(cell)
+    def __init__(self, **kwargs):
+        if "cells" in kwargs:
+            self.cells: Deque[Cell] = deque(kwargs["cells"])
+        elif "genoytpe" in kwargs:
+            self.cells: Deque[Cell] = deque()
+            self.root_gene: Gene = kwargs["genoytpe"]
+            self.root_gene.execute(self)
+        else:
+            self.cells: Deque[Cell] = deque()
 
 
 class Gene(abc.ABC):
@@ -33,5 +37,5 @@ class InputCell(Cell):
     def __init__(self, initial_value):
         self.value = initial_value
 
-    def get_output(self):
+    def get_output(self) -> PRECISION:
         return self.value

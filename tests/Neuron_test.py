@@ -8,7 +8,7 @@ from parameterized import parameterized
 
 from roxene import InputCell, Neuron
 
-from . import random_tensor
+from . import random_tensor, make_neuron
 
 SEED = 732478534
 
@@ -19,7 +19,6 @@ precision = tf.dtypes.float16
 class Neuron_test(unittest.TestCase):
 
     def setUp(self) -> None:
-        tf.compat.v1.enable_eager_execution()
         tf.compat.v1.set_random_seed(SEED)
 
     @parameterized.expand([
@@ -122,28 +121,4 @@ class Neuron_test(unittest.TestCase):
             actual_value = neuron_input_value.flat[port_num]
             self.assertEqual(expected_value, actual_value)
 
-    # def test_add_input_connection(self, input_sz, genes, exepcted_connections):
-    #     self.fail()
-
-def make_neuron(input_sz,
-                hidden_sz,
-                feedback_sz):
-
-    input_initial_value = random_tensor([input_sz])
-    feedback_initial_value = random_tensor([feedback_sz])
-    output_initial_value = random_tensor([])
-    input_hidden = random_tensor([input_sz, hidden_sz])
-    hidden_feedback = random_tensor([hidden_sz, feedback_sz])
-    feedback_hidden = random_tensor([feedback_sz, hidden_sz])
-    hidden_output = random_tensor([hidden_sz, 1])
-
-    return Neuron(
-        input_initial_value=input_initial_value,
-        feedback_initial_value=feedback_initial_value,
-        output_initial_value=output_initial_value,
-        input_hidden=input_hidden,
-        hidden_feedback=hidden_feedback,
-        feedback_hidden=feedback_hidden,
-        hidden_output=hidden_output
-    )
 

@@ -15,10 +15,6 @@ def connect_cells(organism, tx_idx, ports):
 
 class ConnectNeurons_test(TestCase):
 
-    def setUp(self) -> None:
-        tf.compat.v1.enable_eager_execution()
-        tf.compat.v1.set_random_seed(SEED)
-
     @parameterized.expand([
         (2, 2),
         (2, 3),
@@ -78,7 +74,7 @@ def build_organism(num_neurons: int = 20, neuron_input_size: int = 17) -> Organi
     organism = Organism()
     for i in range(num_neurons):
         neuron = build_Neuron(neuron_input_size)
-        organism.add(neuron)
+        organism.cells.appendleft(neuron)
     return organism
 
 def build_Neuron(input_size):

@@ -1,6 +1,9 @@
+from builtins import int
+from enum import IntEnum
+
 from tensorflow import Tensor
 
-from roxene import Gene, Organism, Neuron, Cell
+from roxene import Gene, Organism, Neuron, Cell, InputCell
 
 
 class CreateNeuron(Gene):
@@ -32,7 +35,7 @@ class CreateNeuron(Gene):
             feedback_hidden=self.feedback_hidden,
             hidden_output=self.hidden_output
         )
-        organism.add(neuron)
+        organism.cells.appendleft(neuron)
 
 
 class ConnectNeurons(Gene):
@@ -50,10 +53,22 @@ class ConnectNeurons(Gene):
 
 
 class RotateCells(Gene):
+    class Direction(IntEnum):
+        FORWARD = 1
+        BACKWARD = -1
 
-    def __init__(self, direction):
+    def __init__(self, direction: Direction):
         self.direction = direction
-        pass
 
     def execute(self, organism: Organism):
         organism.cells.rotate(self.direction)
+
+class CreateInputCell(Gene):
+
+    def __init__(self, initial_value):
+        self.initial_value = initial_value
+
+
+    def execute(self, organism: Organism):
+        input_cell = InputCell(self.initial_value)
+        organism.cells.appendleft(input_cell)

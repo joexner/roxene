@@ -72,3 +72,14 @@ class CreateInputCell(Gene):
     def execute(self, organism: Organism):
         input_cell = InputCell(self.initial_value)
         organism.cells.appendleft(input_cell)
+
+class CompositeGene(Gene):
+
+    def __init__(self, genes: [Gene], iterations: int = 1):
+        self.genes = genes
+        self.iterations = iterations
+
+    def execute(self, organism: Organism):
+        for n in range(self.iterations):
+            for gene in self.genes:
+                gene.execute(organism)

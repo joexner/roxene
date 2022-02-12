@@ -1,6 +1,5 @@
-from unittest import TestCase
+import unittest
 
-import tensorflow as tf
 from parameterized import parameterized
 
 from roxene import ConnectNeurons, Neuron, Organism
@@ -13,7 +12,7 @@ def connect_cells(organism, tx_idx, ports):
     for port in ports:
         ConnectNeurons(tx_idx, port).execute(organism)
 
-class ConnectNeurons_test(TestCase):
+class ConnectNeurons_test(unittest.TestCase):
 
     @parameterized.expand([
         (2, 2),

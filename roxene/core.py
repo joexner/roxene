@@ -2,7 +2,7 @@ import abc
 from collections import deque
 from typing import Deque
 
-from roxene import PRECISION
+from . import PRECISION
 
 
 class Cell(abc.ABC):
@@ -23,6 +23,12 @@ class Organism(object):
             self.root_gene.execute(self)
         else:
             self.cells: Deque[Cell] = deque()
+
+    def setInput(self, input_label, input_value):
+        pass
+
+    def getOutput(self, output_label):
+        pass
 
 
 class Gene(abc.ABC):

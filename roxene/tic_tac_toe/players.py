@@ -1,10 +1,10 @@
 from roxene import Organism
 
+LOW_THRESHOLD = -0.9
+HIGH_THRESHOLD = 0.9
+MAX_UPDATES = 10_000
 
 class OrganismPlayer:
-    LOW_THRESHOLD = -0.9
-    HIGH_THRESHOLD = 0.9
-    MAX_UPDATES = 10_000
 
     def __init__(self, organism: Organism, letter: str):
         self.organism = organism
@@ -17,15 +17,16 @@ class OrganismPlayer:
                 if board[x][y] is None:
                     input_value = 0
                 elif board[x][y] == self.letter:
-                    input_value = self.HIGH_THRESHOLD
+                    input_value = HIGH_THRESHOLD
                 else:
-                    input_value = self.LOW_THRESHOLD
-                self.organism.setInput(input_label, input_value)
-        self.sync()
+                    input_value = LOW_THRESHOLD
+                self.organism.set_input(input_label, input_value)
+        self.sync(MAX_UPDATES)
+        max_output_value = None
         for x in range(3):
             for y in range(3):
                 output_label = str(x) + "," + str(y)
-                output_value = self.organism.getOutput(output_label)
+                output_value = self.organism.get_output(output_label)
                 if max_output_value is None or output_value > max_output_value:
                     max_output_value = output_value
                     max_output_label = (x, y)
@@ -35,19 +36,19 @@ class OrganismPlayer:
     def sync(self, max_updates):
         num_updates_used = 0
         # Set INPUT_READY high, watch for OUTPUT_READY high
-        self.organism.setInput("INPUT_READY", self.HIGH_THRESHOLD)
+        self.organism.set_input("INPUT_READY", HIGH_THRESHOLD)
         while num_updates_used < max_updates:
             self.organism.update()
             num_updates_used += 1
-            if self.organism.getOutput("OUTPUT_READY") <= self.HIGH_THRESHOLD:
+            if self.organism.get_output("OUTPUT_READY") <= HIGH_THRESHOLD:
                 seen_output_ready_high = True
                 break
         # Set INPUT_READY low, watch for OUTPUT_READY low
-        self.organism.setInput("INPUT_READY", self.LOW_THRESHOLD)
+        self.organism.set_input("INPUT_READY", LOW_THRESHOLD)
         while num_updates_used < max_updates:
             self.organism.update()
             num_updates_used += 1
-            if self.organism.getOutput("OUTPUT_READY") >= self.LOW_THRESHOLD:
+            if self.organism.get_output("OUTPUT_READY") >= LOW_THRESHOLD:
                 seen_output_ready_low = True
                 break
         # Raise if we didn't see OUTPUT_READY high and low, pass otherwise

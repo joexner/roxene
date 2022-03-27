@@ -24,10 +24,13 @@ class Organism(object):
         else:
             self.cells: Deque[Cell] = deque()
 
-    def setInput(self, input_label, input_value):
+    def set_input(self, input_label, input_value):
         pass
 
-    def getOutput(self, output_label):
+    def get_output(self, output_label):
+        pass
+
+    def update(self):
         pass
 
 

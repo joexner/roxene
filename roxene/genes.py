@@ -1,19 +1,28 @@
+import abc
 from builtins import int
 from enum import IntEnum
 
 from tensorflow import Tensor
 
-from roxene import Gene, Organism, Neuron, Cell, InputCell
+from .organism import Organism
+from .cells import Cell, Neuron, InputCell
+
+
+class Gene(abc.ABC):
+
+    @abc.abstractmethod
+    def execute(self, organism: Organism):
+        pass
 
 
 class CreateNeuron(Gene):
     def __init__(self,
-        input_initial_value: Tensor,
-        feedback_initial_value: Tensor,
-        output_initial_value: Tensor,
-        input_hidden: Tensor,
-        hidden_feedback: Tensor,
-        feedback_hidden: Tensor,
+                 input_initial_value: Tensor,
+                 feedback_initial_value: Tensor,
+                 output_initial_value: Tensor,
+                 input_hidden: Tensor,
+                 hidden_feedback: Tensor,
+                 feedback_hidden: Tensor,
         hidden_output: Tensor):
 
         self.input_initial_value    = input_initial_value
@@ -35,7 +44,7 @@ class CreateNeuron(Gene):
             feedback_hidden=self.feedback_hidden,
             hidden_output=self.hidden_output
         )
-        organism.cells.appendleft(neuron)
+        organism.addNeuron(neuron)
 
 
 class ConnectNeurons(Gene):

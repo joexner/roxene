@@ -1,6 +1,16 @@
+import abc
+
+import tensorflow as tf
 from numpy import ndarray
 
-from roxene import Cell, tf
+from .constants import PRECISION
+
+
+class Cell(abc.ABC):
+
+    @abc.abstractmethod
+    def get_output(self) -> PRECISION:
+        pass
 
 
 class Neuron(Cell):
@@ -53,3 +63,15 @@ class Neuron(Cell):
             if rx_port not in self.input_ports:
                 self.input_ports[rx_port] = tx_cell
                 return
+
+
+class InputCell(Cell):
+
+    def __init__(self, initial_value: PRECISION = None):
+        self.value = initial_value
+
+    def set_output(self, value: PRECISION):
+        self.value = value
+
+    def get_output(self) -> PRECISION:
+        return self.value

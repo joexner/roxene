@@ -1,14 +1,14 @@
 import unittest
 from unittest.mock import Mock, call
 
-from roxene import Organism
-from roxene.genes import CompositeGene, Gene
+from roxene import Organism, Gene
+from roxene.genes import CompositeGene
 
 
 class CompositeGene_test(unittest.TestCase):
 
     def test_execute_once(self):
-        organism: Organism = Organism()
+        organism: Organism = Mock(Organism)
         mock_genes = [Mock(Gene) for i in range(10)]
 
         gene: CompositeGene = CompositeGene(mock_genes)
@@ -17,7 +17,7 @@ class CompositeGene_test(unittest.TestCase):
             mock_gene.execute.assert_called_once_with(organism)
 
     def test_execute_twice(self):
-        organism: Organism = Organism()
+        organism: Organism = Mock(Organism)
         mock_genes = [Mock(Gene) for i in range(10)]
         gene: CompositeGene = CompositeGene(mock_genes, 2)
         gene.execute(organism)

@@ -2,9 +2,8 @@ from random import Random
 
 import tensorflow as tf
 
-from roxene import Organism
+from roxene import Organism, InputCell
 from roxene.genes import CreateInputCell
-from roxene.core import InputCell
 
 SEED = 84592184
 

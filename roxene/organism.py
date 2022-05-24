@@ -6,14 +6,16 @@ from .cells import Neuron, Cell, InputCell
 
 class Organism(object):
 
-    def __init__(self, input_names=[], output_names=[]):
+    def __init__(self, input_names={}, output_names={}, genotype=[]):
         self.inputs: dict[str, InputCell] = dict((input_name, InputCell()) for input_name in input_names)
         self.outputs: dict[str, Neuron] = {}
         self.unused_output_names = list(output_names)
         self.cells: Deque[Cell] = deque(self.inputs.values())
+        for gene in genotype:
+            gene.execute(self)
 
     def set_input(self, input_label, input_value):
-        self.inputs[input_label].value = input_value
+        self.inputs[input_label].set_output(input_value)
 
     def get_output(self, output_label):
         return self.outputs[output_label].get_output()

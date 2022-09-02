@@ -1,8 +1,17 @@
+import logging
+
 from roxene import Organism
 
-LOW_THRESHOLD = -0.9
-HIGH_THRESHOLD = 0.9
-MAX_UPDATES = 10_000
+LOW_THRESHOLD = -0.5
+HIGH_THRESHOLD = 0.5
+MAX_UPDATES = 1_000
+
+INPUT_READY = "INPUT_READY"
+OUTPUT_READY = "OUTPUT_READY"
+
+REQUIRED_INPUTS = [str(x) + ',' + str(y) for x in range(3) for y in range(3)] + [INPUT_READY]
+REQUIRED_OUTPUTS = [str(x) + ',' + str(y) for x in range(3) for y in range(3)] + [OUTPUT_READY]
+
 
 class OrganismPlayer:
 
@@ -34,26 +43,44 @@ class OrganismPlayer:
 
 
     def sync(self, max_updates):
+        logging.info("Beginning sync")
         num_updates_used = 0
+        next_log_at_update_number = 10
+
         # Set INPUT_READY high, watch for OUTPUT_READY high
-        self.organism.set_input("INPUT_READY", HIGH_THRESHOLD)
+        logging.debug(f"Beginning update {self.organism}")
+        seen_output_ready_high = False
+        self.organism.set_input(INPUT_READY, HIGH_THRESHOLD)
         while num_updates_used < max_updates:
+            if num_updates_used == next_log_at_update_number:
+                next_log_at_update_number *= 2
+                logging.debug(f"Beginning update {num_updates_used}")
             self.organism.update()
             num_updates_used += 1
-            if self.organism.get_output("OUTPUT_READY") <= HIGH_THRESHOLD:
+            output_value = self.organism.get_output(OUTPUT_READY)
+            if output_value >= HIGH_THRESHOLD:
                 seen_output_ready_high = True
                 break
+
         # Set INPUT_READY low, watch for OUTPUT_READY low
-        self.organism.set_input("INPUT_READY", LOW_THRESHOLD)
+        seen_output_ready_low = False
+        self.organism.set_input(INPUT_READY, LOW_THRESHOLD)
         while num_updates_used < max_updates:
+            if num_updates_used == next_log_at_update_number:
+                next_log_at_update_number *= 2
+                logging.debug(f"Beginning update {num_updates_used}")
             self.organism.update()
             num_updates_used += 1
-            if self.organism.get_output("OUTPUT_READY") >= LOW_THRESHOLD:
+            output_value = self.organism.get_output(OUTPUT_READY)
+            if output_value <= LOW_THRESHOLD:
                 seen_output_ready_low = True
                 break
+
         # Raise if we didn't see OUTPUT_READY high and low, pass otherwise
-        if not (seen_output_ready_low and seen_output_ready_high):
-            raise Exception(f"Used up all {max_updates} updates")
+        if not (seen_output_ready_high and seen_output_ready_low):
+            raise TimeoutError(f"Used up all {max_updates} updates")
+        else:
+            logging.info(f"Organism synced in {num_updates_used} updates")
 
 class ManualPlayer:
     def __init__(self, letter: str):

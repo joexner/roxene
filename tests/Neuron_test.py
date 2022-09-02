@@ -8,8 +8,6 @@ from parameterized import parameterized
 
 from roxene import InputCell, Neuron
 
-from . import random_tensor, make_neuron
-
 SEED = 732478534
 
 activation = tf.nn.tanh
@@ -33,7 +31,7 @@ class Neuron_test(unittest.TestCase):
             hidden_sz,
             feedback_sz):
 
-        neuron = make_neuron(input_sz, hidden_sz, feedback_sz)
+        neuron = Neuron(**Neuron.random_neuron_state(input_sz, hidden_sz, feedback_sz))
         output_before_update = neuron.get_output()
 
         neuron.update()
@@ -45,7 +43,7 @@ class Neuron_test(unittest.TestCase):
         self.assertNotEqual(output_after_first_update, output_after_another_update)
 
     def test_check_math_linear(self):
-        neuron: Neuron = make_neuron(1, 1, 1)
+        neuron: Neuron = Neuron(**Neuron.random_neuron_state(1, 1, 1))
 
         initial_input_val = neuron.input.numpy()[0]
         initial_feedback_val = neuron.feedback.numpy()[0]
@@ -82,23 +80,9 @@ class Neuron_test(unittest.TestCase):
 
         rng = Random(SEED)
 
-        input_initial_value = random_tensor([input_sz])
-        feedback_initial_value = random_tensor([feedback_sz])
-        output_initial_value = random_tensor([])
-        input_hidden = random_tensor([input_sz, hidden_sz])
-        hidden_feedback = random_tensor([hidden_sz, feedback_sz])
-        feedback_hidden = random_tensor([feedback_sz, hidden_sz])
-        hidden_output = random_tensor([hidden_sz, 1])
+        initial_value = Neuron.random_neuron_state(input_sz, feedback_sz, hidden_sz)
 
-        neuron = Neuron(
-            input_initial_value=input_initial_value,
-            feedback_initial_value=feedback_initial_value,
-            output_initial_value=output_initial_value,
-            input_hidden=input_hidden,
-            hidden_feedback=hidden_feedback,
-            feedback_hidden=feedback_hidden,
-            hidden_output=hidden_output
-        )
+        neuron = Neuron(**initial_value)
 
         # Connect some input ports
         num_to_connect = rng.randint(0, input_sz)
@@ -117,7 +101,7 @@ class Neuron_test(unittest.TestCase):
                 input_cell = connected_ports[port_num]
                 expected_value = input_cell.get_output()
             else:
-                expected_value = input_initial_value.numpy()[port_num]
+                expected_value = initial_value["input_initial_value"].numpy()[port_num]
             actual_value = neuron_input_value.flat[port_num]
             self.assertEqual(expected_value, actual_value)
 

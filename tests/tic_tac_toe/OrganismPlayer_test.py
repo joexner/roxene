@@ -5,16 +5,16 @@ from unittest.mock import Mock, call
 from roxene import Organism
 from roxene.tic_tac_toe import OrganismPlayer
 
-MAX_VALUE = 0.9
-MIN_VALUE = -0.9
+MAX_VALUE = 0.5
+MIN_VALUE = -0.5
 
 
 def generateBoard(numToFill):
     points = list()
     for x in range(3):
         for y in range(3):
-            points.append((x,y))
-    random.shuffle(points) # Yeah yeah, too lazy to figure out how to seed the RNG...
+            points.append((x, y))
+    random.shuffle(points)  # Yeah yeah, too lazy to figure out how to seed the RNG...
     board = [[None] * 3 for _ in range(3)]
     for n in range(numToFill):
         point = points.pop()
@@ -46,13 +46,16 @@ class OrganismPlayer_test(unittest.TestCase):
         organism.set_input.assert_has_calls(expected_set_input_calls, any_order=True)
 
     def test_sync(self):
-        organism = Mock(Organism)
-        # Let the organism show low on "OUTPUT_READY" 5 times, then show high,
+
+        # Let the organism show low on "OUTPUT_READY", then high
         # to satisfy the OrganismPlayer that it's ready
-        organism.get_output.side_effect = [-0.95] * 5 + [0.95]
-        player = OrganismPlayer(organism=organism, letter = 'X')
+        organism = Mock(Organism)
+        organism.get_output.side_effect = [0.5, -0.5]
+        player = OrganismPlayer(organism=organism, letter='X')
         player.sync(max_updates=10)
-        # The Organism just saw 2 set_input calls, to "INPUT_READY" high then low
+
+        # The player showed the Organism 2 set_input calls, to "INPUT_READY", high then low
         self.assertEqual(organism.set_input.call_count, 2)
-        organism.set_input.assert_has_calls([call("INPUT_READY", 0.9), call("INPUT_READY", -0.9)])
-        self.assertEqual(organism.get_output.call_count, 6)
+        organism.set_input.assert_has_calls([call("INPUT_READY", 0.5), call("INPUT_READY", -0.5)])
+
+        self.assertEqual(organism.get_output.call_count, 2)

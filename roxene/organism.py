@@ -1,3 +1,4 @@
+import uuid
 from collections import deque
 from typing import Deque
 
@@ -7,6 +8,7 @@ from .cells import Neuron, Cell, InputCell
 class Organism(object):
 
     def __init__(self, input_names={}, output_names={}, genotype=None):
+        self.id = uuid.uuid4()
         self.inputs: dict[str, InputCell] = dict((input_name, InputCell()) for input_name in input_names)
         self.outputs: dict[str, Neuron] = {}
         self.unused_output_names = list(output_names)
@@ -30,3 +32,6 @@ class Organism(object):
         if self.unused_output_names:
             new_output_name = self.unused_output_names.pop()
             self.outputs[new_output_name] = neuron
+
+    def __str__(self):
+        return f"O{str(self.id)[-7:]}"

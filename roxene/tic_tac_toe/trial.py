@@ -1,3 +1,4 @@
+import logging
 from roxene import Organism
 from enum import Enum, auto
 
@@ -37,6 +38,7 @@ class Trial:
                any(filter(lambda move: Outcome.WIN in move.outcomes or Outcome.LOSE in move.outcomes, self.moves))
 
     def run(self):
+        logging.info(f"Beginning trial for {self.players}")
         while not (self.is_finished()):
             current_player_letter = self.next_player_letter
             self.next_player_letter = 'X' if self.next_player_letter == 'O' else 'O'
@@ -70,7 +72,8 @@ class Outcome(Enum):
     VALID_MOVE = auto()
     INVALID_MOVE = auto()
 
-def run_trial(self, *orgs: Organism) -> Trial:
+
+def run_trial(orgs: list[Organism]) -> Trial:
     assert len(orgs) == 2, "Tic tac toe requires exactly 2 players"
     trial = Trial(OrganismPlayer(orgs[0], 'X'), OrganismPlayer(orgs[1], 'O'))
     trial.run()

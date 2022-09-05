@@ -1,4 +1,6 @@
 import logging
+import uuid
+
 from roxene import Organism
 from enum import Enum, auto
 
@@ -25,6 +27,7 @@ class Move:
 
 class Trial:
     def __init__(self, player_1, player_2):
+        self.id = uuid.uuid4()
         self.board = [[None, None, None], [None, None, None], [None, None, None]]
         self.next_player_letter = 'X'
         self.moves = []
@@ -38,7 +41,7 @@ class Trial:
                any(filter(lambda move: Outcome.WIN in move.outcomes or Outcome.LOSE in move.outcomes, self.moves))
 
     def run(self):
-        logging.info(f"Beginning trial for {self.players}")
+        logging.info(f"Beginning trial for {[str(p) for p in self.players.values()]}")
         while not (self.is_finished()):
             current_player_letter = self.next_player_letter
             self.next_player_letter = 'X' if self.next_player_letter == 'O' else 'O'

@@ -45,10 +45,8 @@ class OrganismPlayer_test(unittest.TestCase):
                 expected_set_input_calls.append(call(f"{x},{y}", value))
         organism.set_input.assert_has_calls(expected_set_input_calls, any_order=True)
 
-    def test_sync(self):
-
-        # Let the organism show low on "OUTPUT_READY", then high
-        # to satisfy the OrganismPlayer that it's ready
+    def test_sync_1_high_1_low(self):
+        """Let the organism show high on "OUTPUT_READY", then low to satisfy the OrganismPlayer that it's ready"""
         organism = Mock(Organism)
         organism.get_output.side_effect = [0.5, -0.5]
         player = OrganismPlayer(organism=organism, letter='X')
@@ -59,3 +57,41 @@ class OrganismPlayer_test(unittest.TestCase):
         organism.set_input.assert_has_calls([call("INPUT_READY", 0.5), call("INPUT_READY", -0.5)])
 
         self.assertEqual(organism.get_output.call_count, 2)
+
+    def test_sync_10_low(self):
+        """Let the organism show only low on "OUTPUT_READY", until it triggers a timeout"""
+        organism = Mock(Organism)
+        max_updates = 100
+
+        organism.get_output.side_effect = [-0.5] * 10
+        player = OrganismPlayer(organism=organism, letter='X')
+        try:
+            player.sync(max_updates=10)
+            self.fail("Should have failed")
+        except TimeoutError as expected:
+            pass
+
+        # Player only showed the Organism INPUT_READY high, once
+        organism.set_input.assert_has_calls([call("INPUT_READY", 0.5)])
+
+        # The Player asked for the Organism's output 10 times before timing out
+        self.assertEqual(organism.get_output.call_count, 10)
+
+    def test_sync_10_high(self):
+        """Let the organism show only low on "OUTPUT_READY", until it triggers a timeout"""
+        organism = Mock(Organism)
+        max_updates = 100
+
+        organism.get_output.side_effect = [0.5] * 10
+        player = OrganismPlayer(organism=organism, letter='X')
+        try:
+            player.sync(max_updates=10)
+            self.fail("Should have failed")
+        except TimeoutError as expected:
+            pass
+
+        # Player only showed the Organism INPUT_READY high, once
+        organism.set_input.assert_has_calls([call("INPUT_READY", 0.5), call("INPUT_READY", -0.5)])
+
+        # The Player asked for the Organism's output 10 times before timing out
+        self.assertEqual(organism.get_output.call_count, 10)

@@ -1,6 +1,7 @@
 import logging
 import uuid
 from enum import Enum, auto
+from typing import List
 
 from roxene.tic_tac_toe.players import Player
 
@@ -16,7 +17,7 @@ WIN_SETS = [
 ]
 
 class Move:
-    def __init__(self, letter: str, initial_board_state: list[list[str]]):
+    def __init__(self, letter: str, initial_board_state: List[List[str]]):
         self.letter = letter
         self.initial_board_state = [row.copy() for row in initial_board_state]
         self.position: tuple(int, int) = None

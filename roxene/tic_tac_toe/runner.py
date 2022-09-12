@@ -1,8 +1,10 @@
 import logging
 import random
-from random import sample, Random
-import tensorflow as tf
 import uuid
+from random import Random
+from typing import Set, List
+
+import tensorflow as tf
 
 from roxene import Organism, CompositeGene, CreateNeuron, Neuron, ConnectNeurons, RotateCells
 from .players import REQUIRED_INPUTS, REQUIRED_OUTPUTS, OrganismPlayer
@@ -10,9 +12,9 @@ from .trial import Trial, Outcome
 
 
 class Runner(object):
-    organisms: set[Organism]
-    busy_organisms: set[Organism]
-    completed_trials: list[Trial]
+    organisms: Set[Organism]
+    busy_organisms: Set[Organism]
+    completed_trials: List[Trial]
 
     def __init__(self, num_organisms: int, seed: int = None):
         self.logger = logging.getLogger(__name__)
@@ -95,7 +97,7 @@ class Runner(object):
             if outcome is Outcome.TIMEOUT:      score -= 100
         return score
 
-    def get_relevant_moves(self, selectee_ids: set[str]):
+    def get_relevant_moves(self, selectee_ids: Set[str]):
         for trial in self.completed_trials:
             for move in trial.moves:
                 if trial.players[move.letter].organism.id in selectee_ids:

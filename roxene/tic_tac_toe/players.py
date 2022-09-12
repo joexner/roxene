@@ -1,5 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
+from typing import Tuple
 
 from roxene import Organism
 
@@ -16,7 +17,7 @@ REQUIRED_OUTPUTS = [str(x) + ',' + str(y) for x in range(3) for y in range(3)] +
 
 class Player(ABC):
     @abstractmethod
-    def get_move_coords(self, board) -> tuple[int]:
+    def get_move_coords(self, board) -> Tuple[int]:
         pass
 
 
@@ -27,7 +28,7 @@ class OrganismPlayer(Player):
         self.letter = letter
         self.logger = logging.getLogger(str(organism)).getChild("player")
 
-    def get_move_coords(self, board) -> tuple[int]:
+    def get_move_coords(self, board) -> Tuple[int]:
         for x in range(3):
             for y in range(3):
                 input_label = str(x) + "," + str(y)
@@ -104,7 +105,7 @@ class ManualPlayer(Player):
     def __init__(self, letter: str):
         self.letter = letter
 
-    def get_move_coords(self, board, raw_input=None) -> tuple[int]:
+    def get_move_coords(self, board, raw_input=None) -> Tuple[int]:
         print()
         for x in range(5):
             for y in range(5):

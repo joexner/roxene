@@ -2,10 +2,11 @@ import logging
 import random
 from random import sample, Random
 import tensorflow as tf
+import uuid
 
 from roxene import Organism, CompositeGene, CreateNeuron, Neuron, ConnectNeurons, RotateCells
 from .players import REQUIRED_INPUTS, REQUIRED_OUTPUTS, OrganismPlayer
-from .trial import Trial
+from .trial import Trial, Outcome
 
 
 class Runner(object):
@@ -25,6 +26,9 @@ class Runner(object):
         self.logger.info(f"Seed={seed}")
         self.rng = Random(seed)
         tf.random.set_seed(seed)
+
+        # Monkey-patch in repeatable U(non-)UID generation a la https://stackoverflow.com/a/56757552/958533
+        uuid.uuid4 = lambda: uuid.UUID(int=self.rng.getrandbits(128))
 
         # Make an output neuron for each required output, wire it to all the inputs and rotate it to the back
         neuron_initial_state = Neuron.random_neuron_state(input_size=20, feedback_size=5, hidden_size=10)
@@ -52,7 +56,47 @@ class Runner(object):
         self.completed_trials.append(trial)
         return trial
 
-    def breed_mutants(self, num_selectees, num_winners):
-        selectees = sample(self.organisms, num_selectees)
-        selectees.sort(lambda selectee: selectee)
-        # TODO: breed mutants
+    def cull(self, num_to_cull: int, num_to_compare: int = 10):
+        for n in range(num_to_cull):
+            selectees = self.rng.sample(self.organisms, num_to_compare)
+            selectee_scores: dict[Organism, int] = dict([(o, 0) for o in selectees])
+            for move, organism in self.get_relevant_moves(selectee_scores.keys()):
+                selectee_scores[organism] += self.score_move(move)
+            # Just kill the lamest of the bunch for now
+            # TODO: Make stochastic
+            organism_to_kill: Organism = sorted(selectee_scores.items(), key=lambda item: item[1], reverse=True)[0][0]
+            self.logger.info(f"Removing organism {organism_to_kill}")
+            self.organisms.discard(organism_to_kill)
+
+    def breed(self, num_to_breed: int, num_to_consider: int = 10):
+        for n in range(num_to_breed):
+            selectees = self.rng.sample(self.organisms, num_to_consider)
+            selectee_scores: dict[Organism, int] = dict([(o, 0) for o in selectees])
+            for move, organism in self.get_relevant_moves(selectee_scores.keys()):
+                selectee_scores[organism] += self.score_move(move)
+            # Asexual reproduction, for now
+            organism_to_breed: Organism = sorted(selectee_scores.items(), key=lambda item: item[1], reverse=False)[0][0]
+            new_organism = self.clone(organism_to_breed)
+            self.logger.info(f"Bred organism {new_organism} from {organism_to_breed}")
+            self.organisms.add(new_organism)
+
+    def clone(self, organism_to_breed: Organism):
+        # TODO: Mutate
+        return Organism(REQUIRED_INPUTS, REQUIRED_OUTPUTS, organism_to_breed.genotype)
+
+    def score_move(self, move):
+        score = 0
+        for outcome in move.outcomes:  # Zero-sum is insufficiently motivational
+            if outcome is Outcome.WIN:          score += 100
+            if outcome is Outcome.TIE:          score += 10
+            if outcome is Outcome.VALID_MOVE:   score += 1
+            if outcome is Outcome.LOSE:         score -= 10
+            if outcome is Outcome.INVALID_MOVE: score -= 50
+            if outcome is Outcome.TIMEOUT:      score -= 100
+        return score
+
+    def get_relevant_moves(self, selectee_ids: set[str]):
+        for trial in self.completed_trials:
+            for move in trial.moves:
+                if trial.players[move.letter].organism.id in selectee_ids:
+                    yield move, trial.players[move.letter].organism.id

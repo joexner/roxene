@@ -1,4 +1,5 @@
 import logging
+from abc import ABC, abstractmethod
 
 from roxene import Organism
 
@@ -13,7 +14,13 @@ REQUIRED_INPUTS = [str(x) + ',' + str(y) for x in range(3) for y in range(3)] + 
 REQUIRED_OUTPUTS = [str(x) + ',' + str(y) for x in range(3) for y in range(3)] + [OUTPUT_READY]
 
 
-class OrganismPlayer:
+class Player(ABC):
+    @abstractmethod
+    def get_move_coords(self, board) -> tuple[int]:
+        pass
+
+
+class OrganismPlayer(Player):
 
     def __init__(self, organism: Organism, letter: str):
         self.organism = organism
@@ -92,7 +99,8 @@ class OrganismPlayer:
 
         self.logger.info(f"Organism synced in {num_updates_used} updates")
 
-class ManualPlayer:
+
+class ManualPlayer(Player):
     def __init__(self, letter: str):
         self.letter = letter
 
@@ -101,7 +109,7 @@ class ManualPlayer:
         for x in range(5):
             for y in range(5):
                 if x % 2 == 0 and y % 2 == 0:
-                    value = board[int(x/2)][int(y/2)] or ' '
+                    value = board[int(x / 2)][int(y / 2)] or ' '
                     print(value, end='')
                 elif x % 2 == 1 and y % 2 == 0:
                     print("-", end='')

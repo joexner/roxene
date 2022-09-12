@@ -1,26 +1,31 @@
-from random import Random
-from sys import argv
-
-import tensorflow as tf
+import logging
+import sys
 
 from .runner import Runner
 
-SEED = 11235
-
-import logging
-
 logging.basicConfig(level=logging.DEBUG)
-LOG = logging.getLogger(__name__)
-
-num_organisms = int(argv[1])
-num_iterations = int(argv[2])
-
-runner = Runner(num_organisms, SEED)
-
 logger = logging.getLogger(__name__)
+
+import argparse
+
+parser = argparse.ArgumentParser(description='Play some tic-tac-toe')
+
+parser.add_argument('pool_size', type=int, help='Number of cloned Organisms initially in the pool')
+parser.add_argument('num_trials', type=int, help='Number of tic-tac-toe trials to run')
+
+args = parser.parse_args(sys.argv[1:])
+
+num_organisms = args.pool_size
+num_iterations = args.num_trials
+
+num_to_cull = num_to_breed = int(max(num_organisms * .05, 5))  # Replace 5% of the herd at a time, up to 5
+
+SEED = 11235
+runner = Runner(num_organisms, SEED)
 
 # Start trials and do GA stuff in a single-threaded alternating loop
 for iteration in range(num_iterations):
     trial = runner.run_trial()
     logger.info(f"Game finished with moves {[(move.letter, move.position, move.outcomes) for move in trial.moves]}")
-    runner
+    runner.cull(num_to_cull)
+    runner.breed(num_to_breed)

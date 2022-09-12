@@ -1,10 +1,8 @@
 import logging
 import uuid
-
-from roxene import Organism
 from enum import Enum, auto
 
-from roxene.tic_tac_toe.players import ManualPlayer, OrganismPlayer
+from roxene.tic_tac_toe.players import Player
 
 WIN_SETS = [
     {(0, 0), (0, 1), (0, 2)},
@@ -26,12 +24,12 @@ class Move:
         self.resultant_board_state: list[list[str]] = None
 
 class Trial:
-    def __init__(self, player_1, player_2):
+    def __init__(self, player_1: Player, player_2: Player):
         self.id = uuid.uuid4()
         self.board = [[None, None, None], [None, None, None], [None, None, None]]
         self.next_player_letter = 'X'
-        self.moves = []
-        self.players = {
+        self.moves: list[Move] = []
+        self.players: map[str, Player] = {
             'X': player_1,
             'O': player_2
         }
@@ -45,7 +43,7 @@ class Trial:
         while not (self.is_finished()):
             current_player_letter = self.next_player_letter
             self.next_player_letter = 'X' if self.next_player_letter == 'O' else 'O'
-            current_player = self.players[current_player_letter]
+            current_player: Player = self.players[current_player_letter]
             this_move = Move(letter=current_player_letter, initial_board_state=self.board)
             try:
                 move_coords = current_player.get_move_coords(self.board)
@@ -74,10 +72,3 @@ class Outcome(Enum):
     TIMEOUT = auto()
     VALID_MOVE = auto()
     INVALID_MOVE = auto()
-
-
-def run_trial(orgs: list[Organism]) -> Trial:
-    assert len(orgs) == 2, "Tic tac toe requires exactly 2 players"
-    trial = Trial(OrganismPlayer(orgs[0], 'X'), OrganismPlayer(orgs[1], 'O'))
-    trial.run()
-    return trial

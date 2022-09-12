@@ -13,6 +13,7 @@ class Organism(object):
         self.outputs: dict[str, Neuron] = {}
         self.unused_output_names = list(output_names)
         self.cells: Deque[Cell] = deque(self.inputs.values())
+        self.genotype = genotype
         if genotype:
             genotype.execute(self)
 
@@ -34,4 +35,4 @@ class Organism(object):
             self.outputs[new_output_name] = neuron
 
     def __str__(self):
-        return f"O{str(self.id)[-7:]}"
+        return f"O-{str(self.id)[-7:]}"

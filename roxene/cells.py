@@ -18,23 +18,23 @@ class Neuron(Cell):
     ACTIVATION = tf.nn.tanh
 
     def __init__(self,
-                 input_initial_value: tf.Tensor,
-                 feedback_initial_value: tf.Tensor,
-                 output_initial_value: tf.Tensor,
-                 input_hidden: tf.Tensor,
-                 hidden_feedback: tf.Tensor,
-                 feedback_hidden: tf.Tensor,
-                 hidden_output: tf.Tensor,
+                 input_initial_value: ndarray,
+                 feedback_initial_value: ndarray,
+                 output_initial_value: ndarray,
+                 input_hidden: ndarray,
+                 hidden_feedback: ndarray,
+                 feedback_hidden: ndarray,
+                 hidden_output: ndarray,
                  activation=ACTIVATION,
                  precision=PRECISION):
-        self.input = tf.Variable(initial_value=input_initial_value)
-        self.feedback = tf.Variable(initial_value=feedback_initial_value)
-        self.output = tf.Variable(initial_value=output_initial_value, dtype=precision)
+        self.input = tf.Variable(initial_value=input_initial_value, dtype=PRECISION)
+        self.feedback = tf.Variable(initial_value=feedback_initial_value, dtype=PRECISION)
+        self.output = tf.Variable(initial_value=output_initial_value, dtype=PRECISION)
 
-        self.input_hidden = input_hidden
-        self.hidden_feedback = hidden_feedback
-        self.feedback_hidden = feedback_hidden
-        self.hidden_output = hidden_output
+        self.input_hidden = tf.convert_to_tensor(input_hidden, dtype=PRECISION)
+        self.hidden_feedback = tf.convert_to_tensor(hidden_feedback, dtype=PRECISION)
+        self.feedback_hidden = tf.convert_to_tensor(feedback_hidden, dtype=PRECISION)
+        self.hidden_output = tf.convert_to_tensor(hidden_output, dtype=PRECISION)
         # maya was here
         # *headbutt* - cece
         # boys rule girls drool - edgar

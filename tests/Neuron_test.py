@@ -1,8 +1,8 @@
 import unittest
-from random import Random
 
 import numpy as np
 import tensorflow as tf
+from numpy.random import default_rng
 # // maya smells...fine
 from parameterized import parameterized
 
@@ -78,15 +78,23 @@ class Neuron_test(unittest.TestCase):
             feedback_sz,
     ):
 
-        rng = Random(SEED)
+        rng = default_rng(seed=SEED)
 
-        initial_value = Neuron.random_neuron_state(input_sz, feedback_sz, hidden_sz)
+        initial_value = {
+            "input_initial_value": rng.uniform(low=-1., high=1., size=(input_sz)),
+            "feedback_initial_value": rng.uniform(low=-1., high=1., size=(feedback_sz)),
+            "output_initial_value": rng.uniform(low=-1., high=1., size=()),
+            "input_hidden": rng.uniform(low=-1., high=1., size=(input_sz, hidden_sz)),
+            "hidden_feedback": rng.uniform(low=-1., high=1., size=(hidden_sz, feedback_sz)),
+            "feedback_hidden": rng.uniform(low=-1., high=1., size=(feedback_sz, hidden_sz)),
+            "hidden_output": rng.uniform(low=-1., high=1., size=(hidden_sz, 1)),
+        }
 
         neuron = Neuron(**initial_value)
 
         # Connect some input ports
-        num_to_connect = rng.randint(0, input_sz)
-        ports_to_connect = rng.sample(range(input_sz), num_to_connect)
+        num_to_connect = rng.integers(0, input_sz)
+        ports_to_connect = rng.choice(input_sz, num_to_connect, replace=False)
         connected_ports = {}
         for port in ports_to_connect:
             new_input_cell = InputCell(np.float16(rng.random()))
@@ -101,8 +109,8 @@ class Neuron_test(unittest.TestCase):
                 input_cell = connected_ports[port_num]
                 expected_value = input_cell.get_output()
             else:
-                expected_value = initial_value["input_initial_value"].numpy()[port_num]
+                expected_value = initial_value["input_initial_value"][port_num]
             actual_value = neuron_input_value.flat[port_num]
-            self.assertEqual(expected_value, actual_value)
+            self.assertAlmostEqual(expected_value, actual_value, 3)
 
 

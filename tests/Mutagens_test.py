@@ -1,27 +1,43 @@
 import unittest
 
-from roxene import CreateNeuron, Neuron
+import numpy as np
+from numpy import ndarray
+from numpy.random import Generator
+
+from roxene import CreateNeuron
 from roxene.mutagens import NeuronInitialValueMutagen
+from roxene.util import random_neuron_state
+
+SEED = 2837457
 
 
 class Mutagens_test(unittest.TestCase):
 
-    def test_Initial(self):
-        parent_gene_data = Neuron.random_neuron_state(5, 5, 5)
-        gene = CreateNeuron(**parent_gene_data)
+    def test_NeuronInitialValueMutagen(self):
+        rng: Generator = np.random.default_rng(SEED)
+        gene = CreateNeuron(**random_neuron_state(500, 500, 500))
+        mutagen = NeuronInitialValueMutagen()
+        mutant = mutagen.mutate(gene, rng)
 
-        mutagen: NeuronInitialValueMutagen = NeuronInitialValueMutagen()
-        mutant = mutagen.mutate(gene)
+        self.assertSomeChanged(mutant.input_initial_value, gene.input_initial_value)
+        self.assertSomeChanged(mutant.input_hidden, gene.input_hidden)
+        self.assertSomeChanged(mutant.hidden_feedback, gene.hidden_feedback)
+        self.assertSomeChanged(mutant.feedback_initial_value, gene.feedback_initial_value)
+        self.assertSomeChanged(mutant.feedback_hidden, gene.feedback_hidden)
+        self.assertSomeChanged(mutant.hidden_output, gene.hidden_output)
+        self.assertSomeChanged(mutant.output_initial_value, gene.output_initial_value)
 
-        for parentGene, murantGene in zip(parent_gene_data.input_initial_value, mutant.input_initial_value):
-            self.assertNotEqual()
-        parent_gene_data.feedback_initial_value
-        parent_gene_data.output_initial_value
+    def assertSomeChanged(self, original: ndarray, mutant: ndarray):
+        num_changed = 0.
+        num_unchanged = 0.
+        for o_ex, m_ex in zip(np.nditer(original), np.nditer(mutant)):
+            if o_ex == m_ex:
+                num_unchanged += 1.
+            else:
+                num_changed += 1.
 
-        parent_initial_values = {(k, v) for k, v in parent_gene_data.items()
-                                 # if k.endswith("initial_value")
-                                 }
-        mutant_initial_values = {(k, v) for k, v in mutant.items() if k.endswith("initial_value")}
-        self.assertEqual(parent_initial_values, mutant_initial_values)
-        parent_gene_data.input_initial_value
-        self.assertEqual(True, False)  # add assertion here
+        fraction_changed = num_changed / (num_changed + num_unchanged)
+
+        self.assertGreaterEqual(fraction_changed, .5, "More than 50% of the values should have changed")
+        if (num_changed + num_unchanged) > 100:
+            self.assertLessEqual(fraction_changed, 1., "At least of the values should have been unchanged")

@@ -1,14 +1,17 @@
+import copy
 import logging
 import random
 import uuid
-from random import Random
 from typing import Set, List
 
 import tensorflow as tf
+from numpy.random import default_rng
 
-from roxene import Organism, CompositeGene, CreateNeuron, Neuron, ConnectNeurons, RotateCells
+from roxene import Organism, CompositeGene, CreateNeuron, ConnectNeurons, RotateCells
 from .players import REQUIRED_INPUTS, REQUIRED_OUTPUTS, OrganismPlayer
 from .trial import Trial, Outcome
+from ..mutagens import NeuronInitialValueMutagen, Mutagen
+from ..util import random_neuron_state
 
 
 class Runner(object):
@@ -26,14 +29,14 @@ class Runner(object):
         if seed is None:
             seed = random.randint()
         self.logger.info(f"Seed={seed}")
-        self.rng = Random(seed)
+        self.rng = default_rng(seed)
         tf.random.set_seed(seed)
 
         # Monkey-patch in repeatable U(non-)UID generation a la https://stackoverflow.com/a/56757552/958533
-        uuid.uuid4 = lambda: uuid.UUID(int=self.rng.getrandbits(128))
+        uuid.uuid4 = lambda: uuid.UUID(bytes=self.rng.bytes(16))
 
         # Make an output neuron for each required output, wire it to all the inputs and rotate it to the back
-        neuron_initial_state = Neuron.random_neuron_state(input_size=20, feedback_size=5, hidden_size=10)
+        neuron_initial_state = random_neuron_state(input_size=20, feedback_size=5, hidden_size=10)
         base_genotype = CompositeGene(
             genes=[
                 CreateNeuron(**neuron_initial_state),
@@ -41,6 +44,9 @@ class Runner(object):
                 RotateCells()],
             iterations=len(REQUIRED_OUTPUTS)
         )
+
+        # Set up the one mutagen
+        self.mutagens: [Mutagen] = [NeuronInitialValueMutagen()]
 
         # Just make a bunch of clones for now
         for org_num in range(num_organisms):
@@ -83,8 +89,12 @@ class Runner(object):
             self.organisms.add(new_organism)
 
     def clone(self, organism_to_breed: Organism):
+        genotype = copy.deepcopy(organism_to_breed.genotype)
         # TODO: Mutate
-        return Organism(REQUIRED_INPUTS, REQUIRED_OUTPUTS, organism_to_breed.genotype)
+        # for mutagen in self.mutagens:
+        #     mutagen.mutate(rng)
+        #     pass
+        return Organism(REQUIRED_INPUTS, REQUIRED_OUTPUTS, genotype)
 
     def score_move(self, move):
         score = 0

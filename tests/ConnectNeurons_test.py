@@ -1,9 +1,11 @@
 import unittest
 
+import tensorflow as tf
 from parameterized import parameterized
 
 from roxene import ConnectNeurons, Neuron, Organism
-from . import random_tensor
+from roxene.constants import TF_PRECISION
+from roxene.util import random_neuron_state
 
 SEED = 8484856303
 
@@ -11,6 +13,7 @@ SEED = 8484856303
 def connect_cells(organism, tx_idx, ports):
     for port in ports:
         ConnectNeurons(tx_idx, port).execute(organism)
+
 
 class ConnectNeurons_test(unittest.TestCase):
 
@@ -77,12 +80,4 @@ def build_organism(num_neurons: int = 20, neuron_input_size: int = 17) -> Organi
     return organism
 
 def build_Neuron(input_size):
-    return Neuron(
-        input_initial_value=random_tensor([input_size]),
-        feedback_initial_value = random_tensor([1]),
-        output_initial_value = random_tensor([]),
-        input_hidden = random_tensor([1, 1]),
-        hidden_feedback = random_tensor([1, 1]),
-        feedback_hidden = random_tensor([1, 1]),
-        hidden_output = random_tensor([1, 1])
-    )
+    return Neuron(**random_neuron_state(input_size, 1, 1))

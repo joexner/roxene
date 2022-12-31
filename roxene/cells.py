@@ -3,7 +3,7 @@ import abc
 import tensorflow as tf
 from numpy import ndarray
 
-from .constants import PRECISION
+from .constants import TF_PRECISION as PRECISION
 
 
 class Cell(abc.ABC):
@@ -14,7 +14,6 @@ class Cell(abc.ABC):
 
 
 class Neuron(Cell):
-    PRECISION = tf.dtypes.float16
     ACTIVATION = tf.nn.tanh
 
     def __init__(self,
@@ -27,6 +26,12 @@ class Neuron(Cell):
                  hidden_output: ndarray,
                  activation=ACTIVATION,
                  precision=PRECISION):
+        '''
+            I guess there's not much enforcement of this API anyway,
+            but we're really trying to only take numpy ndarrays as inputs here.
+            They should be the "right" sizes and types, but that depends on the Genes/tests
+            that call this cx'er, or else you could build a Neuron that asplodes at runtime
+        '''
         self.input = tf.Variable(initial_value=input_initial_value, dtype=PRECISION)
         self.feedback = tf.Variable(initial_value=feedback_initial_value, dtype=PRECISION)
         self.output = tf.Variable(initial_value=output_initial_value, dtype=PRECISION)
@@ -51,7 +56,7 @@ class Neuron(Cell):
         hidden_wts = tf.concat([self.input_hidden, self.feedback_hidden], 0)
         hidden = self.activation(tf.matmul(hidden_in, hidden_wts))
         self.feedback.assign(tf.squeeze(self.activation(tf.matmul(hidden, self.hidden_feedback)), 0))
-        self.output.assign(tf.squeeze(self.activation(tf.matmul(hidden, self.hidden_output)), [0, 1]))
+        self.output.assign(tf.squeeze(self.activation(tf.matmul(hidden, self.hidden_output)), [0]))
 
     def get_output(self) -> PRECISION:
         return self.output.numpy()
@@ -64,16 +69,6 @@ class Neuron(Cell):
                 self.input_ports[rx_port] = tx_cell
                 return
 
-    def random_neuron_state(input_size, feedback_size, hidden_size):
-        return {
-            "input_initial_value": tf.random.uniform([input_size], -1., 1., dtype=Neuron.PRECISION),
-            "feedback_initial_value": tf.random.uniform([feedback_size], -1., 1., dtype=Neuron.PRECISION),
-            "output_initial_value": tf.random.uniform([], -1., 1., dtype=Neuron.PRECISION),
-            "input_hidden": tf.random.uniform([input_size, hidden_size], -1., 1., dtype=Neuron.PRECISION),
-            "hidden_feedback": tf.random.uniform([hidden_size, feedback_size], -1., 1., dtype=Neuron.PRECISION),
-            "feedback_hidden": tf.random.uniform([feedback_size, hidden_size], -1., 1., dtype=Neuron.PRECISION),
-            "hidden_output": tf.random.uniform([hidden_size, 1], -1., 1., dtype=Neuron.PRECISION),
-        }
 
 
 class InputCell(Cell):

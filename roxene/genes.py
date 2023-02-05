@@ -1,6 +1,6 @@
 import abc
 from builtins import int
-from enum import IntEnum
+from enum import IntEnum, Enum, auto
 
 from numpy import ndarray
 
@@ -16,6 +16,16 @@ class Gene(abc.ABC):
     @abc.abstractmethod
     def execute(self, organism: Organism):
         pass
+
+
+class CreateNeuronLayer(Enum):
+    input_initial_value = auto()
+    feedback_initial_value = auto()
+    output_initial_value = auto()
+    input_hidden = auto()
+    hidden_feedback = auto()
+    feedback_hidden = auto()
+    hidden_output = auto()
 
 
 class CreateNeuron(Gene):

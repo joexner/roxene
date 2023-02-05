@@ -7,6 +7,7 @@ from numpy.random import default_rng
 from parameterized import parameterized
 
 from roxene import InputCell, Neuron
+from roxene.util import random_neuron_state
 
 SEED = 732478534
 
@@ -31,7 +32,7 @@ class Neuron_test(unittest.TestCase):
             hidden_sz,
             feedback_sz):
 
-        neuron = Neuron(**Neuron.random_neuron_state(input_sz, hidden_sz, feedback_sz))
+        neuron = Neuron(**random_neuron_state(input_sz, hidden_sz, feedback_sz))
         output_before_update = neuron.get_output()
 
         neuron.update()
@@ -43,7 +44,7 @@ class Neuron_test(unittest.TestCase):
         self.assertNotEqual(output_after_first_update, output_after_another_update)
 
     def test_check_math_linear(self):
-        neuron: Neuron = Neuron(**Neuron.random_neuron_state(1, 1, 1))
+        neuron: Neuron = Neuron(**random_neuron_state(1, 1, 1))
 
         initial_input_val = neuron.input.numpy()[0]
         initial_feedback_val = neuron.feedback.numpy()[0]
@@ -83,7 +84,7 @@ class Neuron_test(unittest.TestCase):
         initial_value = {
             "input_initial_value": rng.uniform(low=-1., high=1., size=(input_sz)),
             "feedback_initial_value": rng.uniform(low=-1., high=1., size=(feedback_sz)),
-            "output_initial_value": rng.uniform(low=-1., high=1., size=()),
+            "output_initial_value": rng.uniform(low=-1., high=1., size=(1)),
             "input_hidden": rng.uniform(low=-1., high=1., size=(input_sz, hidden_sz)),
             "hidden_feedback": rng.uniform(low=-1., high=1., size=(hidden_sz, feedback_sz)),
             "feedback_hidden": rng.uniform(low=-1., high=1., size=(feedback_sz, hidden_sz)),

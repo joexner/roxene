@@ -1,6 +1,7 @@
 import tensorflow as tf
 
-from roxene import CreateNeuron, Organism, Neuron
+from roxene import CreateNeuron, Organism
+from roxene.util import random_neuron_state
 
 
 class CreateNeuron_test(tf.test.TestCase):
@@ -8,7 +9,7 @@ class CreateNeuron_test(tf.test.TestCase):
     def test_execute(self, input_size=12, feedback_size=3, hidden_size=38):
         org = Organism()
 
-        params1 = Neuron.random_neuron_state(input_size, feedback_size, hidden_size)
+        params1 = random_neuron_state(input_size, feedback_size, hidden_size)
         cn1 = CreateNeuron(**params1)
 
         cn1.execute(org)
@@ -20,7 +21,7 @@ class CreateNeuron_test(tf.test.TestCase):
         self.assertAllEqual(params1["hidden_feedback"], neuron1.hidden_feedback)
         self.assertAllEqual(params1["hidden_output"], neuron1.hidden_output)
 
-        # CreateNeuron adds a neuron to the *beginning* of the organisms's cells list
+        # CreateNeuron adds a neuron to the *beginning* of the organism's cells list
         cn1.execute(org)
         self.assertLen(org.cells, 2)
         self.assertIs(org.cells[1], neuron1)
@@ -33,7 +34,7 @@ class CreateNeuron_test(tf.test.TestCase):
         self.assertAllEqual(params1["hidden_feedback"], neuron2.hidden_feedback)
         self.assertAllEqual(params1["hidden_output"], neuron2.hidden_output)
 
-        params2 = Neuron.random_neuron_state(input_size, feedback_size, hidden_size)
+        params2 = random_neuron_state(input_size, feedback_size, hidden_size)
         cn2 = CreateNeuron(**params2)
         
         cn2.execute(org)

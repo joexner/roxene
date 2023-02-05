@@ -1,14 +1,18 @@
+import copy
 import logging
 import random
 import uuid
-from random import Random
 from typing import Set, List
 
 import tensorflow as tf
+from numpy.random import default_rng, Generator
 
-from roxene import Organism, CompositeGene, CreateNeuron, Neuron, ConnectNeurons, RotateCells
+from roxene import Organism, CompositeGene, CreateNeuron, ConnectNeurons, RotateCells
 from .players import REQUIRED_INPUTS, REQUIRED_OUTPUTS, OrganismPlayer
 from .trial import Trial, Outcome
+from ..genes import CreateNeuronLayer
+from ..mutagens import CreateNeuronMutagen, Mutagen
+from ..util import random_neuron_state
 
 
 class Runner(object):
@@ -26,14 +30,14 @@ class Runner(object):
         if seed is None:
             seed = random.randint()
         self.logger.info(f"Seed={seed}")
-        self.rng = Random(seed)
+        self.rng: Generator = default_rng(seed)
         tf.random.set_seed(seed)
 
         # Monkey-patch in repeatable U(non-)UID generation a la https://stackoverflow.com/a/56757552/958533
-        uuid.uuid4 = lambda: uuid.UUID(int=self.rng.getrandbits(128))
+        uuid.uuid4 = lambda: uuid.UUID(bytes=self.rng.bytes(16))
 
         # Make an output neuron for each required output, wire it to all the inputs and rotate it to the back
-        neuron_initial_state = Neuron.random_neuron_state(input_size=20, feedback_size=5, hidden_size=10)
+        neuron_initial_state = random_neuron_state(input_size=20, feedback_size=5, hidden_size=10)
         base_genotype = CompositeGene(
             genes=[
                 CreateNeuron(**neuron_initial_state),
@@ -42,13 +46,17 @@ class Runner(object):
             iterations=len(REQUIRED_OUTPUTS)
         )
 
+        # Set up the mutagens
+        self.mutagens: [Mutagen] = [CreateNeuronMutagen(layer) for layer in CreateNeuronLayer]
+
         # Just make a bunch of clones for now
         for org_num in range(num_organisms):
             organism = Organism(REQUIRED_INPUTS, REQUIRED_OUTPUTS, base_genotype)
             self.organisms.add(organism)
 
     def run_trial(self) -> Trial:
-        orgs = self.rng.sample(*[self.organisms - self.busy_organisms], 2)
+        available_organisms = list(self.organisms - self.busy_organisms)
+        orgs = self.rng.choice(available_organisms, size=2, replace=False)
         self.busy_organisms.update(orgs)
         trial = Trial(OrganismPlayer(orgs[0], 'X'), OrganismPlayer(orgs[1], 'O'))
         self.logger.info(f"Starting trial {trial.id} with players {[str(o.id) for o in orgs]}")
@@ -60,7 +68,7 @@ class Runner(object):
 
     def cull(self, num_to_cull: int, num_to_compare: int = 10):
         for n in range(num_to_cull):
-            selectees = self.rng.sample(self.organisms, num_to_compare)
+            selectees = self.rng.choice(list(self.organisms), size=num_to_compare, replace=False)
             selectee_scores: dict[Organism, int] = dict([(o, 0) for o in selectees])
             for move, organism in self.get_relevant_moves(selectee_scores.keys()):
                 selectee_scores[organism] += self.score_move(move)
@@ -72,7 +80,7 @@ class Runner(object):
 
     def breed(self, num_to_breed: int, num_to_consider: int = 10):
         for n in range(num_to_breed):
-            selectees = self.rng.sample(self.organisms, num_to_consider)
+            selectees = self.rng.choice(list(self.organisms), size=num_to_consider, replace=False)
             selectee_scores: dict[Organism, int] = dict([(o, 0) for o in selectees])
             for move, organism in self.get_relevant_moves(selectee_scores.keys()):
                 selectee_scores[organism] += self.score_move(move)
@@ -83,8 +91,10 @@ class Runner(object):
             self.organisms.add(new_organism)
 
     def clone(self, organism_to_breed: Organism):
-        # TODO: Mutate
-        return Organism(REQUIRED_INPUTS, REQUIRED_OUTPUTS, organism_to_breed.genotype)
+        genotype = copy.deepcopy(organism_to_breed.genotype)
+        for mutagen in self.mutagens:
+            genotype = mutagen.mutate(genotype, self.rng)
+        return Organism(REQUIRED_INPUTS, REQUIRED_OUTPUTS, genotype)
 
     def score_move(self, move):
         score = 0

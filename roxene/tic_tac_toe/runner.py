@@ -7,20 +7,23 @@ from typing import Set, List
 import tensorflow as tf
 from numpy.random import default_rng, Generator
 
-from roxene import Organism, CompositeGene, CreateNeuron, ConnectNeurons, RotateCells
+from roxene import Organism, CompositeGene, CreateNeuron, ConnectNeurons, RotateCells, random_neuron_state, \
+    CreateNeuronMutagen, Mutagen, wiggle, CNLayer
 from .players import REQUIRED_INPUTS, REQUIRED_OUTPUTS, OrganismPlayer
 from .trial import Trial, Outcome
-from ..genes import CreateNeuronLayer
-from ..mutagens import CreateNeuronMutagen, Mutagen
-from ..util import random_neuron_state
 
 
 class Runner(object):
     organisms: Set[Organism]
     busy_organisms: Set[Organism]
     completed_trials: List[Trial]
+    rng: Generator
 
-    def __init__(self, num_organisms: int, seed: int = None):
+    def __init__(self,
+                 num_organisms: int,
+                 num_mutagens: int,
+                 neuron_shape={"input_size": 10, "feedback_size": 5, "hidden_size": 10},
+                 seed: int = None):
         self.logger = logging.getLogger(__name__)
 
         self.organisms = set()
@@ -36,8 +39,8 @@ class Runner(object):
         # Monkey-patch in repeatable U(non-)UID generation a la https://stackoverflow.com/a/56757552/958533
         uuid.uuid4 = lambda: uuid.UUID(bytes=self.rng.bytes(16))
 
-        # Make an output neuron for each required output, wire it to all the inputs and rotate it to the back
-        neuron_initial_state = random_neuron_state(input_size=20, feedback_size=5, hidden_size=10)
+        # For each required output, make an output neuron, wire it to all the inputs and rotate it to the back
+        neuron_initial_state = random_neuron_state(**neuron_shape)
         base_genotype = CompositeGene(
             genes=[
                 CreateNeuron(**neuron_initial_state),
@@ -46,13 +49,20 @@ class Runner(object):
             iterations=len(REQUIRED_OUTPUTS)
         )
 
-        # Set up the mutagens
-        self.mutagens: [Mutagen] = [CreateNeuronMutagen(layer) for layer in CreateNeuronLayer]
+        eve: Organism = Organism(REQUIRED_INPUTS, REQUIRED_OUTPUTS, base_genotype)
+        self.organisms.add(eve)
 
-        # Just make a bunch of clones for now
-        for org_num in range(num_organisms):
-            organism = Organism(REQUIRED_INPUTS, REQUIRED_OUTPUTS, base_genotype)
-            self.organisms.add(organism)
+        mutagen_severity_spread_log_wiggle = 3
+
+        # Set up the mutagens
+        self.mutagens: [Mutagen] = list()
+        for n in range(num_mutagens):
+            layer = self.rng.choice(CNLayer)
+            base_susceptibility: float = wiggle(0.001, self.rng, mutagen_severity_spread_log_wiggle)
+            susceptibility_log_wiggle: float = 0.01
+            CreateNeuronMutagen(layer, base_susceptibility, susceptibility_log_wiggle)
+
+        self.breed(num_organisms - 1, num_to_consider=1)
 
     def run_trial(self) -> Trial:
         available_organisms = list(self.organisms - self.busy_organisms)
@@ -81,18 +91,22 @@ class Runner(object):
     def breed(self, num_to_breed: int, num_to_consider: int = 10):
         for n in range(num_to_breed):
             selectees = self.rng.choice(list(self.organisms), size=num_to_consider, replace=False)
-            selectee_scores: dict[Organism, int] = dict([(o, 0) for o in selectees])
-            for move, organism in self.get_relevant_moves(selectee_scores.keys()):
-                selectee_scores[organism] += self.score_move(move)
-            # Asexual reproduction, for now
-            organism_to_breed: Organism = sorted(selectee_scores.items(), key=lambda item: item[1], reverse=False)[0][0]
+            if num_to_consider == 1:
+                organism_to_breed = selectees[0]
+            else:
+                selectee_scores: dict[Organism, int] = dict([(o, 0) for o in selectees])
+                for move, organism in self.get_relevant_moves(selectee_scores.keys()):
+                    selectee_scores[organism] += self.score_move(move)
+                organism_to_breed: Organism = \
+                sorted(selectee_scores.items(), key=lambda item: item[1], reverse=False)[0][0]
             new_organism = self.clone(organism_to_breed)
             self.logger.info(f"Bred organism {new_organism} from {organism_to_breed}")
             self.organisms.add(new_organism)
 
     def clone(self, organism_to_breed: Organism):
         genotype = copy.deepcopy(organism_to_breed.genotype)
-        for mutagen in self.mutagens:
+        mutagens = self.mutagens
+        for mutagen in mutagens:
             genotype = mutagen.mutate(genotype, self.rng)
         return Organism(REQUIRED_INPUTS, REQUIRED_OUTPUTS, genotype)
 

@@ -18,7 +18,7 @@ class Gene(abc.ABC):
         pass
 
 
-class CreateNeuronLayer(Enum):
+class CNLayer(Enum):
     input_initial_value = auto()
     feedback_initial_value = auto()
     output_initial_value = auto()

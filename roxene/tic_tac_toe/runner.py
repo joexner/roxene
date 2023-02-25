@@ -22,7 +22,7 @@ class Runner(object):
     def __init__(self,
                  num_organisms: int,
                  num_mutagens: int,
-                 neuron_shape={"input_size": 10, "feedback_size": 5, "hidden_size": 10},
+                 neuron_shape= {"input_size": 10, "feedback_size": 5, "hidden_size": 10},
                  seed: int = None):
         self.logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class Runner(object):
         self.completed_trials = list()
 
         if seed is None:
-            seed = random.randint()
+            seed = random.randint(0, 1_000_000)
         self.logger.info(f"Seed={seed}")
         self.rng: Generator = default_rng(seed)
         tf.random.set_seed(seed)
@@ -80,11 +80,11 @@ class Runner(object):
         for n in range(num_to_cull):
             selectees = self.rng.choice(list(self.organisms), size=num_to_compare, replace=False)
             selectee_scores: dict[Organism, int] = dict([(o, 0) for o in selectees])
-            for move, organism in self.get_relevant_moves(selectee_scores.keys()):
+            relevant_moves = self.get_relevant_moves(selectee_scores.keys())
+            for move, organism in relevant_moves:
                 selectee_scores[organism] += self.score_move(move)
-            # Just kill the lamest of the bunch for now
             # TODO: Make stochastic
-            organism_to_kill: Organism = sorted(selectee_scores.items(), key=lambda item: item[1], reverse=True)[0][0]
+            organism_to_kill = sorted(selectee_scores.items(), key=lambda item: item[1], reverse=True)[0][0]
             self.logger.info(f"Removing organism {organism_to_kill}")
             self.organisms.discard(organism_to_kill)
 
@@ -95,10 +95,11 @@ class Runner(object):
                 organism_to_breed = selectees[0]
             else:
                 selectee_scores: dict[Organism, int] = dict([(o, 0) for o in selectees])
-                for move, organism in self.get_relevant_moves(selectee_scores.keys()):
+                relevant_moves = self.get_relevant_moves(selectee_scores.keys())
+                for move, organism in relevant_moves:
                     selectee_scores[organism] += self.score_move(move)
-                organism_to_breed: Organism = \
-                sorted(selectee_scores.items(), key=lambda item: item[1], reverse=False)[0][0]
+                # TODO: Make stochastic
+                organism_to_breed = sorted(selectee_scores.items(), key=lambda item: item[1], reverse=False)[0][0]
             new_organism = self.clone(organism_to_breed)
             self.logger.info(f"Bred organism {new_organism} from {organism_to_breed}")
             self.organisms.add(new_organism)

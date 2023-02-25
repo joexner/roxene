@@ -23,7 +23,7 @@ num_mutagens = args.num_mutagens
 
 SEED = 11235
 
-runner = Runner(num_organisms, num_mutagens, SEED)
+runner = Runner(num_organisms, num_mutagens, seed=SEED)
 
 num_to_cull = num_to_breed = int(max(num_organisms * .05, 5))  # Replace 5% of the herd at a time, up to 5
 
@@ -35,4 +35,3 @@ for iteration in range(args.num_trials):
         logger.info("Breeding and culling")
         runner.cull(num_to_cull)
         runner.breed(num_to_breed)
-        runner.completed_trials.append(trial)

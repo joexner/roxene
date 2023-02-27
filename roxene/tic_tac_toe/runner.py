@@ -40,7 +40,11 @@ class Runner(object):
         uuid.uuid4 = lambda: uuid.UUID(bytes=self.rng.bytes(16))
 
         # For each required output, make an output neuron, wire it to all the inputs and rotate it to the back
-        neuron_initial_state = random_neuron_state(**neuron_shape)
+        neuron_initial_state = random_neuron_state(
+            neuron_shape["input_size"],
+            neuron_shape["feedback_size"],
+            neuron_shape["hidden_size"],
+            self.rng)
         base_genotype = CompositeGene(
             genes=[
                 CreateNeuron(**neuron_initial_state),

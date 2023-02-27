@@ -98,7 +98,7 @@ class OrganismPlayer(Player):
             self.logger.info(f"Failed to sync in {max_updates} updates")
             raise TimeoutError(f"Used up all {max_updates} updates")
 
-        self.logger.info(f"Organism synced in {num_updates_used} updates")
+        self.logger.info(f"{self} synced in {num_updates_used} updates")
 
 
 class ManualPlayer(Player):

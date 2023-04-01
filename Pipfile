@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 tensorflow = "2.11"
 numpy = "*"
+sqlalchemy = "*"
 
 [dev-packages]
 pytest = "*"

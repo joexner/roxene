@@ -6,6 +6,7 @@ from typing import Set, List
 
 import tensorflow as tf
 from numpy.random import default_rng, Generator
+from sqlalchemy.engine.base import Engine
 
 from roxene import Organism, CompositeGene, CreateNeuron, ConnectNeurons, RotateCells, random_neuron_state, \
     CreateNeuronMutagen, Mutagen, wiggle, CNLayer
@@ -13,7 +14,7 @@ from .players import REQUIRED_INPUTS, REQUIRED_OUTPUTS, OrganismPlayer
 from .trial import Trial, Outcome
 
 
-class Runner(object):
+class Run(object):
     organisms: Set[Organism]
     busy_organisms: Set[Organism]
     completed_trials: List[Trial]

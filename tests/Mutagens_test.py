@@ -16,7 +16,7 @@ class Mutagens_test(unittest.TestCase):
 
     def test_CreateNeuronMutagen(self):
         rng: Generator = np.random.default_rng(SEED)
-        gene = CreateNeuron(**random_neuron_state(1000, 1000, 1000))
+        gene = CreateNeuron(**random_neuron_state(100, 100, 100))
         for layer_to_mutate in CNLayer:
             mutagen = CreateNeuronMutagen(layer_to_mutate=layer_to_mutate)
             mutant = mutagen.mutate(gene, rng)

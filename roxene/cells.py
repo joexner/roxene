@@ -1,4 +1,5 @@
 import abc
+from typing import Dict
 
 import tensorflow as tf
 from numpy import ndarray
@@ -13,8 +14,19 @@ class Cell(abc.ABC):
         pass
 
 
+activation_func = tf.nn.tanh
+
 class Neuron(Cell):
-    ACTIVATION = tf.nn.tanh
+
+    input: tf.Variable
+    feedback: tf.Variable
+    output: tf.Variable
+    input_hidden: tf.Tensor
+    hidden_feedback: tf.Tensor
+    feedback_hidden: tf.Tensor
+    hidden_output: tf.Tensor
+
+    input_ports: Dict[int, Cell]
 
     def __init__(self,
                  input_initial_value: ndarray,
@@ -23,9 +35,7 @@ class Neuron(Cell):
                  input_hidden: ndarray,
                  hidden_feedback: ndarray,
                  feedback_hidden: ndarray,
-                 hidden_output: ndarray,
-                 activation=ACTIVATION,
-                 precision=PRECISION):
+                 hidden_output: ndarray):
         '''
             I guess there's not much enforcement of this API anyway,
             but we're really trying to only take numpy ndarrays as inputs here.
@@ -40,23 +50,19 @@ class Neuron(Cell):
         self.hidden_feedback = tf.convert_to_tensor(hidden_feedback, dtype=PRECISION)
         self.feedback_hidden = tf.convert_to_tensor(feedback_hidden, dtype=PRECISION)
         self.hidden_output = tf.convert_to_tensor(hidden_output, dtype=PRECISION)
-        # maya was here
-        # *headbutt* - cece
-        # boys rule girls drool - edgar
-        self.activation = activation
-        self.precision = precision
         self.input_ports = {}
 
     def update(self) -> None:
-        new_val: ndarray = self.input.numpy()
-        for port, input_cell in self.input_ports.items():
-            new_val[port % len(new_val)] = input_cell.get_output()
-        self.input.assign(new_val)
+        # TODO: Optimize / make less wack
+        if len(self.input_ports) > 0:
+            ports = [[n] for n in self.input_ports.keys()]
+            values = [self.input_ports[port[0]].get_output() for port in ports]
+            self.input.assign(tf.tensor_scatter_nd_update(self.input, ports, values))
         hidden_in = tf.expand_dims(tf.concat([self.input, self.feedback], 0), 0)
         hidden_wts = tf.concat([self.input_hidden, self.feedback_hidden], 0)
-        hidden = self.activation(tf.matmul(hidden_in, hidden_wts))
-        self.feedback.assign(tf.squeeze(self.activation(tf.matmul(hidden, self.hidden_feedback)), 0))
-        self.output.assign(tf.squeeze(self.activation(tf.matmul(hidden, self.hidden_output)), [0]))
+        hidden = activation_func(tf.matmul(hidden_in, hidden_wts))
+        self.feedback.assign(tf.squeeze(activation_func(tf.matmul(hidden, self.hidden_feedback)), 0))
+        self.output.assign(tf.squeeze(activation_func(tf.matmul(hidden, self.hidden_output)), [0]))
 
     def get_output(self) -> PRECISION:
         return self.output.numpy()

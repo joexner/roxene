@@ -1,6 +1,7 @@
 import pickle
 import uuid
-from unittest import TestCase
+from typing import List, Mapping, Dict
+from tensorflow.test import TestCase
 
 import numpy as np
 from numpy import ndarray
@@ -15,43 +16,65 @@ class Persistable(DeclarativeBase):
 
 
 class NeuronDTO(Persistable):
-
     __tablename__ = "neuron"
 
     id: Mapped[str] = mapped_column(primary_key=True)
-    input_data: Mapped[bytes] = mapped_column(name='input')
+    input: Mapped[bytes]
+    feedback: Mapped[bytes]
+    output: Mapped[bytes]
+    input_hidden: Mapped[bytes]
+    hidden_feedback: Mapped[bytes]
+    feedback_hidden: Mapped[bytes]
+    hidden_output: Mapped[bytes]
+
+    def __init__(self, neuron: Neuron, id: str):
+        self.id = id
+        self.input = pickle.dumps(neuron.input.numpy(), protocol=5)
+        self.feedback = pickle.dumps(neuron.feedback.numpy(), protocol=5)
+        self.output = pickle.dumps(neuron.output.numpy(), protocol=5)
+        self.input_hidden = pickle.dumps(neuron.input_hidden.numpy(), protocol=5)
+        self.hidden_feedback = pickle.dumps(neuron.hidden_feedback.numpy(), protocol=5)
+        self.feedback_hidden = pickle.dumps(neuron.feedback_hidden.numpy(), protocol=5)
+        self.hidden_output = pickle.dumps(neuron.hidden_output.numpy(), protocol=5)
+
+    def rehydrate(self):
+        return Neuron(
+            input=pickle.loads(self.input),
+            feedback=pickle.loads(self.feedback),
+            output=pickle.loads(self.output),
+            input_hidden=pickle.loads(self.input_hidden),
+            hidden_feedback=pickle.loads(self.hidden_feedback),
+            feedback_hidden=pickle.loads(self.feedback_hidden),
+            hidden_output=pickle.loads(self.hidden_output),
+        ), self.id
 
 
 class Persistence_test(TestCase):
 
     def test_save_new_thing(self):
-        engine = create_engine("sqlite:////tmp/persistence_test.db")
+        engine = create_engine("sqlite://")
         Persistable.metadata.create_all(engine)
-        neuron_ids = set()
+
+        neurons: Dict[str, Neuron] = {}
 
         with Session(engine) as session:
             for n in range(100):
+                neuron = Neuron(**random_neuron_state(input_size=14, hidden_size=28, feedback_size=12))
                 id = str(uuid.uuid4())
-
-                input_ndarr: ndarray = np.random.normal(size=23).astype(np.float16)
-                # Add a checksum
-                input_ndarr = np.append(input_ndarr, -1 * input_ndarr.sum())
-                input_data = pickle.dumps(input_ndarr)
-
-                neuron: NeuronDTO = NeuronDTO(
-                    id=id,
-                    input_data=input_data,
-                )
-
-                session.add(neuron)
-                neuron_ids.add(id)
-                self.assertIs(id, neuron.id)
+                neurons[id] = neuron
+                dto = NeuronDTO(neuron, id)
+                session.add(dto)
             session.commit()
 
         with Session(engine) as session:
-            for id in neuron_ids:
-                neuron: NeuronDTO = session.get(NeuronDTO, id)
-                self.assertEqual(id, neuron.id)
-                data: ndarray = pickle.loads(neuron.input_data)
-                self.assertEqual(len(data), 24)
-                self.assertAlmostEqual(data.sum(), 0, places=2)
+            for id, original_neuron in neurons.items():
+                dto: NeuronDTO = session.get(NeuronDTO, id)
+                reconstituted_neuron, re_id = dto.rehydrate()
+                self.assertEqual(id, re_id)
+                self.assertAllEqual(original_neuron.input, reconstituted_neuron.input)
+                self.assertAllEqual(original_neuron.feedback, reconstituted_neuron.feedback)
+                self.assertAllEqual(original_neuron.output, reconstituted_neuron.output)
+                self.assertAllEqual(original_neuron.input_hidden, reconstituted_neuron.input_hidden)
+                self.assertAllEqual(original_neuron.hidden_feedback, reconstituted_neuron.hidden_feedback)
+                self.assertAllEqual(original_neuron.feedback_hidden, reconstituted_neuron.feedback_hidden)
+                self.assertAllEqual(original_neuron.hidden_output, reconstituted_neuron.hidden_output)

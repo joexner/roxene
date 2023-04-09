@@ -29,9 +29,9 @@ class Neuron(Cell):
     input_ports: Dict[int, Cell]
 
     def __init__(self,
-                 input_initial_value: ndarray,
-                 feedback_initial_value: ndarray,
-                 output_initial_value: ndarray,
+                 input: ndarray,
+                 feedback: ndarray,
+                 output: ndarray,
                  input_hidden: ndarray,
                  hidden_feedback: ndarray,
                  feedback_hidden: ndarray,
@@ -42,9 +42,9 @@ class Neuron(Cell):
             They should be the "right" sizes and types, but that depends on the Genes/tests
             that call this c'tor, or else you could build a Neuron that asplodes at runtime
         '''
-        self.input = tf.Variable(initial_value=input_initial_value, dtype=PRECISION)
-        self.feedback = tf.Variable(initial_value=feedback_initial_value, dtype=PRECISION)
-        self.output = tf.Variable(initial_value=output_initial_value, dtype=PRECISION)
+        self.input = tf.Variable(initial_value=input, dtype=PRECISION)
+        self.feedback = tf.Variable(initial_value=feedback, dtype=PRECISION)
+        self.output = tf.Variable(initial_value=output, dtype=PRECISION)
 
         self.input_hidden = tf.convert_to_tensor(input_hidden, dtype=PRECISION)
         self.hidden_feedback = tf.convert_to_tensor(hidden_feedback, dtype=PRECISION)

@@ -21,19 +21,19 @@ class Mutagens_test(unittest.TestCase):
             mutagen = CreateNeuronMutagen(layer_to_mutate=layer_to_mutate)
             mutant = mutagen.mutate(gene, rng)
             self.check_fraction_changed(layer_to_mutate is CNLayer.input_initial_value,
-                                        mutant.input_initial_value, gene.input_initial_value)
+                                        mutant.input, gene.input)
             self.check_fraction_changed(layer_to_mutate is CNLayer.input_hidden, mutant.input_hidden,
                                         gene.input_hidden)
             self.check_fraction_changed(layer_to_mutate is CNLayer.hidden_feedback, mutant.hidden_feedback,
                                         gene.hidden_feedback)
             self.check_fraction_changed(layer_to_mutate is CNLayer.feedback_initial_value,
-                                        mutant.feedback_initial_value, gene.feedback_initial_value)
+                                        mutant.feedback, gene.feedback)
             self.check_fraction_changed(layer_to_mutate is CNLayer.feedback_hidden, mutant.feedback_hidden,
                                         gene.feedback_hidden)
             self.check_fraction_changed(layer_to_mutate is CNLayer.hidden_output, mutant.hidden_output,
                                         gene.hidden_output)
             self.check_fraction_changed(layer_to_mutate is CNLayer.output_initial_value,
-                                        mutant.output_initial_value, gene.output_initial_value)
+                                        mutant.output, gene.output)
 
     def check_fraction_changed(self, expect_any_change: bool, original: ndarray, mutant: ndarray):
         num_changed = 0

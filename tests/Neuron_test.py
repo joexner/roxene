@@ -82,9 +82,9 @@ class Neuron_test(unittest.TestCase):
         rng = default_rng(seed=SEED)
 
         initial_value = {
-            "input_initial_value": rng.uniform(low=-1., high=1., size=(input_sz)),
-            "feedback_initial_value": rng.uniform(low=-1., high=1., size=(feedback_sz)),
-            "output_initial_value": rng.uniform(low=-1., high=1., size=(1)),
+            "input": rng.uniform(low=-1., high=1., size=(input_sz)),
+            "feedback": rng.uniform(low=-1., high=1., size=(feedback_sz)),
+            "output": rng.uniform(low=-1., high=1., size=(1)),
             "input_hidden": rng.uniform(low=-1., high=1., size=(input_sz, hidden_sz)),
             "hidden_feedback": rng.uniform(low=-1., high=1., size=(hidden_sz, feedback_sz)),
             "feedback_hidden": rng.uniform(low=-1., high=1., size=(feedback_sz, hidden_sz)),
@@ -94,7 +94,7 @@ class Neuron_test(unittest.TestCase):
         neuron = Neuron(**initial_value)
 
         # Connect some input ports
-        num_to_connect = rng.integers(0, input_sz)
+        num_to_connect = rng.integers(1, input_sz) if input_sz > 1 else 1
         ports_to_connect = rng.choice(input_sz, num_to_connect, replace=False)
         connected_ports = {}
         for port in ports_to_connect:
@@ -110,7 +110,7 @@ class Neuron_test(unittest.TestCase):
                 input_cell = connected_ports[port_num]
                 expected_value = input_cell.get_output()
             else:
-                expected_value = initial_value["input_initial_value"][port_num]
+                expected_value = initial_value["input"][port_num]
             actual_value = neuron_input_value.flat[port_num]
             self.assertAlmostEqual(expected_value, actual_value, 3)
 

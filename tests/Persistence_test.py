@@ -3,12 +3,11 @@ import uuid
 from typing import List, Mapping, Dict
 from tensorflow.test import TestCase
 
-import numpy as np
-from numpy import ndarray
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
 
-from roxene import Neuron, random_neuron_state
+from roxene.cells import Neuron
+from roxene.util import random_neuron_state
 
 
 class Persistable(DeclarativeBase):
@@ -51,7 +50,7 @@ class NeuronDTO(Persistable):
 
 class Persistence_test(TestCase):
 
-    def test_save_new_thing(self):
+    def test_save_new_neuron(self):
         engine = create_engine("sqlite://")
         Persistable.metadata.create_all(engine)
 
@@ -78,3 +77,15 @@ class Persistence_test(TestCase):
                 self.assertAllEqual(original_neuron.hidden_feedback, reconstituted_neuron.hidden_feedback)
                 self.assertAllEqual(original_neuron.feedback_hidden, reconstituted_neuron.feedback_hidden)
                 self.assertAllEqual(original_neuron.hidden_output, reconstituted_neuron.hidden_output)
+
+    # def test_save_population(self):
+    #
+    #     engine = create_engine("sqlite://")
+    #     Persistable.metadata.create_all(engine)
+    #
+    #     population: Population = Population(engine, [])
+    #     o1, o2 = Organism(), Organism()
+    #     population.add(o1)
+    #     population.add(o2)
+    #     trial = population.start_trial()
+    #     population.record_trial(trial)

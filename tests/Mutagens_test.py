@@ -4,8 +4,7 @@ import numpy as np
 from numpy import ndarray
 from numpy.random import Generator
 
-from roxene import CreateNeuron
-from roxene.genes import CNLayer
+from roxene.genes import CNLayer, CreateNeuron
 from roxene.mutagens import CreateNeuronMutagen
 from roxene.util import random_neuron_state
 

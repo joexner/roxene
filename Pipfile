@@ -7,6 +7,7 @@ name = "pypi"
 tensorflow = "2.11"
 numpy = "*"
 sqlalchemy = "*"
+testcase = "*"
 
 [dev-packages]
 pytest = "*"

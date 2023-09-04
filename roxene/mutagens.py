@@ -5,9 +5,8 @@ import numpy as np
 from numpy import sign, exp, log, ndarray
 from numpy.random import Generator
 
-from roxene import CreateNeuron, Gene, CompositeGene
+from roxene.genes import CreateNeuron, Gene, CompositeGene, CNLayer
 from roxene.constants import NP_PRECISION
-from roxene.genes import CNLayer
 
 
 class Mutagen(ABC):

@@ -1,10 +1,9 @@
 import unittest
-
-import tensorflow as tf
 from parameterized import parameterized
 
-from roxene import ConnectNeurons, Neuron, Organism
-from roxene.constants import TF_PRECISION
+from roxene.cells import Neuron
+from roxene.genes import ConnectNeurons
+from roxene.organism import Organism
 from roxene.util import random_neuron_state
 
 SEED = 8484856303

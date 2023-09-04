@@ -2,7 +2,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Tuple
 
-from roxene import Organism
+from roxene.organism import Organism
 
 LOW_THRESHOLD = -0.5
 HIGH_THRESHOLD = 0.5

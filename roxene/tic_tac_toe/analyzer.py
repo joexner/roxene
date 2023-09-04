@@ -2,7 +2,7 @@ import pickle
 import mlflow
 from mlflow.tracking import MlflowClient
 
-from roxene.tic_tac_toe import Run
+from roxene.tic_tac_toe.run import Run
 
 client = MlflowClient()
 last_run = client.search_runs('0', max_results=1)[0]

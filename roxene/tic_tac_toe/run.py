@@ -1,17 +1,17 @@
 import copy
 import logging
 import random
+import tensorflow as tf
 import uuid
+from numpy.random import default_rng, Generator
 from typing import Set, List
 
-import tensorflow as tf
-from numpy.random import default_rng, Generator
-from sqlalchemy.engine.base import Engine
-
-from roxene import Organism, CompositeGene, CreateNeuron, ConnectNeurons, RotateCells, random_neuron_state, \
-    CreateNeuronMutagen, Mutagen, wiggle, CNLayer
-from .players import REQUIRED_INPUTS, REQUIRED_OUTPUTS, OrganismPlayer
-from .trial import Trial, Outcome
+from roxene.genes import CompositeGene, CreateNeuron, ConnectNeurons, RotateCells
+from roxene.mutagens import CreateNeuronMutagen, Mutagen, wiggle, CNLayer
+from roxene.organism import Organism
+from roxene.tic_tac_toe.players import REQUIRED_INPUTS, REQUIRED_OUTPUTS, OrganismPlayer
+from roxene.tic_tac_toe.trial import Trial, Outcome
+from roxene.util import random_neuron_state
 
 
 class Run(object):

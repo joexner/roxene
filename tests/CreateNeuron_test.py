@@ -1,6 +1,7 @@
 import tensorflow as tf
 
-from roxene import CreateNeuron, Organism
+from roxene.genes import CreateNeuron
+from roxene.organism import Organism
 from roxene.util import random_neuron_state
 
 

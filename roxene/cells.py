@@ -4,7 +4,7 @@ from typing import Dict
 import tensorflow as tf
 from numpy import ndarray
 
-from .constants import TF_PRECISION as PRECISION
+from constants import TF_PRECISION as PRECISION
 
 
 class Cell(abc.ABC):

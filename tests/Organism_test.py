@@ -1,7 +1,8 @@
 from unittest import TestCase
 from unittest.mock import Mock
 
-from roxene import Organism, Gene, CompositeGene, CreateNeuron
+from roxene.organism import Organism
+from roxene.genes import Gene, CompositeGene, CreateNeuron
 from roxene.util import random_neuron_state
 
 SEED = 22049456

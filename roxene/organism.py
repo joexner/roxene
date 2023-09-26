@@ -9,7 +9,7 @@ from persistence import EntityBase
 
 
 class Organism(EntityBase):
-    __tablename__ = "florganism"
+    __tablename__ = "organism"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
 

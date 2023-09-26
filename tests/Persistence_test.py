@@ -1,13 +1,12 @@
 import pickle
+import tensorflow as tf
 import uuid
-from typing import List, Mapping, Dict
-from tensorflow.test import TestCase
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
+from typing import Dict
 
-from roxene.cells import Neuron
-from roxene.util import random_neuron_state
+from cells import Neuron
+from util import random_neuron_state
 
 
 class Persistable(DeclarativeBase):
@@ -48,7 +47,7 @@ class NeuronDTO(Persistable):
         ), self.id
 
 
-class Persistence_test(TestCase):
+class Persistence_test(tf.test.TestCase):
 
     def test_save_new_neuron(self):
         engine = create_engine("sqlite://")

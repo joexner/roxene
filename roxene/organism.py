@@ -1,27 +1,20 @@
-import uuid
 from collections import deque
 
+import uuid
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import Deque
 
-from persistence import EntityBase
 from cells import Neuron, Cell, InputCell
+from persistence import EntityBase
 
 
-class _SHMOrganism(EntityBase):
-    __tablename__ = "organism"
+class Organism(EntityBase):
+    __tablename__ = "florganism"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
 
-
     def __init__(self, input_names={}, output_names={}, genotype=None):
         self.id = uuid.uuid4()
-
-
-class Organism(_SHMOrganism):
-
-    def __init__(self, input_names={}, output_names={}, genotype=None):
-        super().__init__(input_names, output_names, genotype)
         self.inputs: dict[str, InputCell] = dict((input_name, InputCell()) for input_name in input_names)
         self.outputs: dict[str, Neuron] = {}
         self.unused_output_names = list(output_names)

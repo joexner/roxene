@@ -1,8 +1,7 @@
 import abc
-from typing import Dict
-
 import tensorflow as tf
 from numpy import ndarray
+from typing import Dict
 
 from constants import TF_PRECISION as PRECISION
 

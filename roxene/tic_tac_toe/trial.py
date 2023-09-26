@@ -1,13 +1,13 @@
 import logging
 import uuid
+from datetime import datetime
 from enum import Enum, auto
 from sqlalchemy import ForeignKey, CHAR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import List, Set
 
-from roxene.organism import Organism
-from persistence import EntityBase
-from roxene.tic_tac_toe.players import Player
+from organism import Organism
+from tic_tac_toe.players import Player
 
 WIN_SETS = [
     {(0, 0), (0, 1), (0, 2)},
@@ -21,7 +21,7 @@ WIN_SETS = [
 ]
 
 
-class Participant(EntityBase):
+class Participant:
     __tablename__ = "trial_participant"
 
     trial_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("trial.id"), primary_key=True)
@@ -49,11 +49,13 @@ class Move:
         self.resultant_board_state: list[list[str]] = None
 
 
-class Trial(EntityBase):
+class Trial:
     __tablename__ = 'trial'
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
     participants: Mapped[Set[Participant]] = relationship(Participant, back_populates='trial')
+    start_date: Mapped[datetime] = mapped_column(nullable=False)
+    end_date: Mapped[datetime]
 
     def __init__(self, player_1: Player, player_2: Player):
         self.id = uuid.uuid4()

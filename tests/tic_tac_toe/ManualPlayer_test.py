@@ -1,6 +1,6 @@
 import unittest
 
-from roxene.tic_tac_toe.players import ManualPlayer
+from tic_tac_toe.players import ManualPlayer
 
 
 class ManualPlayer_test(unittest.TestCase):

@@ -1,12 +1,11 @@
-from typing import Dict
-
 from numpy import ndarray
 from numpy.random import Generator, default_rng
+from typing import Dict
 
-from .constants import NP_PRECISION
+from constants import NP_PRECISION
 
 
-def random_neuron_state(input_size, feedback_size, hidden_size, rng: Generator = default_rng()) -> Dict[str, ndarray]:
+def random_neuron_state(input_size=10, feedback_size=10, hidden_size=10, rng: Generator = default_rng()) -> Dict[str, ndarray]:
     return {
         "input": (2 * rng.random([input_size]) - 1).astype(dtype=NP_PRECISION),
         "feedback": (2 * rng.random([feedback_size]) - 1).astype(dtype=NP_PRECISION),

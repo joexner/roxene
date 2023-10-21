@@ -1,8 +1,10 @@
 from collections import deque
 
 import uuid
-from sqlalchemy.orm import Mapped, mapped_column
-from typing import Deque
+from sqlalchemy import ForeignKey
+from sqlalchemy.ext.associationproxy import association_proxy, AssociationProxy
+from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
+from typing import Deque, Dict
 
 from cells import Neuron, Cell, InputCell
 from persistence import EntityBase
@@ -13,18 +15,32 @@ class Organism(EntityBase):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
 
+    _inputs_map: Mapped[Dict[str, "Input"]] = (relationship(
+        back_populates="organism",
+        cascade="all, delete-orphan",
+        collection_class=attribute_keyed_dict("name")))
+
+    input_cells: AssociationProxy[Dict[str, InputCell]] = association_proxy(
+        target_collection="_inputs_map",
+        attr="inputcell",
+        creator=lambda name, inputcell: Input(name=name, inputcell=inputcell))
+
+
     def __init__(self, input_names={}, output_names={}, genotype=None):
         self.id = uuid.uuid4()
-        self.inputs: dict[str, InputCell] = dict((input_name, InputCell()) for input_name in input_names)
+        for name in input_names:
+            self.input_cells[name] = InputCell()
+
         self.outputs: dict[str, Neuron] = {}
         self.unused_output_names = list(output_names)
-        self.cells: Deque[Cell] = deque(self.inputs.values())
+        self.cells: Deque[Cell] = deque(self.input_cells.values())
         self.genotype = genotype
         if genotype:
             genotype.execute(self)
 
     def set_input(self, input_label, input_value):
-        self.inputs[input_label].set_output(input_value)
+        input_cell: InputCell = self.input_cells[input_label]
+        input_cell.set_output(input_value)
 
     def get_output(self, output_label):
         return self.outputs[output_label].get_output()
@@ -43,3 +59,17 @@ class Organism(EntityBase):
     def __str__(self):
         return f"O-{str(self.id)[-7:]}"
 
+
+class Input(EntityBase):
+    __tablename__ = "organism_input"
+
+    organism_id: Mapped[int] = mapped_column(ForeignKey("organism.id"), primary_key=True)
+    inputcell_id: Mapped[int] = mapped_column(ForeignKey("input_cell.id"), primary_key=True)
+
+    name: Mapped[str] = mapped_column()
+    organism: Mapped[Organism] = relationship()
+    inputcell: Mapped[InputCell] = relationship()
+
+    def __init__(self, name, inputcell):
+        self.name = name
+        self.inputcell = inputcell

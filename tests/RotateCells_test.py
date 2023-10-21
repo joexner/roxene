@@ -1,7 +1,7 @@
 import unittest
 from parameterized import parameterized
 
-from tests.ConnectNeurons_test import build_organism
+from ConnectNeurons_test import build_organism
 from genes import RotateCells
 
 

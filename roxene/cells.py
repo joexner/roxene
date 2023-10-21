@@ -1,9 +1,12 @@
 import abc
 import tensorflow as tf
+import uuid
 from numpy import ndarray
-from typing import Dict
+from sqlalchemy.orm import Mapped, mapped_column
+from typing import Dict, Optional
 
 from constants import TF_PRECISION as PRECISION
+from persistence import EntityBase
 
 
 class Cell(abc.ABC):
@@ -75,10 +78,15 @@ class Neuron(Cell):
                 return
 
 
+class InputCell(EntityBase):
+    __tablename__ = "input_cell"
 
-class InputCell(Cell):
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
+    value: Mapped[Optional[float]] = mapped_column()
+
 
     def __init__(self, initial_value: PRECISION = None):
+        self.id = uuid.uuid4()
         self.value = initial_value
 
     def set_output(self, value: PRECISION):

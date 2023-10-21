@@ -9,11 +9,11 @@ from cells import Neuron
 from util import random_neuron_state
 
 
-class Persistable(DeclarativeBase):
+class TestEntity(DeclarativeBase):
     pass
 
 
-class NeuronDTO(Persistable):
+class NeuronDTO(TestEntity):
     __tablename__ = "neuron"
 
     id: Mapped[str] = mapped_column(primary_key=True)
@@ -51,7 +51,7 @@ class Persistence_test(tf.test.TestCase):
 
     def test_save_new_neuron(self):
         engine = create_engine("sqlite://")
-        Persistable.metadata.create_all(engine)
+        TestEntity.metadata.create_all(engine)
 
         neurons: Dict[str, Neuron] = {}
 
@@ -76,15 +76,3 @@ class Persistence_test(tf.test.TestCase):
                 self.assertAllEqual(original_neuron.hidden_feedback, reconstituted_neuron.hidden_feedback)
                 self.assertAllEqual(original_neuron.feedback_hidden, reconstituted_neuron.feedback_hidden)
                 self.assertAllEqual(original_neuron.hidden_output, reconstituted_neuron.hidden_output)
-
-    # def test_save_population(self):
-    #
-    #     engine = create_engine("sqlite://")
-    #     Persistable.metadata.create_all(engine)
-    #
-    #     population: Population = Population(engine, [])
-    #     o1, o2 = Organism(), Organism()
-    #     population.add(o1)
-    #     population.add(o2)
-    #     trial = population.start_trial()
-    #     population.record_trial(trial)

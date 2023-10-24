@@ -1,13 +1,11 @@
-from abc import ABC
-from random import Random
-
 import numpy as np
+from abc import ABC
 from numpy import sign, exp, log, ndarray
 from numpy.random import Generator
+from random import Random
 
-from roxene import CreateNeuron, Gene, CompositeGene
-from roxene.constants import NP_PRECISION
-from roxene.genes import CNLayer
+from .constants import NP_PRECISION
+from .genes import CreateNeuron, Gene, CompositeGene, CNLayer
 
 
 class Mutagen(ABC):

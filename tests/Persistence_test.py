@@ -5,8 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
 from typing import Dict
 
-from cells import Neuron
-from util import random_neuron_state
+from roxene import Neuron, random_neuron_state
 
 
 class TestEntity(DeclarativeBase):

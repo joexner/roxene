@@ -7,8 +7,10 @@ from typing import Set, List
 import tensorflow as tf
 from numpy.random import default_rng, Generator
 
-from roxene import Organism, CompositeGene, CreateNeuron, ConnectNeurons, RotateCells, random_neuron_state, \
-    CreateNeuronMutagen, Mutagen, wiggle, CNLayer
+from ..organism import Organism
+from ..genes import CompositeGene, CreateNeuron, ConnectNeurons, RotateCells
+from ..util import  random_neuron_state
+from ..mutagens import CreateNeuronMutagen, Mutagen, wiggle, CNLayer
 from .players import REQUIRED_INPUTS, REQUIRED_OUTPUTS, OrganismPlayer
 from .trial import Trial, Outcome
 

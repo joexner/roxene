@@ -5,8 +5,8 @@ from numpy import ndarray
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import Dict, Optional
 
-from constants import TF_PRECISION as PRECISION
-from persistence import EntityBase
+from .constants import TF_PRECISION as PRECISION
+from .persistence import EntityBase
 
 
 class Cell(abc.ABC):

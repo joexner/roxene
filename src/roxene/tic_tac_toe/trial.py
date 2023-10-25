@@ -6,8 +6,8 @@ from sqlalchemy import ForeignKey, CHAR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import List, Set
 
-from organism import Organism
-from tic_tac_toe.players import Player
+from ..organism import Organism
+from .players import Player
 
 WIN_SETS = [
     {(0, 0), (0, 1), (0, 2)},

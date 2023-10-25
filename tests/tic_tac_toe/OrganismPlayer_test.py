@@ -2,8 +2,8 @@ import random
 import unittest
 from unittest.mock import Mock, call
 
-from organism import Organism
-from tic_tac_toe.players import OrganismPlayer
+from roxene import Organism
+from roxene.tic_tac_toe import OrganismPlayer
 
 MAX_VALUE = 0.5
 MIN_VALUE = -0.5

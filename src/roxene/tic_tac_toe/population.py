@@ -9,11 +9,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import func
 from typing import Set, List
 
-from mutagens import Mutagen
-from organism import Organism
-from tic_tac_toe.players import REQUIRED_INPUTS, REQUIRED_OUTPUTS
-from tic_tac_toe.trial import Trial, Outcome
-from tic_tac_toe.trial import Participant
+from ..mutagens import Mutagen
+from ..organism import Organism
+from .players import REQUIRED_INPUTS, REQUIRED_OUTPUTS
+from .trial import Trial, Outcome
+from .trial import Participant
 
 
 class Population:

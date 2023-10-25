@@ -1,8 +1,6 @@
 import tensorflow as tf
 
-from genes import CreateNeuron
-from organism import Organism
-from util import random_neuron_state
+from roxene import CreateNeuron, Organism, random_neuron_state
 
 
 class CreateNeuron_test(tf.test.TestCase):

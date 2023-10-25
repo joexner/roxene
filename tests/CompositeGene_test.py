@@ -1,8 +1,7 @@
 import unittest
 from unittest.mock import Mock, call
 
-from genes import Gene, CompositeGene
-from organism import Organism
+from roxene import Gene, CompositeGene, Organism
 
 
 class CompositeGene_test(unittest.TestCase):

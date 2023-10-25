@@ -3,8 +3,8 @@ from builtins import int
 from enum import IntEnum, Enum, auto
 from numpy import ndarray
 
-from cells import Cell, Neuron, InputCell
-from organism import Organism
+from .cells import Cell, Neuron, InputCell
+from .organism import Organism
 
 
 class Gene(abc.ABC):

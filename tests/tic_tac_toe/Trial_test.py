@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import Mock
 
-from tic_tac_toe.players import ManualPlayer
-from tic_tac_toe.trial import Trial, Outcome
+from roxene.tic_tac_toe import ManualPlayer, Trial
+from roxene.tic_tac_toe.trial import Outcome
 
 
 class Trial_test(unittest.TestCase):

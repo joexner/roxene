@@ -1,10 +1,7 @@
 import unittest
 from parameterized import parameterized
 
-from cells import Neuron
-from genes import ConnectNeurons
-from organism import Organism
-from util import random_neuron_state
+from roxene import Neuron, ConnectNeurons, Organism, random_neuron_state
 
 SEED = 8484856303
 

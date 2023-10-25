@@ -6,8 +6,7 @@ from numpy.random import default_rng
 # // maya smells...fine
 from parameterized import parameterized
 
-from cells import InputCell, Neuron
-from util import random_neuron_state
+from roxene import InputCell, Neuron, random_neuron_state
 
 SEED = 732478534
 

@@ -6,8 +6,8 @@ from sqlalchemy.ext.associationproxy import association_proxy, AssociationProxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
 from typing import Deque, Dict
 
-from cells import Neuron, Cell, InputCell
-from persistence import EntityBase
+from .cells import Neuron, Cell, InputCell
+from .persistence import EntityBase
 
 
 class Organism(EntityBase):

@@ -5,10 +5,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from unittest.mock import Mock
 
-from genes import Gene, CompositeGene, CreateNeuron
-from organism import Organism
-from persistence import EntityBase
-from util import random_neuron_state
+from roxene import Gene, CompositeGene, CreateNeuron, Organism, random_neuron_state
+from roxene.persistence import EntityBase
 
 SEED = 22049456
 

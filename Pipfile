@@ -8,6 +8,7 @@ tensorflow = "2.13"
 numpy = "*"
 sqlalchemy = "*"
 testcase = "*"
+roxene = { path = "./src" }
 
 [dev-packages]
 pytest = "*"

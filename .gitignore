@@ -2,3 +2,5 @@
 __pycache__
 .pytest_cache
 tests/persistence_test.db\n
+**build
+**/*.egg-info/

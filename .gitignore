@@ -4,3 +4,4 @@ __pycache__
 tests/persistence_test.db\n
 **build
 **/*.egg-info/
+**/test.db

@@ -1,7 +1,9 @@
 import abc
+
 import tensorflow as tf
 import uuid
 from numpy import ndarray
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import Dict, Optional
 
@@ -9,9 +11,18 @@ from .constants import TF_PRECISION as PRECISION
 from .persistence import EntityBase
 
 
-class Cell(abc.ABC):
+class Cell(EntityBase):
+    __tablename__ = "cell"
+    __allow_unmapped__ = True
 
-    @abc.abstractmethod
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
+    type: Mapped[str]
+
+    __mapper_args__ = {
+        "polymorphic_identity": "cell",
+        "polymorphic_on": "type",
+    }
+
     def get_output(self) -> PRECISION:
         pass
 
@@ -19,6 +30,11 @@ class Cell(abc.ABC):
 activation_func = tf.nn.tanh
 
 class Neuron(Cell):
+    __tablename__ = "neuron"
+    __mapper_args__ = {"polymorphic_identity": "neuron"}
+
+    id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cell.id"), primary_key=True)
+
 
     input: tf.Variable
     feedback: tf.Variable
@@ -44,6 +60,7 @@ class Neuron(Cell):
             They should be the "right" sizes and types, but that depends on the Genes/tests
             that call this c'tor, or else you could build a Neuron that asplodes at runtime
         '''
+        self.id = uuid.uuid4()
         self.input = tf.Variable(initial_value=input, dtype=PRECISION)
         self.feedback = tf.Variable(initial_value=feedback, dtype=PRECISION)
         self.output = tf.Variable(initial_value=output, dtype=PRECISION)
@@ -78,10 +95,11 @@ class Neuron(Cell):
                 return
 
 
-class InputCell(EntityBase):
+class InputCell(Cell):
     __tablename__ = "input_cell"
+    __mapper_args__ = {"polymorphic_identity": "input"}
 
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cell.id"), primary_key=True)
     value: Mapped[Optional[float]] = mapped_column()
 
 

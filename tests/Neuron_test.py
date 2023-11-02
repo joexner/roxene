@@ -1,12 +1,16 @@
 import unittest
+import os
 
 import numpy as np
 import tensorflow as tf
 from numpy.random import default_rng
 # // maya smells...fine
 from parameterized import parameterized
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
 from roxene import InputCell, Neuron, random_neuron_state
+from roxene.persistence import EntityBase
 
 SEED = 732478534
 
@@ -113,4 +117,46 @@ class Neuron_test(unittest.TestCase):
             actual_value = neuron_input_value.flat[port_num]
             self.assertAlmostEqual(expected_value, actual_value, 3)
 
+    def test_save_neuron(self):
+        # try:
+        #    os.remove("test.db")
+        # except FileNotFoundError:
+        #     pass
+        # engine = create_engine("sqlite:///test.db")
+        engine = create_engine("sqlite://")
+        EntityBase.metadata.create_all(engine)
 
+        n1 = Neuron(**random_neuron_state())
+        nid = n1.id
+
+        with Session(engine) as session:
+            session.add(n1)
+            # orig_input = n1.input
+            # orig_feedback = n1.feedback
+            # orig_output = n1.output
+            # orig_input_hidden = n1.input_hidden
+            # orig_hidden_feedback = n1.hidden_feedback
+            # orig_feedback_hidden = n1.feedback_hidden
+            # orig_hidden_output = n1.hidden_output
+            session.commit()
+
+        with Session(engine) as session:
+            n2 = session.get(Neuron, nid)
+
+            self.assertFalse(n2 is None)
+
+            # self.assertEqual(n2.input, orig_input)
+            # self.assertEqual(n2.feedback, orig_feedback)
+            # self.assertEqual(n2.output, orig_output)
+            # self.assertEqual(n2.input_hidden, orig_input_hidden)
+            # self.assertEqual(n2.hidden_feedback, orig_hidden_feedback)
+            # self.assertEqual(n2.feedback_hidden, orig_feedback_hidden)
+            # self.assertEqual(n2.hidden_output, orig_hidden_output)
+
+            # n2.update()
+            # n2_output = n2.output
+            # session.commit()
+
+        # with Session(engine) as session:
+        #     n3 = session.get(Neuron, nid)
+        #     self.assertEqual(n3.output, n2_output)

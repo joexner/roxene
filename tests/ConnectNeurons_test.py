@@ -25,7 +25,7 @@ class ConnectNeurons_test(unittest.TestCase):
         gene.execute(organism)
         rx: Neuron = organism.cells[0]
         expected_tx_cell = organism.cells[transmitter_idx % len(organism.cells)]
-        self.assertIs(rx.input_ports[listener_port], expected_tx_cell)
+        self.assertIs(rx.bound_ports[listener_port], expected_tx_cell)
 
     @parameterized.expand([
         ([], 2, 2),
@@ -53,7 +53,7 @@ class ConnectNeurons_test(unittest.TestCase):
 
 
         connect_cells(organism, 1, pre_connected_ports)
-        num_connected_ports_before_connection = len(rx_cell.input_ports)
+        num_connected_ports_before_connection = len(rx_cell.bound_ports)
 
         self.assertEqual(num_connected_ports_before_connection, len(pre_connected_ports))
 
@@ -63,7 +63,7 @@ class ConnectNeurons_test(unittest.TestCase):
         for tx_cell_index in range(num_gene_executions):
             gene.execute(organism)
 
-        num_connected_ports_after_connection = len(rx_cell.input_ports)
+        num_connected_ports_after_connection = len(rx_cell.bound_ports)
 
         self.assertEqual(num_connected_ports_after_connection, expected_num_connected_ports)
 

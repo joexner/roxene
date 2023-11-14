@@ -1,5 +1,3 @@
-import abc
-
 import tensorflow as tf
 import uuid
 from numpy import ndarray
@@ -8,7 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from typing import Dict, Optional
 
 from .constants import TF_PRECISION as PRECISION
-from .persistence import EntityBase
+from .persistence import EntityBase, WrappedVariable, WrappedTensor, TrackedVariable
 
 
 class Cell(EntityBase):
@@ -36,15 +34,16 @@ class Neuron(Cell):
     id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cell.id"), primary_key=True)
 
 
-    input: tf.Variable
-    feedback: tf.Variable
-    output: tf.Variable
-    input_hidden: tf.Tensor
-    hidden_feedback: tf.Tensor
-    feedback_hidden: tf.Tensor
-    hidden_output: tf.Tensor
+    input: Mapped[TrackedVariable] = mapped_column(TrackedVariable.as_mutable(WrappedVariable))
+    feedback: Mapped[TrackedVariable] = mapped_column(TrackedVariable.as_mutable(WrappedVariable))
+    output: Mapped[TrackedVariable] = mapped_column(TrackedVariable.as_mutable(WrappedVariable))
+    input_hidden: Mapped[tf.Tensor] = mapped_column(WrappedTensor)
+    hidden_feedback: Mapped[tf.Tensor] = mapped_column(WrappedTensor)
+    feedback_hidden: Mapped[tf.Tensor] = mapped_column(WrappedTensor)
+    hidden_output: Mapped[tf.Tensor] = mapped_column(WrappedTensor)
 
-    input_ports: Dict[int, Cell]
+    # TODO: Persist this
+    bound_ports: Dict[int, Cell] = {}
 
     def __init__(self,
                  input: ndarray,
@@ -69,13 +68,13 @@ class Neuron(Cell):
         self.hidden_feedback = tf.convert_to_tensor(hidden_feedback, dtype=PRECISION)
         self.feedback_hidden = tf.convert_to_tensor(feedback_hidden, dtype=PRECISION)
         self.hidden_output = tf.convert_to_tensor(hidden_output, dtype=PRECISION)
-        self.input_ports = {}
+        self.bound_ports = {}
 
     def update(self) -> None:
         # TODO: Optimize / make less wack
-        if len(self.input_ports) > 0:
-            ports = [[n] for n in self.input_ports.keys()]
-            values = [self.input_ports[port[0]].get_output() for port in ports]
+        if len(self.bound_ports) > 0:
+            ports = [[n] for n in self.bound_ports.keys()]
+            values = [self.bound_ports[port[0]].get_output() for port in ports]
             self.input.assign(tf.tensor_scatter_nd_update(self.input, ports, values))
         hidden_in = tf.expand_dims(tf.concat([self.input, self.feedback], 0), 0)
         hidden_wts = tf.concat([self.input_hidden, self.feedback_hidden], 0)
@@ -90,8 +89,8 @@ class Neuron(Cell):
         num_ports = self.input.shape[0]
         for offset in range(num_ports):
             rx_port = (req_port + offset) % num_ports
-            if rx_port not in self.input_ports:
-                self.input_ports[rx_port] = tx_cell
+            if rx_port not in self.bound_ports:
+                self.bound_ports[rx_port] = tx_cell
                 return
 
 

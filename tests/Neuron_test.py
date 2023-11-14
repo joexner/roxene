@@ -18,7 +18,7 @@ activation = tf.nn.tanh
 precision = tf.dtypes.float16
 
 
-class Neuron_test(unittest.TestCase):
+class Neuron_test(tf.test.TestCase):
 
     def setUp(self) -> None:
         tf.compat.v1.set_random_seed(SEED)
@@ -131,13 +131,13 @@ class Neuron_test(unittest.TestCase):
 
         with Session(engine) as session:
             session.add(n1)
-            # orig_input = n1.input
-            # orig_feedback = n1.feedback
-            # orig_output = n1.output
-            # orig_input_hidden = n1.input_hidden
-            # orig_hidden_feedback = n1.hidden_feedback
-            # orig_feedback_hidden = n1.feedback_hidden
-            # orig_hidden_output = n1.hidden_output
+            orig_input = n1.input.numpy()
+            orig_feedback = n1.feedback.numpy()
+            orig_output = n1.output.numpy()
+            orig_input_hidden = n1.input_hidden.numpy()
+            orig_hidden_feedback = n1.hidden_feedback.numpy()
+            orig_feedback_hidden = n1.feedback_hidden.numpy()
+            orig_hidden_output = n1.hidden_output.numpy()
             session.commit()
 
         with Session(engine) as session:
@@ -145,18 +145,29 @@ class Neuron_test(unittest.TestCase):
 
             self.assertFalse(n2 is None)
 
-            # self.assertEqual(n2.input, orig_input)
-            # self.assertEqual(n2.feedback, orig_feedback)
-            # self.assertEqual(n2.output, orig_output)
-            # self.assertEqual(n2.input_hidden, orig_input_hidden)
-            # self.assertEqual(n2.hidden_feedback, orig_hidden_feedback)
-            # self.assertEqual(n2.feedback_hidden, orig_feedback_hidden)
-            # self.assertEqual(n2.hidden_output, orig_hidden_output)
+            self.assertAllEqual(n2.input.numpy(), orig_input)
+            self.assertAllEqual(n2.feedback.numpy(), orig_feedback)
+            self.assertAllEqual(n2.output.numpy(), orig_output)
+            self.assertAllEqual(n2.input_hidden.numpy(), orig_input_hidden)
+            self.assertAllEqual(n2.hidden_feedback.numpy(), orig_hidden_feedback)
+            self.assertAllEqual(n2.feedback_hidden.numpy(), orig_feedback_hidden)
+            self.assertAllEqual(n2.hidden_output.numpy(), orig_hidden_output)
 
-            # n2.update()
-            # n2_output = n2.output
-            # session.commit()
+            n2.update()
+            n2_input = n2.input.numpy()
+            n2_feedback = n2.feedback.numpy()
+            n2_output = n2.output.numpy()
+            self.assertAllEqual(n2_input, orig_input) # input is not changed w/ update()
+            self.assertNotAllEqual(n2_feedback, orig_feedback)
+            self.assertNotEqual(n2_output, orig_output)
+            session.commit()
 
-        # with Session(engine) as session:
-        #     n3 = session.get(Neuron, nid)
-        #     self.assertEqual(n3.output, n2_output)
+        with Session(engine) as session:
+            n3 = session.get(Neuron, nid)
+            n3_input = n3.input.numpy()
+            n3_feedback = n3.feedback.numpy()
+            n3_output = n3.output.numpy()
+            self.assertNotEqual(n3_output, orig_output)
+            self.assertAllEqual(n3_input, n2_input)
+            self.assertAllEqual(n3_feedback, n2_feedback)
+            self.assertEqual(n3_output, n2_output)

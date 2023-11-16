@@ -33,10 +33,9 @@ class Neuron(Cell):
 
     id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cell.id"), primary_key=True)
 
-
-    input: Mapped[TrackedVariable] = mapped_column(TrackedVariable.as_mutable(WrappedVariable))
-    feedback: Mapped[TrackedVariable] = mapped_column(TrackedVariable.as_mutable(WrappedVariable))
-    output: Mapped[TrackedVariable] = mapped_column(TrackedVariable.as_mutable(WrappedVariable))
+    input: Mapped[tf.Variable] = mapped_column(TrackedVariable.as_mutable(WrappedVariable))
+    feedback: Mapped[tf.Variable] = mapped_column(TrackedVariable.as_mutable(WrappedVariable))
+    output: Mapped[tf.Variable] = mapped_column(TrackedVariable.as_mutable(WrappedVariable))
     input_hidden: Mapped[tf.Tensor] = mapped_column(WrappedTensor)
     hidden_feedback: Mapped[tf.Tensor] = mapped_column(WrappedTensor)
     feedback_hidden: Mapped[tf.Tensor] = mapped_column(WrappedTensor)

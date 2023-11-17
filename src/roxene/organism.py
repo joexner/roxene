@@ -6,7 +6,8 @@ from sqlalchemy.ext.associationproxy import association_proxy, AssociationProxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
 from typing import Deque, Dict
 
-from .cells import Neuron, Cell, InputCell
+from .cells import Cell, InputCell
+from .neuron import Neuron
 from .persistence import EntityBase
 
 
@@ -15,15 +16,15 @@ class Organism(EntityBase):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
 
-    _inputs_map: Mapped[Dict[str, "Input"]] = (relationship(
+    _inputs_map: Mapped[Dict[str, "_Organism_Input"]] = relationship(
         back_populates="organism",
         cascade="all, delete-orphan",
-        collection_class=attribute_keyed_dict("name")))
+        collection_class=attribute_keyed_dict("name"))
 
     input_cells: AssociationProxy[Dict[str, InputCell]] = association_proxy(
         target_collection="_inputs_map",
         attr="inputcell",
-        creator=lambda name, inputcell: Input(name=name, inputcell=inputcell))
+        creator=lambda name, inputcell: _Organism_Input(name=name, inputcell=inputcell))
 
 
     def __init__(self, input_names={}, output_names={}, genotype=None):
@@ -60,13 +61,13 @@ class Organism(EntityBase):
         return f"O-{str(self.id)[-7:]}"
 
 
-class Input(EntityBase):
+class _Organism_Input(EntityBase):
     __tablename__ = "organism_input"
 
-    organism_id: Mapped[int] = mapped_column(ForeignKey("organism.id"), primary_key=True)
-    inputcell_id: Mapped[int] = mapped_column(ForeignKey("input_cell.id"), primary_key=True)
+    organism_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organism.id"), primary_key=True)
+    name: Mapped[str] = mapped_column(primary_key=True)
+    inputcell_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("input_cell.id"))
 
-    name: Mapped[str] = mapped_column()
     organism: Mapped[Organism] = relationship()
     inputcell: Mapped[InputCell] = relationship()
 

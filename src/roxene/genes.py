@@ -3,7 +3,8 @@ from builtins import int
 from enum import IntEnum, Enum, auto
 from numpy import ndarray
 
-from .cells import Cell, Neuron, InputCell
+from .cells import Cell, InputCell
+from .neuron import Neuron
 from .organism import Organism
 
 

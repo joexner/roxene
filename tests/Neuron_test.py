@@ -171,3 +171,41 @@ class Neuron_test(tf.test.TestCase):
             self.assertAllEqual(n3_input, n2_input)
             self.assertAllEqual(n3_feedback, n2_feedback)
             self.assertEqual(n3_output, n2_output)
+
+    def test_save_linked_neurons(self):
+        # try:
+        #    os.remove("test.db")
+        # except FileNotFoundError:
+        #     pass
+        # engine = create_engine("sqlite:///test.db")
+        engine = create_engine("sqlite://")
+        EntityBase.metadata.create_all(engine)
+
+        n1 = Neuron(**random_neuron_state())
+        n2 = Neuron(**random_neuron_state())
+        n3 = Neuron(**random_neuron_state())
+        n4 = Neuron(**random_neuron_state())
+
+        n1.add_input_connection(n2, 0)
+        n1.add_input_connection(n3, 1)
+        n1.add_input_connection(n4, 2)
+
+        n1_id = n1.id
+        n2_id = n2.id
+        n3_id = n3.id
+        n4_id = n4.id
+
+        with Session(engine) as session:
+            session.add(n1)
+            session.add(n2)
+            session.add(n3)
+            session.add(n4)
+            session.commit()
+
+        with Session(engine) as session:
+            n5 = session.get(Neuron, n1_id)
+            self.assertFalse(n5 is None)
+            self.assertEqual(len(n5.bound_ports), 3)
+            self.assertEqual(n5.bound_ports[0].id, n2_id)
+            self.assertEqual(n5.bound_ports[1].id, n3_id)
+            self.assertEqual(n5.bound_ports[2].id, n4_id)

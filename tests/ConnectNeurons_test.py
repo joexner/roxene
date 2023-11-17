@@ -6,10 +6,6 @@ from roxene import Neuron, ConnectNeurons, Organism, random_neuron_state
 SEED = 8484856303
 
 
-def connect_cells(organism, tx_idx, ports):
-    for port in ports:
-        ConnectNeurons(tx_idx, port).execute(organism)
-
 
 class ConnectNeurons_test(unittest.TestCase):
 
@@ -46,13 +42,16 @@ class ConnectNeurons_test(unittest.TestCase):
         """
         num_neurons = 2
         neuron_input_size = 10
-        starting_port = 0
+        starting_port = 9
 
         organism = build_organism(num_neurons, neuron_input_size)
-        rx_cell: Neuron = organism.cells[0]
 
+        rx_cell = organism.cells[0]
+        tx_cell = organism.cells[1]
 
-        connect_cells(organism, 1, pre_connected_ports)
+        for port in pre_connected_ports:
+            rx_cell.add_input_connection(tx_cell, port)
+
         num_connected_ports_before_connection = len(rx_cell.bound_ports)
 
         self.assertEqual(num_connected_ports_before_connection, len(pre_connected_ports))

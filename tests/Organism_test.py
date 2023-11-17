@@ -50,7 +50,7 @@ class Organism_test(TestCase):
         engine = create_engine("sqlite:////tmp/test.db")
         EntityBase.metadata.create_all(engine)
 
-        o1 = Organism(input_names={'1'})
+        o1 = Organism(input_names={'A'})
         oid = o1.id
 
         with Session(engine) as session:
@@ -60,10 +60,10 @@ class Organism_test(TestCase):
         with Session(engine) as session:
             o2 = session.get(Organism, oid)
             self.assertFalse(o2 is None)
-            o2.set_input('1', 12.34)
+            o2.set_input('A', 12.34)
             session.commit()
 
         with Session(engine) as session:
             o3 = session.get(Organism, oid)
-            self.assertFalse(o2 is None)
-            self.assertEqual(12.34, o3.input_cells['1'].value)
+            self.assertFalse(o3 is None)
+            self.assertEqual(12.34, o3.input_cells['A'].value)

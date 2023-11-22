@@ -2,6 +2,7 @@ import copy
 import logging
 import random
 import uuid
+from sqlalchemy import Engine
 from typing import Set, List
 
 import tensorflow as tf
@@ -24,8 +25,9 @@ class Runner(object):
     def __init__(self,
                  num_organisms: int,
                  num_mutagens: int,
+                 seed: int = None,
                  neuron_shape={"input_size": 10, "feedback_size": 5, "hidden_size": 10},
-                 seed: int = None):
+                 ):
         self.logger = logging.getLogger(__name__)
 
         self.organisms = set()

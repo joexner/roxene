@@ -8,13 +8,13 @@ tensorflow = "2.13"
 numpy = "*"
 sqlalchemy = "*"
 testcase = "*"
-roxene = { path = "./src" }
 
 [dev-packages]
 pytest = "*"
 parameterized = "*"
 notebook = "*"
 matplotlib = "*"
+mlflow = "*"
 
 [requires]
 python_version = "3.10"

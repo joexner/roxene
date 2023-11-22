@@ -7,7 +7,7 @@ import pickle
 
 from sqlalchemy import create_engine
 
-from .run import Run
+from .runner import Runner
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -36,11 +36,10 @@ mlflow.log_params({
 
 engine = create_engine("sqlite:///run.db", echo=True)
 
-runner = Run(
+runner = Runner(
     num_organisms=num_organisms,
     num_mutagens=num_mutagens,
     seed=SEED,
-    engine=engine
 )
 
 num_to_cull = num_to_breed = int(max(num_organisms * .05, 5))  # Replace 5% of the herd at a time, up to 5

@@ -8,11 +8,11 @@ from typing import Dict
 from roxene import Neuron, random_neuron_state
 
 
-class TestEntity(DeclarativeBase):
+class Base(DeclarativeBase):
     pass
 
 
-class NeuronDTO(TestEntity):
+class NeuronDTO(Base):
     __tablename__ = "neuron"
 
     id: Mapped[str] = mapped_column(primary_key=True)
@@ -50,7 +50,7 @@ class Persistence_test(tf.test.TestCase):
 
     def test_save_new_neuron(self):
         engine = create_engine("sqlite://")
-        TestEntity.metadata.create_all(engine)
+        Base.metadata.create_all(engine)
 
         neurons: Dict[str, Neuron] = {}
 

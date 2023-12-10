@@ -48,7 +48,7 @@ class Population:
             return active_session.scalars(stmt).all()
         else:
             with Session(self.engine) as session:
-                return session.scalars(stmt).all()
+                return session.scalars(stmt).unique().all()
 
     def breed(self, num_to_breed: int, num_to_consider: int = 10):
         selectee_scores: dict[Organism, int] = defaultdict(int)

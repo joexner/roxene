@@ -4,7 +4,7 @@ import uuid
 from sqlalchemy import ForeignKey
 from sqlalchemy.ext.associationproxy import association_proxy, AssociationProxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
-from typing import Deque, Dict
+from typing import Deque, Dict, List
 
 from .cells import Cell, InputCell
 from .neuron import Neuron
@@ -19,19 +19,21 @@ class Organism(EntityBase):
     _inputs_map: Mapped[Dict[str, "_Organism_Input"]] = relationship(
         back_populates="organism",
         cascade="all, delete-orphan",
-        collection_class=attribute_keyed_dict("name"))
+        collection_class=attribute_keyed_dict("name"),
+        lazy="joined")
 
     input_cells: AssociationProxy[Dict[str, InputCell]] = association_proxy(
         target_collection="_inputs_map",
         attr="inputcell",
         creator=lambda name, inputcell: _Organism_Input(name=name, inputcell=inputcell))
 
+    # neurons: Mapped[List[Neuron]] =
+
 
     def __init__(self, input_names={}, output_names={}, genotype=None):
         self.id = uuid.uuid4()
         for name in input_names:
             self.input_cells[name] = InputCell()
-
         self.outputs: dict[str, Neuron] = {}
         self.unused_output_names = list(output_names)
         self.cells: Deque[Cell] = deque(self.input_cells.values())
@@ -43,6 +45,7 @@ class Organism(EntityBase):
         input_cell: InputCell = self.input_cells[input_label]
         input_cell.set_output(input_value)
 
+    # TODO: Make output a @property, and maybe input and cells
     def get_output(self, output_label):
         return self.outputs[output_label].get_output()
 
@@ -69,7 +72,7 @@ class _Organism_Input(EntityBase):
     inputcell_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("input_cell.id"))
 
     organism: Mapped[Organism] = relationship()
-    inputcell: Mapped[InputCell] = relationship()
+    inputcell: Mapped[InputCell] = relationship(lazy="joined")
 
     def __init__(self, name, inputcell):
         self.name = name

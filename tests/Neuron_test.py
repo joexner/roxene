@@ -173,11 +173,6 @@ class Neuron_test(tf.test.TestCase):
             self.assertEqual(n3_output, n2_output)
 
     def test_save_linked_neurons(self):
-        # try:
-        #    os.remove("test.db")
-        # except FileNotFoundError:
-        #     pass
-        # engine = create_engine("sqlite:///test.db")
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
 

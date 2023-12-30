@@ -8,12 +8,8 @@ from roxene import RotateCells
 class RotateCells_test(unittest.TestCase):
 
     @parameterized.expand([
-        (1,),
-        (2,),
-        (-1,),
-        (4,),
-        (7,),
-        (-27,),
+        (RotateCells.Direction.FORWARD),
+        (RotateCells.Direction.BACKWARD),
     ])
     def test_execute(self, direction):
         num_neurons = 5

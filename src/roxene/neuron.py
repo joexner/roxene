@@ -86,6 +86,9 @@ class Neuron(Cell):
                 self.bound_ports[rx_port] = tx_cell
                 return
 
+    def __str__(self):
+        return f"N-{str(self.id)[-7:]}"
+
 
 class _Neuron_Input(EntityBase):
     __tablename__ = "neuron_input"

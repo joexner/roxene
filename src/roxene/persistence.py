@@ -54,7 +54,7 @@ class WrappedVariable(sqlalchemy.types.TypeDecorator):
         return value.numpy()
 
     def process_result_value(self, value: np.ndarray, dialect) -> tf.Variable:
-        return tf.Variable(initial_value=value, dtype=TF_PRECISION)
+        return tf.Variable(initial_value=value, dtype=TF_PRECISION) if (value is not None) else None
 
 
 class WrappedTensor(sqlalchemy.types.TypeDecorator):
@@ -65,6 +65,4 @@ class WrappedTensor(sqlalchemy.types.TypeDecorator):
         return pickle.dumps(value.numpy(), protocol=5)
 
     def process_result_value(self, value: bytes, dialect) -> tf.Tensor:
-        return tf.convert_to_tensor(pickle.loads(value), dtype=TF_PRECISION)
-
-
+        return tf.convert_to_tensor(pickle.loads(value), dtype=TF_PRECISION) if value else None

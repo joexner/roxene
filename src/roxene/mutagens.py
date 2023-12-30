@@ -6,7 +6,8 @@ from numpy import sign, exp, log, ndarray
 from numpy.random import Generator
 
 from .constants import NP_PRECISION
-from .genes import CreateNeuron, Gene, CompositeGene, CNLayer
+from .genes import CreateNeuron, CompositeGene, CNLayer
+from .organism import Gene
 
 
 class Mutagen(ABC):

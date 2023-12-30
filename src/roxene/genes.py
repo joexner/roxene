@@ -1,21 +1,10 @@
-import abc
 from builtins import int
 from enum import IntEnum, Enum, auto
 from numpy import ndarray
 
 from .cells import Cell, InputCell
 from .neuron import Neuron
-from .organism import Organism
-
-
-class Gene(abc.ABC):
-
-    def __init__(self, parent_gene=None):
-        self.parent_gene: Gene = parent_gene
-
-    @abc.abstractmethod
-    def execute(self, organism: Organism):
-        pass
+from .organism import Gene, Organism
 
 
 class CNLayer(Enum):
@@ -85,7 +74,12 @@ class RotateCells(Gene):
         self.direction = direction
 
     def execute(self, organism: Organism):
-        organism.cells.rotate(self.direction)
+        if self.direction is RotateCells.Direction.FORWARD:
+            popped = organism.cells.pop()
+            organism.cells.insert(0, popped)
+        elif self.direction is RotateCells.Direction.BACKWARD:
+            popped = organism.cells.pop(0)
+            organism.cells.append(popped)
 
 
 class CreateInputCell(Gene):
@@ -96,7 +90,7 @@ class CreateInputCell(Gene):
 
     def execute(self, organism: Organism):
         input_cell = InputCell(self.initial_value)
-        organism.cells.appendleft(input_cell)
+        organism.cells.insert(0, input_cell)
 
 
 class CompositeGene(Gene):

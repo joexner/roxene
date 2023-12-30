@@ -71,7 +71,7 @@ def build_organism(num_neurons: int = 20, neuron_input_size: int = 17) -> Organi
     organism = Organism()
     for i in range(num_neurons):
         neuron = build_Neuron(neuron_input_size)
-        organism.cells.appendleft(neuron)
+        organism.cells.insert(0, neuron)
     return organism
 
 def build_Neuron(input_size):

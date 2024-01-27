@@ -11,9 +11,7 @@ from typing import Set, List
 
 from ..mutagens import Mutagen
 from ..organism import Organism
-from .players import REQUIRED_INPUTS, REQUIRED_OUTPUTS
-from .trial import Trial, Outcome
-from .trial import Participant
+from .trial import Trial, Outcome, REQUIRED_INPUTS, REQUIRED_OUTPUTS, Participant
 
 
 class Population:

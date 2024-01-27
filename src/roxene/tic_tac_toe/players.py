@@ -1,5 +1,4 @@
 import logging
-from abc import ABC, abstractmethod
 from typing import Tuple
 
 from ..organism import Organism
@@ -15,13 +14,7 @@ REQUIRED_INPUTS = [str(x) + ',' + str(y) for x in range(3) for y in range(3)] + 
 REQUIRED_OUTPUTS = [str(x) + ',' + str(y) for x in range(3) for y in range(3)] + [OUTPUT_READY]
 
 
-class Player(ABC):
-    @abstractmethod
-    def get_move_coords(self, board) -> Tuple[int]:
-        pass
-
-
-class OrganismPlayer(Player):
+class Player:
 
     def __init__(self, organism: Organism, letter: str):
         self.organism = organism

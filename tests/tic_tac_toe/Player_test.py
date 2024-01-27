@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import Mock, call
 
 from roxene import Organism
-from roxene.tic_tac_toe import OrganismPlayer
+from roxene.tic_tac_toe import Player
 
 MAX_VALUE = 0.5
 MIN_VALUE = -0.5
@@ -22,15 +22,16 @@ def generateBoard(numToFill):
     return board
 
 
-class OrganismPlayer_test(unittest.TestCase):
+class Player_test(unittest.TestCase):
 
     def test_get_move_coords(self):
-        organism = Mock(Organism)
-        player = OrganismPlayer(organism, letter='X')
+
+        organism: Organism = Mock(Organism)
+        player = Player(organism, 'X')
         board = generateBoard(numToFill=6)
 
         # Let the mock Organism's outputs vary continuously, randomly between -1 and 1
-        # This will eventually convince the OrganismPlayer that we're ready wih our other output
+        # This will eventually convince the Player that we're ready wih our other output
         organism.get_output.side_effect = lambda _: random.uniform(-1, 1)
 
         player.get_move_coords(board)
@@ -46,10 +47,10 @@ class OrganismPlayer_test(unittest.TestCase):
         organism.set_input.assert_has_calls(expected_set_input_calls, any_order=True)
 
     def test_sync_1_high_1_low(self):
-        """Let the organism show high on "OUTPUT_READY", then low to satisfy the OrganismPlayer that it's ready"""
+        """Let the organism show high on "OUTPUT_READY", then low to satisfy the Player that it's ready"""
         organism = Mock(Organism)
         organism.get_output.side_effect = [0.5, -0.5]
-        player = OrganismPlayer(organism=organism, letter='X')
+        player = Player(organism=organism, letter='X')
         player.sync(max_updates=10)
 
         # The player showed the Organism 2 set_input calls, to "INPUT_READY", high then low
@@ -64,7 +65,7 @@ class OrganismPlayer_test(unittest.TestCase):
         max_updates = 100
 
         organism.get_output.side_effect = [-0.5] * 10
-        player = OrganismPlayer(organism=organism, letter='X')
+        player = Player(organism=organism, letter='X')
         try:
             player.sync(max_updates=10)
             self.fail("Should have failed")
@@ -83,7 +84,7 @@ class OrganismPlayer_test(unittest.TestCase):
         max_updates = 100
 
         organism.get_output.side_effect = [0.5] * 10
-        player = OrganismPlayer(organism=organism, letter='X')
+        player = Player(organism=organism, letter='X')
         try:
             player.sync(max_updates=10)
             self.fail("Should have failed")

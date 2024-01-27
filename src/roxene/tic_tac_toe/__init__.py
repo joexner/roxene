@@ -1,3 +1,3 @@
-from .players import OrganismPlayer, ManualPlayer
+from .players import Player, ManualPlayer
 from .trial import Trial
 from .runner import Runner

@@ -12,7 +12,7 @@ from ..organism import Organism
 from ..genes import CompositeGene, CreateNeuron, ConnectNeurons, RotateCells
 from ..util import  random_neuron_state
 from ..mutagens import CreateNeuronMutagen, Mutagen, wiggle, CNLayer
-from .players import REQUIRED_INPUTS, REQUIRED_OUTPUTS, OrganismPlayer
+from .players import REQUIRED_INPUTS, REQUIRED_OUTPUTS, Player
 from .trial import Trial, Outcome
 
 
@@ -76,7 +76,7 @@ class Runner(object):
         available_organisms = list(self.organisms - self.busy_organisms)
         orgs = self.rng.choice(available_organisms, size=2, replace=False)
         self.busy_organisms.update(orgs)
-        trial = Trial(OrganismPlayer(orgs[0], 'X'), OrganismPlayer(orgs[1], 'O'))
+        trial = Trial(Player(orgs[0], 'X'), Player(orgs[1], 'O'))
         self.logger.info(f"Starting trial {trial.id} with players {[str(o.id) for o in orgs]}")
         trial.run()
         self.logger.info(f"Finished trial {trial.id}")

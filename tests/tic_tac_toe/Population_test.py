@@ -3,8 +3,8 @@ from sqlalchemy import create_engine
 
 from roxene import Organism
 from roxene.persistence import EntityBase
-from roxene.tic_tac_toe.players import REQUIRED_INPUTS, REQUIRED_OUTPUTS
 from roxene.tic_tac_toe.population import Population
+from roxene.tic_tac_toe.trial import REQUIRED_INPUTS, REQUIRED_OUTPUTS
 
 
 # from organism import Organism

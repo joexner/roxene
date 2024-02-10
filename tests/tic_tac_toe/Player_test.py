@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import Mock, call
 
 from roxene import Organism
-from roxene.tic_tac_toe import Player
+from roxene.tic_tac_toe.trial import Player
 
 MAX_VALUE = 0.5
 MIN_VALUE = -0.5

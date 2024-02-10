@@ -1,8 +1,7 @@
 import unittest
-from roxene.tic_tac_toe.players import Player
 from unittest.mock import Mock
 
-from roxene.tic_tac_toe import ManualPlayer, Trial
+from roxene.tic_tac_toe import Player, Trial
 from roxene.tic_tac_toe.trial import Outcome
 
 

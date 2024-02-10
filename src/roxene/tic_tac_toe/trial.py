@@ -5,8 +5,10 @@ from enum import Enum, auto
 from sqlalchemy import ForeignKey, CHAR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import List, Set
+from typing import Tuple
 
 from ..organism import Organism
+from ..persistence import EntityBase
 
 WIN_SETS = [
     {(0, 0), (0, 1), (0, 2)},
@@ -19,25 +21,6 @@ WIN_SETS = [
     {(0, 0), (1, 1), (2, 2)},
 ]
 
-
-class Participant:
-    __tablename__ = "trial_participant"
-
-    trial_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("trial.id"), primary_key=True)
-    trial: Mapped['Trial'] = relationship('Trial', back_populates='participants')
-
-    organism_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organism.id"), unique=True)
-    organism: Mapped[Organism] = relationship(Organism)
-
-    letter: Mapped[str] = mapped_column(CHAR(1), primary_key=True)
-
-    def __init__(self, trial: 'Trial', organism: Organism, letter: str):
-        self.trial = trial
-        self.organism = organism
-        self.letter = letter
-
-    def __str__(self):
-        return self.name
 
 class Move:
     def __init__(self, letter: str, initial_board_state: List[List[str]]):
@@ -52,7 +35,7 @@ class Trial:
     __tablename__ = 'trial'
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
-    participants: Mapped[Set[Participant]] = relationship(Participant, back_populates='trial')
+    participants: Mapped[Set["Player"]] = relationship("Player", back_populates='trial')
     start_date: Mapped[datetime] = mapped_column(nullable=False)
     end_date: Mapped[datetime]
 
@@ -106,11 +89,6 @@ class Outcome(Enum):
     INVALID_MOVE = auto()
 
 
-import logging
-from typing import Tuple
-
-from ..organism import Organism
-
 LOW_THRESHOLD = -0.5
 HIGH_THRESHOLD = 0.5
 MAX_UPDATES = 1_000
@@ -122,9 +100,19 @@ REQUIRED_INPUTS = [str(x) + ',' + str(y) for x in range(3) for y in range(3)] + 
 REQUIRED_OUTPUTS = [str(x) + ',' + str(y) for x in range(3) for y in range(3)] + [OUTPUT_READY]
 
 
-class Player:
+class Player(EntityBase):
+    __tablename__ = "trial_participant"
 
-    def __init__(self, organism: Organism, letter: str):
+    trial_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("trial.id"), primary_key=True)
+    trial: Mapped['Trial'] = relationship('Trial', back_populates='participants')
+
+    organism_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organism.id"), unique=True)
+    organism: Mapped[Organism] = relationship(Organism)
+
+    letter: Mapped[str] = mapped_column(CHAR(1), primary_key=True)
+
+    def __init__(self, trial: 'Trial', organism: Organism, letter: str):
+        self.trial = trial
         self.organism = organism
         self.letter = letter
         self.logger = logging.getLogger(str(organism)).getChild("player")

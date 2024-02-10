@@ -1,2 +1,2 @@
-from .trial import Trial, Player, ManualPlayer
+from .trial import Trial, Player, ManualPlayer, Outcome
 from .runner import Runner

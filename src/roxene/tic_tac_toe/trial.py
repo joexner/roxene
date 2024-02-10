@@ -104,14 +104,14 @@ class Player(EntityBase):
     __tablename__ = "trial_participant"
 
     trial_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("trial.id"), primary_key=True)
-    trial: Mapped['Trial'] = relationship('Trial', back_populates='participants')
+    trial: Mapped[Trial] = relationship(Trial, back_populates='participants')
 
     organism_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organism.id"), unique=True)
     organism: Mapped[Organism] = relationship(Organism)
 
     letter: Mapped[str] = mapped_column(CHAR(1), primary_key=True)
 
-    def __init__(self, trial: 'Trial', organism: Organism, letter: str):
+    def __init__(self, trial: Trial, organism: Organism, letter: str):
         self.trial = trial
         self.organism = organism
         self.letter = letter

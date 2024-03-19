@@ -23,5 +23,8 @@ jobs:
     - name: Install roxene and dependencies
       run: pipenv install --dev
 
+    - name: Install roxene
+      run: pipenv run pip install -e src/
+
     - name: Test with pytest
       run: pipenv run python -m pytest

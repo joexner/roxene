@@ -5,7 +5,8 @@ from typing import Dict
 from .constants import NP_PRECISION
 
 
-def random_neuron_state(input_size=10, feedback_size=10, hidden_size=10, rng: Generator = default_rng()) -> Dict[str, ndarray]:
+def random_neuron_state(input_size=10, feedback_size=10, hidden_size=10, rng: Generator = None) -> Dict[str, ndarray]:
+    rng = rng or default_rng()
     return {
         "input": (2 * rng.random([input_size]) - 1).astype(dtype=NP_PRECISION),
         "feedback": (2 * rng.random([feedback_size]) - 1).astype(dtype=NP_PRECISION),

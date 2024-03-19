@@ -31,7 +31,8 @@ class Neuron(Cell):
     _ports_map: Mapped[Dict[int, "_Neuron_Input"]] = relationship(
         back_populates="listener_neuron",
         cascade="all, delete-orphan",
-        collection_class=attribute_keyed_dict("port"))
+        collection_class=attribute_keyed_dict("port"),
+        lazy="joined")
 
     bound_ports: AssociationProxy[Dict[int, Cell]] = association_proxy(
         target_collection="_ports_map",

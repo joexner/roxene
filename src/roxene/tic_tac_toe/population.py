@@ -12,8 +12,8 @@ from typing import Set, List
 from ..mutagens import Mutagen
 from ..organism import Organism
 from .players import REQUIRED_INPUTS, REQUIRED_OUTPUTS
-from .trial import Trial, Outcome
-from .trial import Participant
+from .trial import Trial
+from .outcome import Outcome
 
 
 class Population:
@@ -39,7 +39,7 @@ class Population:
         stmt = select(Organism)
         if idle_only:
             busy_organisms_query = (select(Organism.id)
-                                    .join(Participant)
+                                    .join(Player)
                                     .join(Trial)
                                     .where(Trial.end_date is None))
             stmt = stmt.where(~Organism.id.in_(busy_organisms_query.subquery()))

@@ -67,12 +67,14 @@ class ConnectNeurons_test(unittest.TestCase):
         self.assertEqual(num_connected_ports_after_connection, expected_num_connected_ports)
 
 
-def build_organism(num_neurons: int = 20, neuron_input_size: int = 17) -> Organism:
-    organism = Organism()
+def build_organism(num_neurons: int = 20, neuron_input_size: int = 17, input_names=set(), output_names=set(),
+                   rng=None) -> Organism:
+    organism = Organism(input_names=input_names, output_names=output_names)
     for i in range(num_neurons):
-        neuron = build_Neuron(neuron_input_size)
-        organism.cells.insert(0, neuron)
+        neuron = build_Neuron(neuron_input_size, rng)
+        organism.addNeuron(neuron)
     return organism
 
-def build_Neuron(input_size):
-    return Neuron(**random_neuron_state(input_size, 1, 1))
+
+def build_Neuron(input_size, rng=None):
+    return Neuron(**random_neuron_state(input_size, 1, 1, rng))

@@ -13,7 +13,8 @@ from ..genes import CompositeGene, CreateNeuron, ConnectNeurons, RotateCells
 from ..util import  random_neuron_state
 from ..mutagens import CreateNeuronMutagen, Mutagen, wiggle, CNLayer
 from .players import REQUIRED_INPUTS, REQUIRED_OUTPUTS, Player
-from .trial import Trial, Outcome
+from .trial import Trial
+from .outcome import Outcome
 
 
 class Runner(object):

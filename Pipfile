@@ -4,10 +4,9 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-tensorflow = "2.13"
+tensorflow = "*"
 numpy = "*"
 sqlalchemy = "*"
-roxene = { path = "./src" }
 
 [dev-packages]
 pytest = "*"

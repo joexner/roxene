@@ -11,9 +11,11 @@ from .organism import Gene
 
 
 class Mutagen(ABC):
+    susceptibilities: dict[Gene, float]
+    susceptibility_log_wiggle: float
 
     def __init__(self, base_susceptibility: float, susceptibility_log_wiggle: float):
-        self.susceptibilities: dict[Gene, float] = {None: base_susceptibility}
+        self.susceptibilities = {None: base_susceptibility}
         self.susceptibility_log_wiggle = susceptibility_log_wiggle
 
     def get_mutation_susceptibility(self, gene: Gene, rng: Generator) -> float:

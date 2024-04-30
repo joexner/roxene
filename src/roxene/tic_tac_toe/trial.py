@@ -60,7 +60,7 @@ class Trial(EntityBase):
                 break
         while not (self.is_finished()):
             current_player: Player = player_iter.__next__()
-            this_move = Move(letter=current_player.letter, initial_board_state=board)
+            this_move = Move(player=current_player, initial_board_state=board)
             try:
                 move_coords = current_player.get_move_coords(board)
                 this_move.position = Point(move_coords[0], move_coords[1])

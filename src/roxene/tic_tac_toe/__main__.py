@@ -1,13 +1,12 @@
 import argparse
 import logging
-import sys
-
 import mlflow
 import pickle
-
+import sys
 from sqlalchemy import create_engine
 
-from .runner import Runner
+import roxene.tic_tac_toe
+from .environment import Environment
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -36,10 +35,14 @@ mlflow.log_params({
 
 engine = create_engine("sqlite:///run.db", echo=True)
 
-runner = Runner(
+population = roxene.tic_tac_toe.Population()
+
+runner = Environment(
     num_organisms=num_organisms,
     num_mutagens=num_mutagens,
+    population=population,
     seed=SEED,
+    engine=engine,
 )
 
 num_to_cull = num_to_breed = int(max(num_organisms * .05, 5))  # Replace 5% of the herd at a time, up to 5

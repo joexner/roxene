@@ -74,7 +74,8 @@ class Environment(object):
             layer = self.rng.choice(CNLayer)
             base_susceptibility: float = wiggle(0.001, self.rng, mutagen_severity_spread_log_wiggle)
             susceptibility_log_wiggle: float = 0.01
-            CreateNeuronMutagen(layer, base_susceptibility, susceptibility_log_wiggle)
+            new_mutagen = CreateNeuronMutagen(layer, base_susceptibility, susceptibility_log_wiggle)
+            self.mutagens.append(new_mutagen)
 
     def run_trial(self):
         with Session(self.engine) as session:
@@ -127,8 +128,7 @@ class Environment(object):
 
     def clone(self, organism_to_breed: Organism):
         genotype = copy.deepcopy(organism_to_breed.genotype)
-        mutagens = self.mutagens
-        for mutagen in mutagens:
+        for mutagen in self.mutagens:
             genotype = mutagen.mutate(genotype, self.rng)
         return Organism(REQUIRED_INPUTS, REQUIRED_OUTPUTS, genotype)
 

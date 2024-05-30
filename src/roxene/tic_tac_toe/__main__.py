@@ -7,6 +7,7 @@ from sqlalchemy import create_engine
 
 import roxene.tic_tac_toe
 from .environment import Environment
+from .. import EntityBase
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -26,18 +27,19 @@ num_mutagens = args.num_mutagens
 num_trials = args.num_trials
 SEED = 11235
 
-mlflow.log_params({
-    'num_organisms': num_organisms,
-    'num_mutagens': num_mutagens,
-    'num_trials': num_trials,
-    'seed': SEED
-})
+# mlflow.log_params({
+#     'num_organisms': num_organisms,
+#     'num_mutagens': num_mutagens,
+#     'num_trials': num_trials,
+#     'seed': SEED
+# })
 
 engine = create_engine("sqlite:///run.db", echo=True)
+EntityBase.metadata.create_all(engine)
 
 population = roxene.tic_tac_toe.Population()
 
-runner = Environment(
+env = Environment(
     num_organisms=num_organisms,
     num_mutagens=num_mutagens,
     population=population,
@@ -49,16 +51,16 @@ num_to_cull = num_to_breed = int(max(num_organisms * .05, 5))  # Replace 5% of t
 
 # Start trials and do GA stuff in a single-threaded alternating loop
 for iteration in range(num_trials):
-    trial = runner.run_trial()
+    trial = env.run_trial()
     logger.info(f"Game finished with moves {[(move.letter, move.position, move.outcomes) for move in trial.moves]}")
     if iteration % args.breed_and_cull_interval == 0:
         logger.info("Breeding and culling")
-        runner.cull(num_to_cull)
-        runner.breed(num_to_breed)
+        env.cull(num_to_cull)
+        env.breed(num_to_breed)
 
-mlflow.log_metric("trials_executed", num_trials)
+# mlflow.log_metric("trials_executed", num_trials)
 
-with open('runner.pickle', 'wb') as file:
-    pickle.dump(runner, file)
+# with open('runner.pickle', 'wb') as file:
+#     pickle.dump(env, file)
 
-mlflow.log_artifact('runner.pkl')
+# mlflow.log_artifact('runner.pkl')

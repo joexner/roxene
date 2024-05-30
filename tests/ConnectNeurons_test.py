@@ -1,7 +1,9 @@
 import unittest
 from parameterized import parameterized
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
-from roxene import Neuron, ConnectNeurons, Organism, random_neuron_state
+from roxene import Neuron, ConnectNeurons, Organism, random_neuron_state, EntityBase
 
 SEED = 8484856303
 
@@ -65,6 +67,41 @@ class ConnectNeurons_test(unittest.TestCase):
         num_connected_ports_after_connection = len(rx_cell.bound_ports)
 
         self.assertEqual(num_connected_ports_after_connection, expected_num_connected_ports)
+
+    def test_negative_indices(self):
+        """Negative indices should be handled correctly"""
+
+        organism = build_organism(10, 10)
+        gene = ConnectNeurons(-1, -2)
+        gene.execute(organism)
+
+        rx: Neuron = organism.cells[0]
+        expected_tx_cell = organism.cells[9]
+        self.assertIs(rx.bound_ports[8], expected_tx_cell)
+
+    def test_persistence(self):
+
+        gene = ConnectNeurons(1, 2)
+        gene_id = gene.id
+
+        gene_2 = ConnectNeurons(-3, -11)
+        gene_2_id = gene_2.id
+
+        engine = create_engine("sqlite://")
+        EntityBase.metadata.create_all(engine)
+
+        with Session(engine) as session:
+            session.add_all([gene, gene_2])
+            session.commit()
+
+        with Session(engine) as session:
+            reloaded = session.get(ConnectNeurons, gene_id)
+            self.assertEqual(reloaded.tx_cell_index, 1)
+            self.assertEqual(reloaded.rx_port, 2)
+
+            reloaded_2 = session.get(ConnectNeurons, gene_2_id)
+            self.assertEqual(reloaded_2.tx_cell_index, -3)
+            self.assertEqual(reloaded_2.rx_port, -11)
 
 
 def build_organism(num_neurons: int = 20, neuron_input_size: int = 17, input_names=set(), output_names=set(),

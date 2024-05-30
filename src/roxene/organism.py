@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 from collections import deque
 
@@ -16,15 +18,28 @@ from .persistence import EntityBase
 # Racka-fracka cyclic imports...
 class Gene(EntityBase):
     __tablename__ = "gene"
+    __allow_unmapped__ = True
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
+    parent_gene_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("gene.id"))
+    parent_gene: relationship(Gene, remote_side=[id])
+    type: Mapped[str]
+
+    __mapper_args__ = {
+        "polymorphic_identity": "gene",
+        "polymorphic_on": "type",
+    }
 
     def __init__(self, parent_gene=None):
         self.parent_gene: Gene = parent_gene
+        self.id = uuid.uuid4()
 
     @abc.abstractmethod
     def execute(self, organism: 'Organism'):
         pass
+
+    def __str__(self):
+        return f"G-{str(self.id)[-7:]}"
 
 
 class _Organism_Input(EntityBase):

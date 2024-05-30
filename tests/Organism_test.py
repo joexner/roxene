@@ -234,15 +234,15 @@ class Organism_test(TestCase):
 
         with Session(engine) as session:
             with session.begin():
-                o3 = session.get(Organism, org_id)
-                self.assertFalse(o3 is None)
-                self.assertEqual(len(o3.unused_output_names), 2)
+                o4 = session.get(Organism, org_id)
+                self.assertFalse(o4 is None)
+                self.assertEqual(len(o4.unused_output_names), 2)
 
                 for n in range(2):
                     neuron = Neuron(**random_neuron_state(rng=rng))
-                    o3.addNeuron(neuron)
+                    o4.addNeuron(neuron)
 
         with Session(engine) as session:
-            o4 = session.get(Organism, org_id)
-            self.assertFalse(o4 is None)
-            self.assertEqual(len(o4.unused_output_names), 0)
+            o5 = session.get(Organism, org_id)
+            self.assertFalse(o5 is None)
+            self.assertEqual(len(o5.unused_output_names), 0)

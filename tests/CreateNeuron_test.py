@@ -1,6 +1,9 @@
 import tensorflow as tf
+from numpy.random import default_rng
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
-from roxene import CreateNeuron, Organism, random_neuron_state
+from roxene import CreateNeuron, Organism, random_neuron_state, EntityBase
 
 
 class CreateNeuron_test(tf.test.TestCase):
@@ -50,3 +53,28 @@ class CreateNeuron_test(tf.test.TestCase):
         self.assertAllEqual(params2["input_hidden"], neuron3.input_hidden)
         self.assertAllEqual(params2["hidden_feedback"], neuron3.hidden_feedback)
         self.assertAllEqual(params2["hidden_output"], neuron3.hidden_output)
+
+    def test_persistence(self):
+        engine = create_engine("sqlite://")
+        EntityBase.metadata.create_all(engine)
+        rng = default_rng(seed=7624387)
+
+        state = random_neuron_state(rng=rng)
+        cn = CreateNeuron(**state)
+
+        cn_id = cn.id
+
+        with Session(engine) as session:
+            session.add(cn)
+            session.commit()
+
+        with Session(engine) as session:
+            cn2: CreateNeuron = session.get(CreateNeuron, cn_id)
+            self.assertIsNotNone(cn2)
+            self.assertAllEqual(state["input"], cn2.input)
+            self.assertAllEqual(state["feedback"], cn2.feedback)
+            self.assertAllEqual(state["output"], cn2.output)
+            self.assertAllEqual(state["input_hidden"], cn2.input_hidden)
+            self.assertAllEqual(state["hidden_feedback"], cn2.hidden_feedback)
+            self.assertAllEqual(state["feedback_hidden"], cn2.feedback_hidden)
+            self.assertAllEqual(state["hidden_output"], cn2.hidden_output)

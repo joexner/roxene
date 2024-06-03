@@ -1,7 +1,4 @@
-import sys
-
-import tensorflow as tf
-from numpy.random import default_rng
+import unittest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
@@ -15,7 +12,7 @@ from roxene.tic_tac_toe.players import REQUIRED_INPUTS, REQUIRED_OUTPUTS
 # from organism import Organism
 
 
-class Population_test(tf.test.TestCase):
+class Population_test(unittest.TestCase):
 
     def test_add_and_sample_non_idle(self):
         engine = create_engine("sqlite://")
@@ -52,24 +49,22 @@ class Population_test(tf.test.TestCase):
         EntityBase.metadata.create_all(engine)
 
         with Session(engine) as session:
+
             # Build a population, make sure we can put them all in trials simultaneously
             pop: Population = Population()
 
             num_orgs = 20
+
             for n in range(num_orgs):
                 organism = Organism(input_names=REQUIRED_INPUTS, output_names=REQUIRED_OUTPUTS)
                 pop.add(organism, session)
 
-            for n in range((num_orgs // 2) - 1):
-                trial = pop.start_trial(session)
+            for n in range(num_orgs // 2):
+                pop.start_trial(session)
 
-            trial = pop.start_trial(session)
-            orgs = [part.organism for part in trial.participants]
 
             try:
-                trial = pop.start_trial(session)
-                orgs = map(trial.participants, lambda p: p.organism)
-            except BaseException as ex:
-                print(ex)
-            else:
+                pop.start_trial(session)
                 self.fail("Should be out of idle orgs")
+            except BaseException as expected_ex:
+                print(expected_ex)

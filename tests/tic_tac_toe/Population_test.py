@@ -31,40 +31,40 @@ class Population_test(unittest.TestCase):
             orgs = pop.sample(num_orgs, False, session)
             self.assertEqual(num_orgs, len(orgs))
 
-    # def test_start_and_run_trial(self):
-    #
-    #
-    #     engine = create_engine("sqlite://")
-    #     EntityBase.metadata.create_all(engine)
-    #
-    #     for seed in range(11235, 12345):
-    #
-    #         print(f"Trying seed {seed}")
-    #         rng = default_rng(SEED)
-    #
-    #         with Session(engine) as session:
-    #             # Build a population, start a trial, verify results
-    #             pop: Population = Population()
-    #
-    #             num_orgs = 10
-    #             for n in range(num_orgs):
-    #                 organism = build_organism(input_names=REQUIRED_INPUTS, output_names=REQUIRED_OUTPUTS, rng=rng)
-    #                 pop.add(organism, session)
-    #
-    #             trial = pop.start_trial(session)
-    #             trial.run(timeout=100)
-    #             pop.complete_trial(trial, session)
-    #
-    #             moves = list(trial.moves)
-    #
-    #             print(f"Trial {trial.id} from seed {seed} had {len(moves)} moves")
-    #
-    #             if len(moves) > 1:
-    #                 for move in moves:
-    #                     print(move)
-    #                 break
-    #             else:
-    #                 print(f"Trial {trial.id} from seed {seed} had {len(moves)} moves")
+    def test_start_and_run_trial(self):
+
+
+        engine = create_engine("sqlite://")
+        EntityBase.metadata.create_all(engine)
+
+        for seed in range(11235, 12345):
+
+            print(f"Trying seed {seed}")
+            rng = default_rng(SEED)
+
+            with Session(engine) as session:
+                # Build a population, start a trial, verify results
+                pop: Population = Population()
+
+                num_orgs = 10
+                for n in range(num_orgs):
+                    organism = build_organism(input_names=REQUIRED_INPUTS, output_names=REQUIRED_OUTPUTS, rng=rng)
+                    pop.add(organism, session)
+
+                trial = pop.start_trial(session)
+                trial.run(timeout=100)
+                pop.complete_trial(trial, session)
+
+                moves = list(trial.moves)
+
+                print(f"Trial {trial.id} from seed {seed} had {len(moves)} moves")
+
+                if len(moves) > 1:
+                    for move in moves:
+                        print(move)
+                    break
+                else:
+                    print(f"Trial {trial.id} from seed {seed} had {len(moves)} moves")
 
     def test_sample_idle(self):
         engine = create_engine("sqlite://")

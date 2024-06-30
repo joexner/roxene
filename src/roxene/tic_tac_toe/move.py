@@ -5,9 +5,9 @@ from sqlalchemy import CHAR, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, composite, relationship
 from typing import List, Set, Optional
 
-from .players import Player
 from .outcome import Outcome
 from .persistence import Board, Point, OutcomeSet
+from .players import Player
 from ..persistence import EntityBase
 
 
@@ -25,6 +25,10 @@ class Move(EntityBase):
     resultant_board_state: Mapped[Optional[List[List[str]]]] = mapped_column(Board, nullable=True)
 
     outcomes: Mapped[Set[Outcome]] = mapped_column(OutcomeSet)
+
+    # Human and fake players have no organism
+    organism_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey('organism.id'))
+    organism: Mapped[Optional['Organism']] = relationship('Organism')
 
     def __init__(self, player: Player, initial_board_state: List[List[str]]):
         self.id = uuid.uuid4()

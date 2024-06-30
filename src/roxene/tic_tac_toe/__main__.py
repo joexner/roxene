@@ -1,11 +1,11 @@
 import argparse
 import logging
-import mlflow
-import pickle
 import sys
+import time
 from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
-import roxene.tic_tac_toe
+from . import Trial
 from .environment import Environment
 from .. import EntityBase
 
@@ -27,6 +27,8 @@ num_mutagens = args.num_mutagens
 num_trials = args.num_trials
 SEED = 11235
 
+# import mlflow
+# import pickle
 # mlflow.log_params({
 #     'num_organisms': num_organisms,
 #     'num_mutagens': num_mutagens,
@@ -34,25 +36,30 @@ SEED = 11235
 #     'seed': SEED
 # })
 
-engine = create_engine("sqlite:///run.db", echo=True)
+now_int = int(time.time())
+
+filename = "sqlite:///run_%d.db" % now_int
+engine = create_engine(filename)
 EntityBase.metadata.create_all(engine)
 
-population = roxene.tic_tac_toe.Population()
 
 env = Environment(
-    num_organisms=num_organisms,
-    num_mutagens=num_mutagens,
-    population=population,
     seed=SEED,
     engine=engine,
 )
 
-num_to_cull = num_to_breed = int(max(num_organisms * .05, 5))  # Replace 5% of the herd at a time, up to 5
+env.populate(num_organisms)
+env.add_mutagens(num_mutagens)
+
+# Replace 5% of the herd at a time, up to 5
+num_to_cull = num_to_breed = int(max(num_organisms * .05, 5))
 
 # Start trials and do GA stuff in a single-threaded alternating loop
 for iteration in range(num_trials):
-    trial = env.run_trial()
-    logger.info(f"Game finished with moves {[(move.letter, move.position, move.outcomes) for move in trial.moves]}")
+    # trial_id = env.run_trial()
+    # with Session(engine) as session:
+    #     trial = session.get(Trial, trial_id)
+    #     logger.info(f"Game finished with moves {[(move.letter, move.position, move.outcomes) for move in trial.moves]}")
     if iteration % args.breed_and_cull_interval == 0:
         logger.info("Breeding and culling")
         env.cull(num_to_cull)

@@ -51,7 +51,7 @@ class Player_test(unittest.TestCase):
         organism = Mock(Organism)
         organism.get_output.side_effect = [0.5, -0.5]
         player = Player(organism=organism, letter='X')
-        player.sync(max_updates=10)
+        player.sync(timeout=10)
 
         # The player showed the Organism 2 set_input calls, to "INPUT_READY", high then low
         self.assertEqual(organism.set_input.call_count, 2)
@@ -67,7 +67,7 @@ class Player_test(unittest.TestCase):
         organism.get_output.side_effect = [-0.5] * 10
         player = Player(organism=organism, letter='X')
         try:
-            player.sync(max_updates=10)
+            player.sync(timeout=10)
             self.fail("Should have failed")
         except TimeoutError as expected:
             pass
@@ -86,7 +86,7 @@ class Player_test(unittest.TestCase):
         organism.get_output.side_effect = [0.5] * 10
         player = Player(organism=organism, letter='X')
         try:
-            player.sync(max_updates=10)
+            player.sync(timeout=10)
             self.fail("Should have failed")
         except TimeoutError as expected:
             pass

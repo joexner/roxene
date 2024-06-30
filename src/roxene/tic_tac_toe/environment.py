@@ -21,20 +21,17 @@ from .outcome import Outcome
 
 
 class Environment(object):
+
     population: Population
     mutagens: [Mutagen]
     rng: Generator
     engine: Engine
 
     def __init__(self,
-                 num_organisms: int,
-                 num_mutagens: int,
-                 population: Population,
                  seed: int,
                  engine: Engine,
-                 neuron_shape={"input_size": 10, "feedback_size": 5, "hidden_size": 10},
                  ):
-        self.population = population
+        self.population = Population()
         self.engine = engine
         self.logger = logging.getLogger(__name__)
 
@@ -45,28 +42,37 @@ class Environment(object):
         tf.random.set_seed(seed)
         uuid.uuid4 = lambda: uuid.UUID(bytes=self.rng.bytes(16))
 
-        for _ in range(num_organisms):
-            neuron_initial_state = random_neuron_state(
-                neuron_shape["input_size"],
-                neuron_shape["feedback_size"],
-                neuron_shape["hidden_size"],
-                self.rng)
+    def populate(self,
+                 num_organisms: int,
+                 neuron_shape={"input_size": 10, "feedback_size": 5, "hidden_size": 10},
+                 ):
 
-            # For each required output, make an output neuron, wire it to all the inputs and rotate it to the back
-            base_genotype = CompositeGene(
-                genes=[
-                    CreateNeuron(**neuron_initial_state),
-                    *[ConnectNeurons(n, n) for n in range(1, len(REQUIRED_INPUTS) + 1)],
-                    RotateCells()],
-                iterations=len(REQUIRED_OUTPUTS)
-            )
+        with Session(self.engine) as session:
+            for _ in range(num_organisms):
+                # Create a random initial state for the neuron
+                neuron_initial_state = random_neuron_state(
+                    neuron_shape["input_size"],
+                    neuron_shape["feedback_size"],
+                    neuron_shape["hidden_size"],
+                    self.rng)
 
-            with Session(self.engine) as session:
+                # Build the genotype
+                # For each required output, make an output neuron, wire it to all the inputs and rotate it to the back
+                base_genotype = CompositeGene(
+                    genes=[
+                        CreateNeuron(**neuron_initial_state),
+                        *[ConnectNeurons(n, n) for n in range(1, len(REQUIRED_INPUTS) + 1)],
+                        RotateCells()],
+                    iterations=len(REQUIRED_OUTPUTS)
+                )
+
+                # Create the organism and add it to the population
                 new_organism: Organism = Organism(REQUIRED_INPUTS, REQUIRED_OUTPUTS, base_genotype)
                 self.population.add(new_organism, session)
+                session.commit()
 
+    def add_mutagens(self, num_mutagens):
 
-        # Set up the mutagens
         mutagen_severity_spread_log_wiggle = 3
 
         self.mutagens: [Mutagen] = list()
@@ -79,12 +85,13 @@ class Environment(object):
 
     def run_trial(self):
         with Session(self.engine) as session:
-            trial = self.population.start_trial()
+            trial = self.population.start_trial(session)
             self.logger.info(
                 f"Starting trial between {trial.participants[0].organism} and {trial.participants[1].organism}")
             trial.run()
             self.logger.info(f"Done trial, {len(trial.moves)} moves")
             self.population.complete_trial(trial, session)
+            return trial.id
 
 
     def cull(self, num_to_cull: int, num_to_compare: int = 10):
@@ -94,8 +101,9 @@ class Environment(object):
                 selectees = self.population.sample(num_to_compare, False, session)
                 selectee_scores: dict[Organism, int] = dict([(o, 0) for o in selectees])
                 relevant_moves = self.get_relevant_moves([o.id for o in selectees], session)
-                for move, organism in relevant_moves:
-                    selectee_scores[organism] += self.score_move(move)
+                if relevant_moves is not None:
+                    for move, organism in relevant_moves:
+                        selectee_scores[organism] += self.score_move(move)
 
                 sorted_orgs_and_scores = sorted(selectee_scores.items(), key=lambda item: item[1], reverse=True)
                 index_to_kill = int(abs(self.rng.normal()))
@@ -146,7 +154,5 @@ class Environment(object):
     def get_relevant_moves(self, selectee_ids: Set[str], session: Session):
         return session.scalars(
             select(Move)
-            .join(Trial)
-            .join(Player)
             .join(Organism)
             .where(Organism.id.in_(selectee_ids)))

@@ -36,7 +36,7 @@ class Trial(EntityBase):
     end_date: Mapped[datetime] = mapped_column(nullable=True)
 
     participants: Mapped[List[Player]] = relationship(Player, back_populates='trial', lazy="immediate")
-    moves: Mapped[List[Move]] = relationship(Move, back_populates='trial', lazy="joined")
+    moves: Mapped[List[Move]] = relationship(Move, back_populates='trial', lazy="immediate")
 
     def __init__(self, player_1: Player, player_2: Player):
         self.id = uuid.uuid4()
@@ -49,7 +49,7 @@ class Trial(EntityBase):
         return len(self.moves) == 9 or \
                any(filter(lambda move: Outcome.WIN in move.outcomes or Outcome.LOSE in move.outcomes, self.moves))
 
-    def run(self):
+    def run(self, timeout=1000):
         self.start_date = datetime.now()
         board = [[None, None, None], [None, None, None], [None, None, None]]
         logging.info(f"Beginning trial for {[str(p) for p in self.participants]}")
@@ -60,9 +60,11 @@ class Trial(EntityBase):
                 break
         while not (self.is_finished()):
             current_player: Player = player_iter.__next__()
-            this_move = Move(player=current_player, initial_board_state=board)
+            this_move: Move = Move(player=current_player, initial_board_state=board)
+            if current_player.organism is not None:
+                this_move.organism = current_player.organism
             try:
-                move_coords = current_player.get_move_coords(board)
+                move_coords = current_player.get_move_coords(board, timeout)
                 this_move.position = Point(move_coords[0], move_coords[1])
                 existing_square_value = board[move_coords[0]][move_coords[1]]
                 if existing_square_value:
@@ -79,5 +81,7 @@ class Trial(EntityBase):
                             this_move.outcomes |= {Outcome.WIN}
             except TimeoutError:
                 this_move.outcomes |= {Outcome.TIMEOUT, Outcome.LOSE}
+
             self.moves.append(this_move)
+
         self.end_date = datetime.now()

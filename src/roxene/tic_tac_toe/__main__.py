@@ -36,9 +36,7 @@ SEED = 11235
 #     'seed': SEED
 # })
 
-now_int = int(time.time())
-
-filename = "sqlite:///run_%d.db" % now_int
+filename = "sqlite:///run_%d.db" % int(time.time())
 engine = create_engine(filename)
 EntityBase.metadata.create_all(engine)
 
@@ -56,10 +54,11 @@ num_to_cull = num_to_breed = int(max(num_organisms * .05, 5))
 
 # Start trials and do GA stuff in a single-threaded alternating loop
 for iteration in range(num_trials):
-    # trial_id = env.run_trial()
-    # with Session(engine) as session:
-    #     trial = session.get(Trial, trial_id)
-    #     logger.info(f"Game finished with moves {[(move.letter, move.position, move.outcomes) for move in trial.moves]}")
+    with Session(engine) as session:
+        trial = env.start_trial(session)
+        trial.run()
+        env.co
+        logger.info(f"Game finished with moves {[(move.letter, move.position, move.outcomes) for move in trial.moves]}")
     if iteration % args.breed_and_cull_interval == 0:
         logger.info("Breeding and culling")
         env.cull(num_to_cull)

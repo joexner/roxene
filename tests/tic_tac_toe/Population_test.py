@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from ConnectNeurons_test import build_organism
 from roxene import Organism
 from roxene.persistence import EntityBase
-from roxene.tic_tac_toe import Population
+from roxene.tic_tac_toe import Population, Environment
 from roxene.tic_tac_toe.players import REQUIRED_INPUTS, REQUIRED_OUTPUTS
 
 from numpy.random import default_rng
@@ -73,20 +73,17 @@ class Population_test(unittest.TestCase):
         with Session(engine) as session:
 
             # Build a population, make sure we can put them all in trials simultaneously
-            pop: Population = Population()
+            env = Environment(823547, engine)
 
-            num_orgs = 20
+            num_orgs = 10
 
-            for n in range(num_orgs):
-                organism = Organism(input_names=REQUIRED_INPUTS, output_names=REQUIRED_OUTPUTS)
-                pop.add(organism, session)
+            env.populate(num_orgs)
 
             for n in range(num_orgs // 2):
-                pop.start_trial(session)
-
+                env.start_trial(session)
 
             try:
-                pop.start_trial(session)
+                env.start_trial(session)
                 self.fail("Should be out of idle orgs")
             except BaseException as expected_ex:
                 print(expected_ex)

@@ -1,4 +1,6 @@
 import logging
+import time
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import func
@@ -31,22 +33,11 @@ class Population:
                                     .join(Trial)
                                     .where(Trial.end_date is None))
             stmt = stmt.where(~Organism.id.in_(busy_organisms_query.subquery()))
-        stmt = stmt.order_by(func.random()).limit(num_organisms)  # TODO: Make this depend on the RNG
-        return session.scalars(stmt).unique().all()
+        stmt = stmt.order_by(func.random())   # TODO: Make this depend on the RNG
+        stmt = stmt.limit(num_organisms)
+        start = time.time()
+        result = session.scalars(stmt).unique().all()
+        end = time.time()
+        self.logger.info(f"Sample query took {end - start} seconds")
+        return result
 
-    def start_trial(self, session: Session) -> Trial:
-        try:
-            orgs: List[Organism] = self.sample(2, True, session)
-        except:
-            raise Exception("Not enough idle Organisms")
-        p1 = Player(orgs[0])
-        p2 = Player(orgs[1])
-        print(f'Starting a trial with {p1} and {p2}')
-        trial = Trial(p1, p2)
-        session.add(trial)
-        session.commit()
-        return trial
-
-    def complete_trial(self, trial: Trial, session: Session):
-        session.merge(trial)
-        session.commit()

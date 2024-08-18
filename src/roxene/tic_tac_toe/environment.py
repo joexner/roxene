@@ -83,15 +83,29 @@ class Environment(object):
             new_mutagen = CreateNeuronMutagen(layer, base_susceptibility, susceptibility_log_wiggle)
             self.mutagens.append(new_mutagen)
 
-    def run_trial(self):
-        with Session(self.engine) as session:
-            trial = self.population.start_trial(session)
-            self.logger.info(
-                f"Starting trial between {trial.participants[0].organism} and {trial.participants[1].organism}")
-            trial.run()
-            self.logger.info(f"Done trial, {len(trial.moves)} moves")
-            self.population.complete_trial(trial, session)
-            return trial.id
+    def start_trial(self, session: Session):
+        # try:
+        orgs: List[Organism] = self.population.sample(2, True, session)
+        # except:
+        #     raise Exception("Not enough idle Organisms")
+
+        p1, p2 = Player(orgs[0]), Player(orgs[1])
+
+        self.logger.info(f'Starting a trial with {p1} and {p2}')
+
+        trial = Trial(p1, p2)
+        session.add(trial)
+        session.commit()
+
+        self.logger.info(
+            f"Started trial between {orgs[0]} and {orgs[1]}")
+
+        return trial
+
+
+    def complete_trial(self, trial: Trial, session: Session):
+        session.merge(trial)
+        session.commit()
 
 
     def cull(self, num_to_cull: int, num_to_compare: int = 10):

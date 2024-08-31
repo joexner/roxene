@@ -8,7 +8,7 @@ from roxene.persistence import EntityBase
 from roxene.tic_tac_toe import Population, Environment
 from roxene.tic_tac_toe.players import REQUIRED_INPUTS, REQUIRED_OUTPUTS
 
-from numpy.random import default_rng
+from numpy.random import default_rng, Generator
 
 # from organism import Organism
 
@@ -16,6 +16,8 @@ from numpy.random import default_rng
 SEED = 1123581321
 
 class Population_test(unittest.TestCase):
+
+    rng: Generator = default_rng(SEED)
 
 
     def test_add_and_sample_non_idle(self):
@@ -28,7 +30,7 @@ class Population_test(unittest.TestCase):
             for n in range(num_orgs):
                 organism = Organism()
                 pop.add(organism, session)
-            orgs = pop.sample(num_orgs, False, session)
+            orgs = pop.sample(num_orgs, False, self.rng, session)
             self.assertEqual(num_orgs, len(orgs))
 
     # def test_start_and_run_trial(self):

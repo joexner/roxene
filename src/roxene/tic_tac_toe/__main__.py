@@ -57,7 +57,7 @@ for iteration in range(num_trials):
     with Session(engine) as session:
         trial = env.start_trial(session)
         trial.run()
-        env.co
+        env.complete_trial(trial, session)
         logger.info(f"Game finished with moves {[(move.letter, move.position, move.outcomes) for move in trial.moves]}")
     if iteration % args.breed_and_cull_interval == 0:
         logger.info("Breeding and culling")

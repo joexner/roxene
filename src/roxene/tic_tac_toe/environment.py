@@ -85,7 +85,7 @@ class Environment(object):
 
     def start_trial(self, session: Session):
         # try:
-        orgs: List[Organism] = self.population.sample(2, True, session)
+        orgs: List[Organism] = self.population.sample(2, True, self.rng, session)
         # except:
         #     raise Exception("Not enough idle Organisms")
 
@@ -112,7 +112,7 @@ class Environment(object):
         with Session(self.engine) as session:
 
             for n in range(num_to_cull):
-                selectees = self.population.sample(num_to_compare, False, session)
+                selectees = self.population.sample(num_to_compare, False, self.rng, session)
                 selectee_scores: dict[Organism, int] = dict([(o, 0) for o in selectees])
                 relevant_moves = self.get_relevant_moves([o.id for o in selectees], session)
                 if relevant_moves is not None:
@@ -132,7 +132,7 @@ class Environment(object):
         with Session(self.engine) as session:
 
             for n in range(num_to_breed):
-                selectees = self.population.sample(num_to_consider, True, session)
+                selectees = self.population.sample(num_to_consider, True, self.rng, session)
                 if num_to_consider == 1:
                     organism_to_breed = selectees[0]
                 else:

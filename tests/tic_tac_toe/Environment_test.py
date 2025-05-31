@@ -30,12 +30,12 @@ class Environment_test(unittest.TestCase):
                         Player(o3, queued_input=[(1, 0), (0, 0)]))
 
         trial_1.run()
-        trial_2.run()
-
         environment.complete_trial(trial_1)
 
+        trial_2.run()
+        environment.complete_trial(trial_2)
+
         with Session(engine) as session:
-            session.add_all([trial_1, trial_2])
             self.assertEqual(5, len(list(environment.get_relevant_moves([o1_id], session))))
             self.assertEqual(4, len(list(environment.get_relevant_moves([o2_id, o3_id], session))))
 

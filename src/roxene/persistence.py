@@ -49,6 +49,7 @@ class TrackedVariable(Mutable):
 class WrappedVariable(sqlalchemy.types.TypeDecorator):
 
     impl = PickleType
+    cache_ok = True
 
     def process_bind_param(self, value: tf.Variable, dialect) -> np.ndarray:
         return value.numpy()
@@ -59,7 +60,8 @@ class WrappedVariable(sqlalchemy.types.TypeDecorator):
 
 class WrappedTensor(sqlalchemy.types.TypeDecorator):
 
-    impl = sqlalchemy.types.BLOB
+    impl = sqlalchemy.types.LargeBinary
+    cache_ok = True
 
     def process_bind_param(self, value: tf.Tensor, dialect) -> bytes:
         return pickle.dumps(value.numpy(), protocol=5)

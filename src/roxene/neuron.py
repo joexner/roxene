@@ -100,7 +100,7 @@ class _Neuron_Input(EntityBase):
     broadcaster_cell_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cell.id"))
 
     listener_neuron: Mapped[Neuron] = relationship(foreign_keys=[listener_neuron_id])
-    broadcaster_cell: Mapped[Cell] = relationship(foreign_keys=[broadcaster_cell_id])
+    broadcaster_cell: Mapped[Cell] = relationship(foreign_keys=[broadcaster_cell_id], lazy="immediate")
 
     def __init__(self, port: int, inputcell: Cell):
         self.port = port

@@ -3,7 +3,7 @@ import logging
 import random
 import uuid
 from sqlalchemy import Engine, select, join
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 from typing import Set, List
 
 import tensorflow as tf
@@ -21,18 +21,30 @@ from .outcome import Outcome
 
 
 class Environment(object):
+    """
+    Represents the environment in which organisms interact, evolve, and compete.
+
+    This class manages the population of organisms, their mutations, trials, and evolutionary processes.
+    It also handles interactions with the database and random number generation for reproducibility.
+
+    Attributes:
+        population (Population): The population of organisms in the environment.
+        mutagens (List[Mutagen]): A list of mutagens used to modify genotypes.
+        rng (Generator): A random number generator for reproducibility.
+        engine (Engine): The SQLAlchemy engine for database interactions.
+    """
 
     population: Population
     mutagens: [Mutagen]
     rng: Generator
-    engine: Engine
+    sessionmaker: sessionmaker
 
     def __init__(self,
                  seed: int,
                  engine: Engine,
                  ):
         self.population = Population()
-        self.engine = engine
+        self.sessionmaker = sessionmaker(engine)
         self.logger = logging.getLogger(__name__)
 
         self.logger.info(f"Seed={seed}")
@@ -46,9 +58,8 @@ class Environment(object):
                  num_organisms: int,
                  neuron_shape={"input_size": 10, "feedback_size": 5, "hidden_size": 10},
                  ):
-
-        with Session(self.engine) as session:
-            for _ in range(num_organisms):
+        for _ in range(num_organisms):
+            with self.sessionmaker.begin() as session:
                 # Create a random initial state for the neuron
                 neuron_initial_state = random_neuron_state(
                     neuron_shape["input_size"],
@@ -69,12 +80,9 @@ class Environment(object):
                 # Create the organism and add it to the population
                 new_organism: Organism = Organism(REQUIRED_INPUTS, REQUIRED_OUTPUTS, base_genotype)
                 self.population.add(new_organism, session)
-                session.commit()
 
     def add_mutagens(self, num_mutagens):
-
         mutagen_severity_spread_log_wiggle = 3
-
         self.mutagens: [Mutagen] = list()
         for n in range(num_mutagens):
             layer = self.rng.choice(CNLayer)
@@ -83,35 +91,32 @@ class Environment(object):
             new_mutagen = CreateNeuronMutagen(layer, base_susceptibility, susceptibility_log_wiggle)
             self.mutagens.append(new_mutagen)
 
-    def start_trial(self, session: Session):
-        # try:
-        orgs: List[Organism] = self.population.sample(2, True, self.rng, session)
-        # except:
-        #     raise Exception("Not enough idle Organisms")
+    def start_trial(self) -> Trial:
+        with self.sessionmaker() as session:
+            orgs: List[Organism] = self.population.sample(2, True, self.rng, session)
+            p1, p2 = Player(orgs[0]), Player(orgs[1])
+            self.logger.info(f'Starting a trial with {p1} and {p2}')
 
-        p1, p2 = Player(orgs[0]), Player(orgs[1])
+            trial = Trial(p1, p2)
+            self.logger.info(f"Started trial between {orgs[0]} and {orgs[1]}")
 
-        self.logger.info(f'Starting a trial with {p1} and {p2}')
+            session.add(trial)
+            session.commit()
 
-        trial = Trial(p1, p2)
-        session.add(trial)
-        session.commit()
+            # Committing "expires" everything from the session, so refresh the trial before returning it
+            session.refresh(trial)
 
-        self.logger.info(
-            f"Started trial between {orgs[0]} and {orgs[1]}")
-
-        return trial
+            return trial
 
 
-    def complete_trial(self, trial: Trial, session: Session):
-        session.merge(trial)
-        session.commit()
+    def complete_trial(self, trial: Trial):
+        with self.sessionmaker.begin() as session:
+            session.merge(trial)
 
 
     def cull(self, num_to_cull: int, num_to_compare: int = 10):
-        with Session(self.engine) as session:
-
-            for n in range(num_to_cull):
+        for n in range(num_to_cull):
+            with self.sessionmaker.begin() as session:
                 selectees = self.population.sample(num_to_compare, False, self.rng, session)
                 selectee_scores: dict[Organism, int] = dict([(o, 0) for o in selectees])
                 relevant_moves = self.get_relevant_moves([o.id for o in selectees], session)
@@ -129,15 +134,14 @@ class Environment(object):
 
 
     def breed(self, num_to_breed: int, num_to_consider: int = 10):
-        with Session(self.engine) as session:
-
-            for n in range(num_to_breed):
+        for n in range(num_to_breed):
+            with self.sessionmaker.begin() as session:
                 selectees = self.population.sample(num_to_consider, True, self.rng, session)
                 if num_to_consider == 1:
                     organism_to_breed = selectees[0]
                 else:
                     selectee_scores: dict[Organism, int] = dict([(o, 0) for o in selectees])
-                    for move, organism in self.get_relevant_moves(selectee_scores.keys()):
+                    for move, organism in self.get_relevant_moves(selectee_scores.keys(), session):
                         selectee_scores[organism] += self.score_move(move)
 
                     sorted_orgs_and_scores = sorted(selectee_scores.items(), key=lambda item: item[1], reverse=False)

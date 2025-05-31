@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from roxene import InputCell, Neuron, random_neuron_state
 from roxene.persistence import EntityBase
+from tic_tac_toe.util import get_engine
 
 SEED = 732478534
 
@@ -35,7 +36,7 @@ class Neuron_test(tf.test.TestCase):
             hidden_sz,
             feedback_sz):
 
-        neuron = Neuron(**random_neuron_state(input_sz, hidden_sz, feedback_sz))
+        neuron = Neuron(**random_neuron_state(input_sz, hidden_sz, feedback_sz, rng=default_rng(SEED)))
         output_before_update = neuron.get_output()
 
         neuron.update()
@@ -47,7 +48,7 @@ class Neuron_test(tf.test.TestCase):
         self.assertNotEqual(output_after_first_update, output_after_another_update)
 
     def test_check_math_linear(self):
-        neuron: Neuron = Neuron(**random_neuron_state(1, 1, 1))
+        neuron: Neuron = Neuron(**random_neuron_state(1, 1, 1, rng=default_rng(SEED)))
 
         initial_input_val = neuron.input.numpy()[0]
         initial_feedback_val = neuron.feedback.numpy()[0]
@@ -118,13 +119,7 @@ class Neuron_test(tf.test.TestCase):
             self.assertAlmostEqual(expected_value, actual_value, 3)
 
     def test_save_neuron(self):
-        # try:
-        #    os.remove("test.db")
-        # except FileNotFoundError:
-        #     pass
-        # engine = create_engine("sqlite:///test.db")
-        engine = create_engine("sqlite://")
-        EntityBase.metadata.create_all(engine)
+        engine = get_engine()
 
         n1 = Neuron(**random_neuron_state())
         nid = n1.id
@@ -173,8 +168,7 @@ class Neuron_test(tf.test.TestCase):
             self.assertEqual(n3_output, n2_output)
 
     def test_save_linked_neurons(self):
-        engine = create_engine("sqlite://")
-        EntityBase.metadata.create_all(engine)
+        engine = get_engine()
 
         n1 = Neuron(**random_neuron_state())
         n2 = Neuron(**random_neuron_state())

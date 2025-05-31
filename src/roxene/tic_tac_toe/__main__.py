@@ -54,11 +54,10 @@ num_to_cull = num_to_breed = int(max(num_organisms * .05, 5))
 
 # Start trials and do GA stuff in a single-threaded alternating loop
 for iteration in range(num_trials):
-    with Session(engine) as session:
-        trial = env.start_trial(session)
-        trial.run()
-        env.complete_trial(trial, session)
-        logger.info(f"Game finished with moves {[(move.letter, move.position, move.outcomes) for move in trial.moves]}")
+    trial: Trial = env.start_trial()
+    trial.run()
+    env.complete_trial(trial)
+    logger.info(f"Game finished with moves {[(move.letter, move.position, move.outcomes) for move in trial.moves]}")
     if iteration % args.breed_and_cull_interval == 0:
         logger.info("Breeding and culling")
         env.cull(num_to_cull)

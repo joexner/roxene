@@ -16,8 +16,7 @@ parser = argparse.ArgumentParser(description='Play some tic-tac-toe')
 
 parser.add_argument('pool_size', type=int, help='Number of cloned Organisms initially in the pool')
 parser.add_argument('num_trials', type=int, help='Number of tic-tac-toe trials to run')
-parser.add_argument('--breed_and_cull_interval', type=int,
-                    help='Number of trials between rounds of culling and breeding', default=10)
+parser.add_argument('--breed_and_cull_interval', type=int, help='Number of trials between rounds of culling and breeding', default=10)
 parser.add_argument('--num_mutagens', type=int, help='Number of mutagens in the pool', default=100)
 
 args = parser.parse_args(sys.argv[1:])

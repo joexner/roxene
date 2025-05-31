@@ -47,7 +47,7 @@ class Population:
             result = session.scalars(stmt).unique().all()[0]
             if self.logger.isEnabledFor(logging.DEBUG):
                 end = time.perf_counter()
-                self.logger.debug(f"Sample query took {end - start} seconds")
+                self.logger.debug(f"Sample query took {end - start} seconds, idle_only={idle_only}")
             results.append(result)
 
         return results

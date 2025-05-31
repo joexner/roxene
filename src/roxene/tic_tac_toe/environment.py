@@ -121,8 +121,8 @@ class Environment(object):
                 selectee_scores: dict[Organism, int] = dict([(o, 0) for o in selectees])
                 relevant_moves = self.get_relevant_moves([o.id for o in selectees], session)
                 if relevant_moves is not None:
-                    for move, organism in relevant_moves:
-                        selectee_scores[organism] += self.score_move(move)
+                    for move in relevant_moves:
+                        selectee_scores[move.organism] += self.score_move(move)
 
                 sorted_orgs_and_scores = sorted(selectee_scores.items(), key=lambda item: item[1], reverse=True)
                 index_to_kill = int(abs(self.rng.normal()))
@@ -141,8 +141,8 @@ class Environment(object):
                     organism_to_breed = selectees[0]
                 else:
                     selectee_scores: dict[Organism, int] = dict([(o, 0) for o in selectees])
-                    for move, organism in self.get_relevant_moves(selectee_scores.keys(), session):
-                        selectee_scores[organism] += self.score_move(move)
+                    for move in self.get_relevant_moves(selectee_scores.keys(), session):
+                        selectee_scores[move.organism] += self.score_move(move)
 
                     sorted_orgs_and_scores = sorted(selectee_scores.items(), key=lambda item: item[1], reverse=False)
 

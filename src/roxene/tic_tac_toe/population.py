@@ -22,33 +22,44 @@ class Population:
         session.delete(organism_to_kill)
 
     def sample(self, num_to_select: int, idle_only: bool, rng: Generator, session: Session):
-        pop_size = session.execute(select(func.count()).select_from(Organism)).scalar()
+
+        # Build the base stmt once
+        candidate_select_stmt = select(Organism).order_by(Organism.id)
+        if idle_only:
+            busy_organisms_query = (select(Organism.id)
+                                    .join(Player)
+                                    .join(Trial)
+                                    .where(Trial.end_date.is_(None)))
+            candidate_select_stmt = candidate_select_stmt.where(~Organism.id.in_(busy_organisms_query))
+
+        if self.logger.isEnabledFor(logging.DEBUG):
+            start = time.perf_counter()
+        num_candidates = session.execute(select(func.count()).select_from(candidate_select_stmt)).scalar()
+        if self.logger.isEnabledFor(logging.DEBUG):
+            end = time.perf_counter()
+            self.logger.debug(f"Count query took {end - start} seconds, idle_only={idle_only}")
+
+        if num_candidates < num_to_select:
+            raise ValueError(f"Only {num_candidates} candidates available, not enough candidates to select {num_to_select} organisms. ")
+
         indexes = []
         results = []
         for _ in range(num_to_select):
-            # TODO: fix likely bug where this can be higher than the number of available organisms
-            idx = rng.integers(0, pop_size)
+            idx = rng.integers(0, num_candidates)
             while idx in indexes:
-                idx = rng.integers(0, pop_size)
+                idx = rng.integers(0, num_candidates)
             indexes.append(idx)
 
-        for _ in range(num_to_select):
-            stmt = select(Organism).order_by(Organism.id)
-            if idle_only:
-                busy_organisms_query = (select(Organism.id)
-                                        .join(Player)
-                                        .join(Trial)
-                                        .where(Trial.end_date is None))
-                stmt = stmt.where(~Organism.id.in_(busy_organisms_query))
-            stmt = stmt.offset(indexes.pop())
-            stmt = stmt.limit(1)
+        indexes.sort()
+
+        for idx in indexes:
+            stmt_with_offset = candidate_select_stmt.offset(idx).limit(1)
             if self.logger.isEnabledFor(logging.DEBUG):
                 start = time.perf_counter()
-            result = session.scalars(stmt).unique().all()[0]
+            result = session.scalars(stmt_with_offset).unique().all()[0]
             if self.logger.isEnabledFor(logging.DEBUG):
                 end = time.perf_counter()
                 self.logger.debug(f"Sample query took {end - start} seconds, idle_only={idle_only}")
             results.append(result)
 
         return results
-

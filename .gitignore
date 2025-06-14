@@ -5,3 +5,4 @@ tests/persistence_test.db\n
 **build
 **/*.egg-info/
 **/test.db
+run_*.db

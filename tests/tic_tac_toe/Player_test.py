@@ -79,7 +79,7 @@ class Player_test(unittest.TestCase):
         self.assertEqual(organism.get_output.call_count, 10)
 
     def test_sync_10_high(self):
-        """Let the organism show only low on "OUTPUT_READY", until it triggers a timeout"""
+        """Let the organism show only high on "OUTPUT_READY", until it triggers a timeout"""
         organism = Mock(Organism)
         max_updates = 100
 

@@ -5,7 +5,7 @@ name = "pypi"
 
 [packages]
 tensorflow = "*"
-numpy = "<2.0"
+numpy = "*"
 sqlalchemy = "*"
 roxene = {file = "src", editable = true}
 

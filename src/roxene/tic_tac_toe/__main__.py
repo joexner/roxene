@@ -52,11 +52,12 @@ env.add_mutagens(num_mutagens)
 num_to_cull = num_to_breed = int(max(num_organisms * .05, 5))
 
 # Start trials and do GA stuff in a single-threaded alternating loop
-for iteration in range(num_trials):
+for iteration in range(1, num_trials + 1):
     trial: Trial = env.start_trial()
+    logger.info(f"Starting trial {iteration} between players {trial.participants[0]} and {trial.participants[1]}")
     trial.run()
     env.complete_trial(trial)
-    logger.info(f"Game finished with moves {[(move.letter, move.position, move.outcomes) for move in trial.moves]}")
+    logger.info(f"Finished trial {iteration} with moves {[(move.letter, move.position, move.outcomes) for move in trial.moves]}")
     if iteration % args.breed_and_cull_interval == 0:
         logger.info("Breeding and culling")
         env.cull(num_to_cull)

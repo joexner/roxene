@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "ef5f3e2ec28509b5bb47307c02f306dbac08da6cf4bef7f24c1c366b19d7a08f"
+            "sha256": "db152984f7fe32c25de7ba92ca0075c08e9aacea42c6bd4d809ea585d68cc50e"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -744,6 +744,10 @@
             ],
             "markers": "python_full_version >= '3.8.0'",
             "version": "==14.0.0"
+        },
+        "roxene": {
+            "editable": true,
+            "file": "src"
         },
         "setuptools": {
             "hashes": [

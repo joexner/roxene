@@ -24,7 +24,7 @@ class Population:
     def sample(self, num_to_select: int, idle_only: bool, rng: Generator, session: Session):
 
         # Build the base stmt once
-        candidate_select_stmt = select(Organism).order_by(Organism.id)
+        candidate_select_stmt = select(Organism.id).order_by(Organism.id)
         if idle_only:
             busy_organisms_query = (select(Organism.id)
                                     .join(Player)
@@ -37,7 +37,7 @@ class Population:
         num_candidates = session.execute(select(func.count()).select_from(candidate_select_stmt)).scalar()
         if self.logger.isEnabledFor(logging.DEBUG):
             end = time.perf_counter()
-            self.logger.debug(f"Count query took {end - start} seconds, idle_only={idle_only}")
+            self.logger.debug(f"Count query took {end - start} seconds")
 
         if num_candidates < num_to_select:
             raise ValueError(f"Only {num_candidates} candidates available, not enough candidates to select {num_to_select} organisms. ")
@@ -59,7 +59,7 @@ class Population:
             result = session.scalars(stmt_with_offset).unique().all()[0]
             if self.logger.isEnabledFor(logging.DEBUG):
                 end = time.perf_counter()
-                self.logger.debug(f"Organism load took {end - start} seconds, idle_only={idle_only}")
+                self.logger.debug(f"Organism ID query took {end - start} seconds")
             results.append(result)
 
         return results

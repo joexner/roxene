@@ -76,7 +76,7 @@ class Player(EntityBase):
 
     def sync(self, timeout):
         logger = logging.getLogger(str(self.organism)).getChild("player")
-        logger.info(f"{self.id} beginning sync, depth={timeout}")
+        logger.info(f"Beginning sync, depth={timeout}")
         num_updates_used = 0
         next_log_at_update_number = 10
 

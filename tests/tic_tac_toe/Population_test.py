@@ -27,9 +27,9 @@ class Population_test(unittest.TestCase):
                 pop.add(organism, session)
 
         with seshmaker.begin() as session:
-            orgs = pop.sample(num_orgs, False, rng, session)
+            org_ids = pop.sample(num_orgs, False, rng, session)
 
-        self.assertEqual(num_orgs, len(orgs))
+        self.assertEqual(num_orgs, len(org_ids))
 
 
     def test_sample_idle(self):
@@ -49,9 +49,9 @@ class Population_test(unittest.TestCase):
             # Start 2 trials, which will use 4 organisms (2 per trial)
             for _ in range(2):
                 logging.info("Starting trial")
-                orgs = pop.sample(2, True, rng, session)
-                player_1 = Player(organism=orgs[0], letter='X')
-                player_2 = Player(organism=orgs[1], letter='O')
+                orgs_ids = pop.sample(2, True, rng, session)
+                player_1 = Player(organism=session.get(Organism, orgs_ids[0]), letter='X')
+                player_2 = Player(organism=session.get(Organism, orgs_ids[1]), letter='O')
                 trial = Trial(player_1, player_2)
                 session.add(trial)
                 session.commit()

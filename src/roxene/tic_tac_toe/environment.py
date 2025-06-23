@@ -92,8 +92,9 @@ class Environment(object):
             self.mutagens.append(new_mutagen)
 
     def start_trial(self) -> Trial:
-        with self.sessionmaker() as session:
-            orgs: List[Organism] = self.population.sample(2, True, self.rng, session)
+        with (self.sessionmaker() as session):
+            org_ids: [uuid.UUID] = self.population.sample(2, True, self.rng, session)
+            orgs: List[Organism] = [session.get(Organism, oid) for oid in org_ids]
             p1, p2 = Player(orgs[0]), Player(orgs[1])
             self.logger.info(f'Starting a trial with {p1} and {p2}')
 
@@ -117,39 +118,54 @@ class Environment(object):
     def cull(self, num_to_cull: int, num_to_compare: int = 10):
         for n in range(num_to_cull):
             with self.sessionmaker.begin() as session:
-                selectees = self.population.sample(num_to_compare, False, self.rng, session)
-                selectee_scores: dict[Organism, int] = dict([(o, 0) for o in selectees])
-                relevant_moves = self.get_relevant_moves([o.id for o in selectees], session)
-                if relevant_moves is not None:
+                selectee_ids = self.population.sample(num_to_compare, False, self.rng, session)
+                if num_to_compare == 1:
+                    organism_id_to_kill = selectee_ids[0]
+                else:
+                    selectee_scores: dict[uuid.UUID, int] = dict([(oid, 0) for oid in selectee_ids])
+                    relevant_moves = self.get_relevant_moves(selectee_ids, session)
                     for move in relevant_moves:
-                        selectee_scores[move.organism] += self.score_move(move)
+                        selectee_scores[move.organism_id] += self.score_move(move)
 
-                sorted_orgs_and_scores = sorted(selectee_scores.items(), key=lambda item: item[1], reverse=True)
-                index_to_kill = int(abs(self.rng.normal()))
-                organism_to_kill: Organism = sorted_orgs_and_scores[index_to_kill][0]
-                self.logger.info(f"Culling index {index_to_kill} of")
+                    # Put the Organisms with the highest scores at the front of the list
+                    sorted_orgs_and_scores = sorted(selectee_scores.items(), key=lambda item: item[1], reverse=True)
 
-                self.logger.info(f"Removing organism {organism_to_kill}")
+                    rand = self.rng.random()
+                    index_to_kill = int((rand ^ 2) * num_to_compare)  # Squaring the random number to skew it towards the lower end
+                    self.logger.info(f"Removing organism at index {index_to_kill} of {num_to_compare}")
+
+                    organism_id_to_kill = sorted_orgs_and_scores[index_to_kill][0]
+                    self.logger.info(f"Removing organism {organism_id_to_kill}")
+
+                organism_to_kill: Organism = session.get(Organism, organism_id_to_kill)
                 self.population.remove(organism_to_kill, session)
 
 
     def breed(self, num_to_breed: int, num_to_consider: int = 10):
         for n in range(num_to_breed):
             with self.sessionmaker.begin() as session:
-                selectees = self.population.sample(num_to_consider, True, self.rng, session)
+                selectee_ids = self.population.sample(num_to_consider, False, self.rng, session)
                 if num_to_consider == 1:
-                    organism_to_breed = selectees[0]
+                    organism_id_to_breed = selectee_ids[0]
                 else:
-                    selectee_scores: dict[Organism, int] = dict([(o, 0) for o in selectees])
-                    for move in self.get_relevant_moves(selectee_scores.keys(), session):
-                        selectee_scores[move.organism] += self.score_move(move)
+                    selectee_scores: dict[uuid.UUID, int] = dict([(oid, 0) for oid in selectee_ids])
+                    relevant_moves = self.get_relevant_moves(selectee_ids, session)
+                    for move in relevant_moves:
+                        selectee_scores[move.organism_id] += self.score_move(move)
 
+                    # Put the Organisms with the lowest scores at the front of the list
                     sorted_orgs_and_scores = sorted(selectee_scores.items(), key=lambda item: item[1], reverse=False)
 
-                    organism_to_breed: Organism = sorted_orgs_and_scores[0][0]
+                    rand = self.rng.random()
+                    index_to_clone = int((rand ^ 2) * num_to_consider)  # Squaring the random number to skew it towards the lower end
+                    self.logger.info(f"Cloning organism at index {index_to_clone} of {num_to_consider}")
 
-                new_organism = self.clone(organism_to_breed)
-                self.logger.info(f"Bred organism {new_organism} from {organism_to_breed}")
+                    organism_id_to_breed = sorted_orgs_and_scores[index_to_clone][0]
+                    self.logger.info(f"Cloning organism {organism_id_to_breed}")
+
+                old_organism = session.get(Organism, organism_id_to_breed)
+                new_organism = self.clone(old_organism)
+                self.logger.info(f"Bred organism {new_organism} from {old_organism}")
                 self.population.add(new_organism, session)
 
     def clone(self, organism_to_breed: Organism):

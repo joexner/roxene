@@ -60,7 +60,8 @@ class Player(EntityBase):
 
         self.sync(timeout)
 
-        max_output_value = None
+        max_output_value, max_output_label = None
+        logger.debug(f"Outputs for {self.organism} after sync:")
         for x in range(3):
             for y in range(3):
                 output_label = str(x) + "," + str(y)

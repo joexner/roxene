@@ -45,8 +45,10 @@ env = Environment(
     engine=engine,
 )
 
+logger.info(f"Populating environment with {num_organisms} organisms and {num_mutagens} mutagens")
 env.populate(num_organisms)
 env.add_mutagens(num_mutagens)
+logger.info("Done populating environment")
 
 # Replace 5% of the herd at a time, up to 5
 num_to_cull = num_to_breed = int(max(num_organisms * .05, 5))

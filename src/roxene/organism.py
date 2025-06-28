@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import abc
-from collections import deque
-
 import uuid
+from typing import Dict, List, Optional
+
 from sqlalchemy import ForeignKey, Integer, String
-from sqlalchemy.ext.associationproxy import association_proxy, AssociationProxy
+from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
-from typing import Deque, Dict, List, Optional
 
 from .cells import Cell, InputCell
 from .neuron import Neuron
@@ -161,7 +160,7 @@ class Organism(EntityBase):
         input_cell.set_output(input_value)
 
     # TODO: Make output a @property, and maybe input and cells
-    def get_output(self, output_label):
+    def get_output(self, output_label) -> float:
         return self.outputs[output_label].get_output()
 
     def update(self):

@@ -4,9 +4,12 @@ from unittest.mock import Mock, call
 
 from roxene import Organism
 from roxene.tic_tac_toe import Player
+from roxene.tic_tac_toe.move import Move
 
 MAX_VALUE = 0.5
 MIN_VALUE = -0.5
+
+SEED = 90210
 
 
 def generateBoard(numToFill):
@@ -18,23 +21,30 @@ def generateBoard(numToFill):
     board = [[None] * 3 for _ in range(3)]
     for n in range(numToFill):
         point = points.pop()
-        board[point[0]][point[1]] = 'X' if n % 2 == 1 else 'O'
+        board[point[0]][point[1]] = 'X' if n % 2 == 0 else 'O'
     return board
 
 
 class Player_test(unittest.TestCase):
 
     def test_get_move_coords(self):
+        # Set a fixed seed for reproducible tests
+        rng = random.Random(SEED)
 
         organism: Organism = Mock(Organism)
         player = Player(organism, 'X')
         board = generateBoard(numToFill=6)
 
-        # Let the mock Organism's outputs vary continuously, randomly between -1 and 1
-        # This will eventually convince the Player that we're ready wih our other output
-        organism.get_output.side_effect = lambda _: random.uniform(-1, 1)
+        organism_outputs: list[list[float]] = [[rng.uniform(-1, 1) for _ in range(3)] for _ in range(3)]
 
-        player.get_move_coords(board)
+        # Let the mock organism's side-effect look up the label in organism_outputs
+        organism.get_output.side_effect = (
+            lambda label: organism_outputs[int(label.split(',')[0])][int(label.split(',')[1])]
+            if ',' in label
+            else rng.uniform(-1, 1)
+        )
+
+        move: Move = player.get_move_coords(board)
 
         # Check that the player set the inputs on the Organism correctly
         expected_set_input_calls = []
@@ -45,6 +55,17 @@ class Player_test(unittest.TestCase):
                     value = MAX_VALUE if board[x][y] == player.letter else MIN_VALUE
                 expected_set_input_calls.append(call(f"{x},{y}", value))
         organism.set_input.assert_has_calls(expected_set_input_calls, any_order=True)
+
+        # Check that we picked the right move, given the organism outputs
+        max_value = float('-inf')
+        expected_move = None
+        for x in range(3):
+            for y in range(3):
+                output_value = organism_outputs[x][y]
+                if output_value > max_value:
+                    max_value = output_value
+                    expected_move = (x, y)
+        self.assertEqual(move, expected_move)
 
     def test_sync_1_high_1_low(self):
         """Let the organism show high on "OUTPUT_READY", then low to satisfy the Player that it's ready"""

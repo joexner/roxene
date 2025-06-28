@@ -43,7 +43,7 @@ class Player(EntityBase):
         self.queued_input = queued_input
 
     def get_move_coords(self, board, timeout=MAX_UPDATES) -> Tuple[int]:
-
+        logger = logging.getLogger(str(self.organism)).getChild("player")
         if self.queued_input is not None and len(self.queued_input) > 0:
             return self.queued_input.pop(0)
 
@@ -65,6 +65,7 @@ class Player(EntityBase):
             for y in range(3):
                 output_label = str(x) + "," + str(y)
                 output_value = self.organism.get_output(output_label)
+                logger.debug(f"Output for {output_label} is {output_value:.4f}")
                 if max_output_value is None or output_value > max_output_value:
                     max_output_value = output_value
                     max_output_label = (x, y)

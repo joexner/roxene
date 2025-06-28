@@ -161,7 +161,7 @@ class Organism(EntityBase):
 
     # TODO: Make output a @property, and maybe input and cells
     def get_output(self, output_label) -> float:
-        return self.outputs[output_label].get_output()
+        return float(self.outputs[output_label].get_output())
 
     def update(self):
         for cell in self.cells:

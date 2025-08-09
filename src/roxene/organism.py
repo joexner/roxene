@@ -30,7 +30,7 @@ class Gene(EntityBase):
     }
 
     def __init__(self, parent_gene=None):
-        self.parent_gene: Gene = parent_gene
+        self.parent_gene = parent_gene
         self.id = uuid.uuid4()
 
     @abc.abstractmethod

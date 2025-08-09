@@ -2,7 +2,7 @@ import copy
 import logging
 import random
 import uuid
-from sqlalchemy import Engine, select, join
+from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session, sessionmaker
 from typing import Set, List
 
@@ -11,7 +11,7 @@ from numpy.random import default_rng, Generator
 
 from .population import Population
 from .move import Move
-from ..organism import Organism
+from ..organism import Organism, Gene
 from ..genes import CompositeGene, CreateNeuron, ConnectNeurons, RotateCells
 from ..util import  random_neuron_state
 from ..mutagens import CreateNeuronMutagen, Mutagen, wiggle, CNLayer
@@ -19,6 +19,7 @@ from .players import REQUIRED_INPUTS, REQUIRED_OUTPUTS, Player
 from .trial import Trial
 from .outcome import Outcome
 
+logger = logging.getLogger(__name__)
 
 class Environment(object):
     """
@@ -44,28 +45,24 @@ class Environment(object):
                  engine: Engine,
                  ):
         self.population = Population()
-        self.sessionmaker = sessionmaker(engine)
-        self.logger = logging.getLogger(__name__)
-
-        self.logger.info(f"Seed={seed}")
-
-        # Set up the RNG
+        self.mutagens = list()
         self.rng: Generator = default_rng(seed)
+        self.sessionmaker = sessionmaker(engine)
+
+        logger.info(f"Seed={seed}")
         tf.random.set_seed(seed)
         uuid.uuid4 = lambda: uuid.UUID(bytes=self.rng.bytes(16))
 
     def populate(self,
                  num_organisms: int,
-                 neuron_shape={"input_size": 10, "feedback_size": 5, "hidden_size": 10},
+                 neuron_shape = None,
                  ):
+        if neuron_shape is None:
+            neuron_shape = {"input_size": 10, "feedback_size": 5, "hidden_size": 10}
         for _ in range(num_organisms):
             with self.sessionmaker.begin() as session:
                 # Create a random initial state for the neuron
-                neuron_initial_state = random_neuron_state(
-                    neuron_shape["input_size"],
-                    neuron_shape["feedback_size"],
-                    neuron_shape["hidden_size"],
-                    self.rng)
+                neuron_initial_state = random_neuron_state(**neuron_shape, rng=self.rng)
 
                 # Build the genotype
                 # For each required output, make an output neuron, wire it to all the inputs and rotate it to the back
@@ -83,7 +80,6 @@ class Environment(object):
 
     def add_mutagens(self, num_mutagens):
         mutagen_severity_spread_log_wiggle = 3
-        self.mutagens: [Mutagen] = list()
         for n in range(num_mutagens):
             layer = self.rng.choice(CNLayer)
             base_susceptibility: float = wiggle(0.001, self.rng, mutagen_severity_spread_log_wiggle)
@@ -96,10 +92,10 @@ class Environment(object):
             org_ids: [uuid.UUID] = self.population.sample(2, True, self.rng, session)
             orgs: List[Organism] = [session.get(Organism, oid) for oid in org_ids]
             p1, p2 = Player(orgs[0]), Player(orgs[1])
-            self.logger.info(f'Starting a trial with {p1} and {p2}')
+            logger.info(f'Starting a trial with {p1} and {p2}')
 
             trial = Trial(p1, p2)
-            self.logger.info(f"Started trial between {orgs[0]} and {orgs[1]}")
+            logger.info(f"Started trial between {orgs[0]} and {orgs[1]}")
 
             session.add(trial)
             session.commit()
@@ -117,6 +113,7 @@ class Environment(object):
 
     def cull(self, num_to_cull: int, num_to_compare: int = 10):
         for n in range(num_to_cull):
+            session: Session
             with self.sessionmaker.begin() as session:
                 selectee_ids = self.population.sample(num_to_compare, False, self.rng, session)
                 if num_to_compare == 1:
@@ -131,14 +128,13 @@ class Environment(object):
                     sorted_orgs_and_scores = sorted(selectee_scores.items(), key=lambda item: item[1], reverse=True)
 
                     rand = self.rng.random()
-                    index_to_kill = int((rand ^ 2) * num_to_compare)  # Squaring the random number to skew it towards the lower end
-                    self.logger.info(f"Removing organism at index {index_to_kill} of {num_to_compare}")
+                    index_to_kill = int((rand ** 2) * num_to_compare)  # Squaring the random number to skew it towards the lower end
+                    logger.info(f"Removing organism at index {index_to_kill} of {num_to_compare}")
 
                     organism_id_to_kill = sorted_orgs_and_scores[index_to_kill][0]
-                    self.logger.info(f"Removing organism {organism_id_to_kill}")
 
-                organism_to_kill: Organism = session.get(Organism, organism_id_to_kill)
-                self.population.remove(organism_to_kill, session)
+                logger.info(f"Removing organism {organism_id_to_kill}")
+                self.population.remove(organism_id_to_kill, session)
 
 
     def breed(self, num_to_breed: int, num_to_consider: int = 10):
@@ -157,22 +153,25 @@ class Environment(object):
                     sorted_orgs_and_scores = sorted(selectee_scores.items(), key=lambda item: item[1], reverse=False)
 
                     rand = self.rng.random()
-                    index_to_clone = int((rand ^ 2) * num_to_consider)  # Squaring the random number to skew it towards the lower end
-                    self.logger.info(f"Cloning organism at index {index_to_clone} of {num_to_consider}")
+                    index_to_clone = int((rand ** 2) * num_to_consider)  # Squaring the random number to skew it towards the lower end
+                    logger.info(f"Cloning organism at index {index_to_clone} of {num_to_consider}")
 
                     organism_id_to_breed = sorted_orgs_and_scores[index_to_clone][0]
-                    self.logger.info(f"Cloning organism {organism_id_to_breed}")
+                    logger.info(f"Cloning organism {organism_id_to_breed}")
 
-                old_organism = session.get(Organism, organism_id_to_breed)
-                new_organism = self.clone(old_organism)
-                self.logger.info(f"Bred organism {new_organism} from {old_organism}")
+                new_organism = self.clone(organism_id_to_breed, session)
+                logger.info(f"Bred organism {new_organism.id} from {organism_id_to_breed}")
                 self.population.add(new_organism, session)
 
-    def clone(self, organism_to_breed: Organism):
-        genotype = copy.deepcopy(organism_to_breed.genotype)
-        for mutagen in self.mutagens:
-            genotype = mutagen.mutate(genotype, self.rng)
-        return Organism(REQUIRED_INPUTS, REQUIRED_OUTPUTS, genotype)
+    def clone(self, organism_id: uuid, session: Session, mutate=True) -> Organism:
+        original_genotype = session.scalar(select(Gene)
+                             .join_from(Organism, Gene)
+                             .where(Organism.id == organism_id))
+        clone_genotype = original_genotype
+        if mutate:
+            for mutagen in self.mutagens:
+                clone_genotype = mutagen.mutate(clone_genotype, self.rng)
+        return Organism(REQUIRED_INPUTS, REQUIRED_OUTPUTS, clone_genotype)
 
     def score_move(self, move):
         score = 0

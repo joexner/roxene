@@ -21,7 +21,7 @@ class Mutagen(ABC):
     def get_mutation_susceptibility(self, gene: Gene, rng: Generator) -> float:
         result = self.susceptibilities.get(gene)
         if result is None:
-            parent_gene = gene.parent_gene  # May be null, gets base_susceptibility
+            parent_gene = getattr(gene, "parent_gene", None)
             parent_sus = self.get_mutation_susceptibility(parent_gene, rng)
             result = wiggle(parent_sus, rng, self.susceptibility_log_wiggle)
             self.susceptibilities[gene] = result
@@ -41,7 +41,7 @@ class Mutagen(ABC):
         for orig in parent_gene.genes:
             mutant = self.mutate(orig, rng)
             new_genes.append(mutant)
-            any_changed &= (mutant is not orig)
+            any_changed |= (mutant is not orig)
         if any_changed:
             return CompositeGene(new_genes, parent_gene.iterations, parent_gene)
         else:
@@ -54,7 +54,8 @@ class Mutagen(ABC):
 class CreateNeuronMutagen(Mutagen):
     layer_to_mutate: CNLayer
 
-    def __init__(self, layer_to_mutate: CNLayer,
+    def __init__(self,
+                 layer_to_mutate: CNLayer,
                  base_susceptibility: float = 0.001,
                  susceptibility_log_wiggle: float = 0.01):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)

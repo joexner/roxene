@@ -25,7 +25,7 @@ class Organism_test(TestCase):
         input_names = {'I_0', 'I_1', 'I_2'}
         output_names = {'O1', '02'}
         gene = CreateNeuron(**random_neuron_state(input_size=2, feedback_size=3, hidden_size=1))
-        organism = Organism(input_names, output_names, CompositeGene(genes=[gene], iterations=10))
+        organism = Organism(input_names, output_names, CompositeGene(child_genes=[gene], iterations=10))
         self.assertSetEqual(input_names, set(organism.inputs.keys()))
         self.assertSetEqual(output_names, set(organism.outputs.keys()))
 
@@ -36,7 +36,7 @@ class Organism_test(TestCase):
         input_names = {'I_0', 'I_1', 'I_2'}
         output_names = {'O1', '02'}
         gene = CreateNeuron(**random_neuron_state(rng=rng))
-        organism = Organism(input_names, output_names, CompositeGene(genes=[gene], iterations=10))
+        organism = Organism(input_names, output_names, CompositeGene(child_genes=[gene], iterations=10))
 
 
         for input_name in input_names:

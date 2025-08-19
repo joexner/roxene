@@ -67,7 +67,7 @@ class Environment(object):
                 # Build the genotype
                 # For each required output, make an output neuron, wire it to all the inputs and rotate it to the back
                 base_genotype = CompositeGene(
-                    genes=[
+                    child_genes=[
                         CreateNeuron(**neuron_initial_state),
                         *[ConnectNeurons(n, n) for n in range(1, len(REQUIRED_INPUTS) + 1)],
                         RotateCells()],

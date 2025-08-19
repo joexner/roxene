@@ -38,13 +38,13 @@ class CompositeGene_test(unittest.TestCase):
         cg: CompositeGene = CompositeGene([a, b, c], 4)
 
         cg_id = cg.id
-        original_cg_child_ids = [g.id for g in cg.genes]
+        original_cg_child_ids = [g.id for g in cg.child_genes]
         original_cg_iterations = cg.iterations
 
         cg2 = CompositeGene([c, a], 5)
 
         cg2_id = cg2.id
-        original_cg2_child_ids = [g.id for g in cg2.genes]
+        original_cg2_child_ids = [g.id for g in cg2.child_genes]
         original_cg2_iterations = cg2.iterations
 
         engine = create_engine("sqlite://")
@@ -57,11 +57,11 @@ class CompositeGene_test(unittest.TestCase):
 
         with Session(engine) as session:
             reloaded = session.get(CompositeGene, cg_id)
-            reloaded_gene_ids = [gene.id for gene in reloaded.genes]
+            reloaded_gene_ids = [gene.id for gene in reloaded.child_genes]
             self.assertEqual(reloaded_gene_ids, original_cg_child_ids)
             self.assertEqual(reloaded.iterations, original_cg_iterations)
 
             reloaded_2 = session.get(CompositeGene, cg2_id)
-            reloaded_2_gene_ids = [gene.id for gene in reloaded_2.genes]
+            reloaded_2_gene_ids = [gene.id for gene in reloaded_2.child_genes]
             self.assertEqual(reloaded_2_gene_ids, original_cg2_child_ids)
             self.assertEqual(reloaded_2.iterations, original_cg2_iterations)

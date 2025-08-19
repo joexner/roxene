@@ -138,7 +138,7 @@ class CompositeGene(Gene):
     __mapper_args__ = {"polymorphic_identity": "composite_gene"}
 
     id: Mapped[uuid.UUID] = mapped_column(ForeignKey("gene.id"), primary_key=True)
-    genes: Mapped[List[Gene]] = association_proxy(target_collection="_genes_list", attr="child")
+    child_genes: Mapped[List[Gene]] = association_proxy(target_collection="_genes_list", attr="child")
     iterations: Mapped[int] = mapped_column()
 
     _genes_list: Mapped[List["_CompositeGene_Child"]] = relationship(
@@ -148,14 +148,14 @@ class CompositeGene(Gene):
         lazy="select",
     )
 
-    def __init__(self, genes: [Gene], iterations: int = 1, parent_gene=None):
+    def __init__(self, child_genes: List[Gene], iterations: int = 1, parent_gene=None):
         super().__init__(parent_gene)
-        self.genes = genes
+        self.child_genes = child_genes
         self.iterations = iterations
 
     def execute(self, organism: Organism):
         for n in range(self.iterations):
-            for gene in self.genes:
+            for gene in self.child_genes:
                 gene.execute(organism)
 
 

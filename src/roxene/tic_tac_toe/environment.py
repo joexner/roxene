@@ -1,23 +1,21 @@
-import copy
 import logging
-import random
 import uuid
-from sqlalchemy import Engine, select
-from sqlalchemy.orm import Session, sessionmaker
 from typing import Set, List
 
 import tensorflow as tf
 from numpy.random import default_rng, Generator
+from sqlalchemy import Engine, select
+from sqlalchemy.orm import Session, sessionmaker
 
-from .population import Population
 from .move import Move
-from ..organism import Organism, Gene
-from ..genes import CompositeGene, CreateNeuron, ConnectNeurons, RotateCells
-from ..util import  random_neuron_state
-from ..mutagens import CreateNeuronMutagen, Mutagen, wiggle, CNLayer
-from .players import REQUIRED_INPUTS, REQUIRED_OUTPUTS, Player
-from .trial import Trial
 from .outcome import Outcome
+from .players import REQUIRED_INPUTS, REQUIRED_OUTPUTS, Player
+from .population import Population
+from .trial import Trial
+from ..genes import CompositeGene, CreateNeuron, ConnectNeurons, RotateCells, CNLayer
+from ..mutagens import CreateNeuronMutagen, Mutagen, wiggle
+from ..organism import Organism, Gene
+from ..util import random_neuron_state
 
 logger = logging.getLogger(__name__)
 

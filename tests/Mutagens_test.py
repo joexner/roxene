@@ -4,7 +4,9 @@ import numpy as np
 from numpy import ndarray
 from numpy.random import Generator
 
-from roxene import CNLayer, CreateNeuron, CreateNeuronMutagen, random_neuron_state
+from roxene import random_neuron_state
+from roxene.genes import CreateNeuron
+from roxene.mutagens import CNLayer, CreateNeuronMutagen
 
 SEED = 2837457
 

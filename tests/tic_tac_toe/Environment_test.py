@@ -4,7 +4,8 @@ import unittest
 from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session
 
-from roxene import Organism, CreateNeuronMutagen, CNLayer
+from roxene import Organism
+from roxene.mutagens import CreateNeuronMutagen, CNLayer
 from roxene.tic_tac_toe import Trial, Player, Environment, Outcome
 from util import get_engine
 

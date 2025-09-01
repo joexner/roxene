@@ -3,7 +3,8 @@ from numpy.random import default_rng
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from roxene import CreateNeuron, Organism, random_neuron_state, EntityBase
+from roxene import Organism, random_neuron_state, EntityBase
+from roxene.genes import CreateNeuron
 
 
 class CreateNeuron_test(tf.test.TestCase):

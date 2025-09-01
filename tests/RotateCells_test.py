@@ -4,7 +4,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from ConnectNeurons_test import build_organism
-from roxene import RotateCells, EntityBase
+from roxene import EntityBase
+from roxene.genes import RotateCells
 
 
 class RotateCells_test(unittest.TestCase):

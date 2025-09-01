@@ -1,13 +1,11 @@
-import os
-
 import unittest
-from numpy.random import default_rng
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
 from unittest.mock import Mock, call
 
-from roxene import Gene, CompositeGene, Organism, RotateCells, EntityBase
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
+from roxene import Gene, Organism, EntityBase
+from roxene.genes import CompositeGene, RotateCells
 
 
 class CompositeGene_test(unittest.TestCase):

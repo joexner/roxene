@@ -1,11 +1,11 @@
 import unittest
-
-import tensorflow as tf
 from random import Random
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from roxene import CreateInputCell, InputCell, Organism, EntityBase
+from roxene import InputCell, Organism, EntityBase
+from roxene.genes import CreateInputCell
 
 SEED = 84592184
 

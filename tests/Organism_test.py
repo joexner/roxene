@@ -1,13 +1,13 @@
-import os
 from unittest import TestCase
+from unittest.mock import Mock
 from uuid import UUID
 
 from numpy.random import default_rng, Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-from unittest.mock import Mock
 
-from roxene import Gene, CompositeGene, CreateNeuron, Organism, random_neuron_state, Neuron
+from roxene import Gene, Organism, random_neuron_state, Neuron
+from roxene.genes import CreateNeuron, CompositeGene
 from roxene.persistence import EntityBase
 
 SEED = 22049456

@@ -1,12 +1,22 @@
+from enum import Enum, auto
+
 import numpy as np
 from numpy import ndarray
 from numpy.random import Generator
 
 from ..constants import NP_PRECISION
-from ..genes import CreateNeuron, CNLayer
+from ..genes import CreateNeuron
 from .mutagen import Mutagen
 from .util import wiggle
 
+class CNLayer(Enum):
+    input_initial_value = auto()
+    feedback_initial_value = auto()
+    output_initial_value = auto()
+    input_hidden = auto()
+    hidden_feedback = auto()
+    feedback_hidden = auto()
+    hidden_output = auto()
 
 class CreateNeuronMutagen(Mutagen):
     layer_to_mutate: CNLayer
@@ -50,3 +60,4 @@ class CreateNeuronMutagen(Mutagen):
             rng.random(x.shape) < wiggle_probability,
             x,
             wiggle(x, rng, log_wiggle, absolute_wiggle))
+

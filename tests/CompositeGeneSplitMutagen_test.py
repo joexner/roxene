@@ -4,7 +4,9 @@ from typing import List
 
 import numpy as np
 
-from roxene import CompositeGene, CreateInputCell, CompositeGeneSplitMutagen, RotateCells, Gene
+from roxene import Gene
+from roxene.genes import CompositeGene, RotateCells
+from roxene.mutagens import CompositeGeneSplitMutagen
 
 SEED = 11235
 

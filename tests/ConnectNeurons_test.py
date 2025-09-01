@@ -1,9 +1,11 @@
 import unittest
+
 from parameterized import parameterized
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from roxene import Neuron, ConnectNeurons, Organism, random_neuron_state, EntityBase
+from roxene import Neuron, Organism, random_neuron_state, EntityBase
+from roxene.genes import ConnectNeurons
 
 SEED = 8484856303
 

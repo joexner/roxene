@@ -20,7 +20,7 @@ class Gene(EntityBase):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
     parent_gene_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("gene.id"))
-    parent_gene: Mapped[Gene] = relationship(Gene, remote_side=[id])
+    parent_gene: Mapped[Gene] = relationship("Gene", remote_side=[id])
     type: Mapped[str]
 
     __mapper_args__ = {

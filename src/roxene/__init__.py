@@ -1,4 +1,5 @@
-from .organism import Organism, Gene
+from .gene import Gene
+from .organism import Organism
 from .util import random_neuron_state
 from .persistence import EntityBase
 from .constants import *

@@ -4,7 +4,8 @@ from numpy import ndarray
 from sqlalchemy import ForeignKey, PickleType
 from sqlalchemy.orm import Mapped, mapped_column
 
-from roxene import Gene, Organism, Neuron
+from roxene import Gene, Organism
+from roxene.cells import Neuron
 
 
 class CreateNeuron(Gene):

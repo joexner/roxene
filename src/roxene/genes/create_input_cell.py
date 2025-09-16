@@ -3,7 +3,8 @@ import uuid
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-from roxene import Gene, Organism, InputCell
+from roxene import Gene, Organism
+from roxene.cells import InputCell
 
 
 class CreateInputCell(Gene):

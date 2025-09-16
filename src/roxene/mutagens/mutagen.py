@@ -1,7 +1,7 @@
 from abc import ABC
 from numpy.random import Generator
-from ..organism import Gene
-from ..genes import CompositeGene, CreateNeuron
+from roxene import Gene
+from roxene.genes import CompositeGene, CreateNeuron
 from .util import wiggle
 
 

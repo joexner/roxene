@@ -8,7 +8,7 @@ from typing import List, Set, Optional
 from .outcome import Outcome
 from .persistence import Board, Point, OutcomeSet
 from .players import Player
-from ..persistence import EntityBase
+from roxene.persistence import EntityBase
 
 
 class Move(EntityBase):

@@ -4,8 +4,8 @@ import numpy as np
 from numpy import ndarray
 from numpy.random import Generator
 
-from ..constants import NP_PRECISION
-from ..genes import CreateNeuron
+from roxene import NP_PRECISION
+from roxene.genes import CreateNeuron
 from .mutagen import Mutagen
 from .util import wiggle
 

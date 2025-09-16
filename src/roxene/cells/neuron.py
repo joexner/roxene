@@ -7,9 +7,9 @@ import uuid
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
 
-from .cells import Cell
-from .constants import TF_PRECISION as PRECISION
-from .persistence import TrackedVariable, WrappedVariable, WrappedTensor, EntityBase
+from .cell import Cell
+from roxene.constants import NP_PRECISION, TF_PRECISION
+from roxene.persistence import TrackedVariable, WrappedVariable, WrappedTensor, EntityBase
 
 activation_func = tf.nn.tanh
 
@@ -54,14 +54,14 @@ class Neuron(Cell):
             that call this c'tor, or else you could build a Neuron that asplodes at runtime
         '''
         self.id = uuid.uuid4()
-        self.input = tf.Variable(initial_value=input, dtype=PRECISION)
-        self.feedback = tf.Variable(initial_value=feedback, dtype=PRECISION)
-        self.output = tf.Variable(initial_value=output, dtype=PRECISION)
+        self.input = tf.Variable(initial_value=input, dtype=TF_PRECISION)
+        self.feedback = tf.Variable(initial_value=feedback, dtype=TF_PRECISION)
+        self.output = tf.Variable(initial_value=output, dtype=TF_PRECISION)
 
-        self.input_hidden = tf.convert_to_tensor(input_hidden, dtype=PRECISION)
-        self.hidden_feedback = tf.convert_to_tensor(hidden_feedback, dtype=PRECISION)
-        self.feedback_hidden = tf.convert_to_tensor(feedback_hidden, dtype=PRECISION)
-        self.hidden_output = tf.convert_to_tensor(hidden_output, dtype=PRECISION)
+        self.input_hidden = tf.convert_to_tensor(input_hidden, dtype=TF_PRECISION)
+        self.hidden_feedback = tf.convert_to_tensor(hidden_feedback, dtype=TF_PRECISION)
+        self.feedback_hidden = tf.convert_to_tensor(feedback_hidden, dtype=TF_PRECISION)
+        self.hidden_output = tf.convert_to_tensor(hidden_output, dtype=TF_PRECISION)
         self.bound_ports = {}
 
     def update(self) -> None:
@@ -76,7 +76,7 @@ class Neuron(Cell):
         self.feedback.assign(tf.squeeze(activation_func(tf.matmul(hidden, self.hidden_feedback)), 0))
         self.output.assign(tf.squeeze(activation_func(tf.matmul(hidden, self.hidden_output)), [0]))
 
-    def get_output(self) -> PRECISION:
+    def get_output(self) -> NP_PRECISION:
         return self.output.numpy()
 
     def add_input_connection(self, tx_cell: Cell, req_port: int):

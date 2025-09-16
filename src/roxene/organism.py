@@ -9,8 +9,7 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
 
-from .cells import Cell, InputCell
-from .neuron import Neuron
+from .cells import Cell, InputCell, Neuron
 from .persistence import EntityBase
 
 
@@ -21,7 +20,7 @@ class Gene(EntityBase):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
     parent_gene_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("gene.id"))
-    parent_gene: relationship(Gene, remote_side=[id])
+    parent_gene: Mapped[Gene] = relationship("Gene", remote_side=[id])
     type: Mapped[str]
 
     __mapper_args__ = {

@@ -6,8 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from . import Trial
-from .environment import Environment
-from .. import EntityBase
+from roxene import EntityBase, Environment
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)

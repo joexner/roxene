@@ -1,7 +1,5 @@
-from .cells import Cell, InputCell
-from .neuron import Neuron
 from .organism import Organism, Gene
-from .genes import CreateNeuron, ConnectNeurons, RotateCells, CreateInputCell, CompositeGene, CNLayer
 from .util import random_neuron_state
-from .mutagens import CreateNeuronMutagen, Mutagen, wiggle, CompositeGeneSplitMutagen
 from .persistence import EntityBase
+from .constants import *
+from .cells import Neuron, InputCell

@@ -6,10 +6,9 @@ from sqlalchemy import ForeignKey, CHAR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import Tuple, List
 
-# import roxene.tic_tac_toe as ttt
-from roxene import EntityBase, Organism
-
 # from .trial import Trial
+from ..organism import Organism
+from ..persistence import EntityBase
 
 LOW_THRESHOLD = -0.5
 HIGH_THRESHOLD = 0.5
@@ -31,7 +30,7 @@ class Player(EntityBase):
     organism_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organism.id"))
     letter: Mapped[str] = mapped_column(CHAR(1), primary_key=True)
 
-    trial: Mapped[Trial] = relationship("Trial", back_populates='participants', lazy="joined")
+    trial: Mapped["Trial"] = relationship("Trial", back_populates='participants', lazy="joined")
     organism: Mapped[Organism] = relationship(Organism, lazy="joined")
 
     queued_input: List[Tuple[int]] = None

@@ -4,7 +4,7 @@ from typing import Optional
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import mapped_column, Mapped
 
-from .cell import Cell
+from ..cell import Cell
 
 
 class InputCell(Cell):

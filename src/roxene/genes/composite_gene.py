@@ -6,7 +6,9 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from roxene import Gene, Organism, EntityBase
+from ..gene import Gene
+from ..organism import Organism
+from ..persistence import EntityBase
 
 
 class CompositeGene(Gene):

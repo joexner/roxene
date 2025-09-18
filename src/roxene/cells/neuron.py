@@ -7,9 +7,9 @@ import uuid
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
 
-from .cell import Cell
-from roxene.constants import NP_PRECISION, TF_PRECISION
-from roxene.persistence import TrackedVariable, WrappedVariable, WrappedTensor, EntityBase
+from ..cell import Cell
+from ..constants import NP_PRECISION, TF_PRECISION
+from ..persistence import TrackedVariable, WrappedVariable, WrappedTensor, EntityBase
 
 activation_func = tf.nn.tanh
 

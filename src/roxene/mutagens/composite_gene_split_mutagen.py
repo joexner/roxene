@@ -1,6 +1,6 @@
 from numpy.random import Generator
 
-from roxene.genes import CompositeGene
+from ..genes.composite_gene import CompositeGene
 from .mutagen import Mutagen
 
 

@@ -1,4 +1,4 @@
-from .cell import Cell
+from roxene.cell import Cell
 from .input_cell import InputCell
 from .neuron import Neuron
 

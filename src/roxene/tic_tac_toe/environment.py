@@ -12,9 +12,16 @@ from .outcome import Outcome
 from .players import REQUIRED_INPUTS, REQUIRED_OUTPUTS, Player
 from .population import Population
 from .trial import Trial
-from roxene.genes import CompositeGene, CreateNeuron, ConnectNeurons, RotateCells
-from roxene.mutagens import CreateNeuronMutagen, Mutagen, wiggle, CNLayer
-from roxene import Organism, Gene, random_neuron_state
+from ..gene import Gene
+from ..genes.composite_gene import CompositeGene
+from ..genes.connect_neurons import ConnectNeurons
+from ..genes.create_neuron import CreateNeuron
+from ..genes.rotate_cells import RotateCells
+from ..mutagens.create_neuron_mutagen import CNLayer
+from ..mutagens.mutagen import Mutagen
+from ..mutagens.util import wiggle
+from ..organism import Organism
+from ..util import random_neuron_state
 
 logger = logging.getLogger(__name__)
 

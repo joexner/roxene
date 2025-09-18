@@ -11,7 +11,7 @@ from .move import Move
 from .outcome import Outcome
 from .persistence import Point
 from .players import Player
-from roxene import EntityBase
+from ..persistence import EntityBase
 
 # import roxene.tic_tac_toe as ttt
 

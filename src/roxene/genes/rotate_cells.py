@@ -4,7 +4,8 @@ from enum import IntEnum
 from sqlalchemy import ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
-from roxene import Gene, Organism
+from ..gene import Gene
+from ..organism import Organism
 
 
 class RotateCells(Gene):

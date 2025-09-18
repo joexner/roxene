@@ -2,7 +2,7 @@ import pickle
 import mlflow
 from mlflow.tracking import MlflowClient
 
-from trial import Trial as Run
+from .trial import Trial as Run
 
 client = MlflowClient()
 last_run = client.search_runs('0', max_results=1)[0]

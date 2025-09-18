@@ -2,7 +2,7 @@ import uuid
 
 from sqlalchemy.orm import Mapped, mapped_column
 
-from roxene.persistence import EntityBase
+from .persistence import EntityBase
 
 
 class Cell(EntityBase):

@@ -1,17 +1,15 @@
-from __future__ import annotations
-
 import dataclasses
 import sqlalchemy
 from sqlalchemy import CHAR, VARCHAR
 from typing import List, Set
 
-import roxene.tic_tac_toe as ttt
+from .outcome import Outcome
 
 
 class Board(sqlalchemy.types.TypeDecorator):
     impl = CHAR(9)
 
-    def process_bind_param(self, value: List[List[str]], dialect) -> str:
+    def process_bind_param(self, value: List[List[str]], dialect) -> str | None:
         if value is None:
             return None
         resultStr = ""
@@ -43,14 +41,14 @@ class Point:
 class OutcomeSet(sqlalchemy.types.TypeDecorator):
     impl = VARCHAR
 
-    def process_bind_param(self, value: Set[ttt.Outcome], dialect) -> str:
+    def process_bind_param(self, value: Set[Outcome], dialect) -> str:
         value_strings = map(lambda o: o.name, value)
         return ", ".join(value_strings)
 
-    def process_result_value(self, value: str, dialect) -> Set[ttt.Outcome]:
+    def process_result_value(self, value: str, dialect) -> Set[Outcome]:
         if value is None:
             return None
-        resultSet: Set[ttt.Outcome] = set()
+        resultSet: Set[Outcome] = set()
         for outcomeStr in value.split(", "):
-            resultSet.add(ttt.Outcome[outcomeStr])
+            resultSet.add(Outcome[outcomeStr])
         return resultSet

@@ -9,7 +9,7 @@ from sqlalchemy.sql.expression import func
 
 from .players import Player
 from .trial import Trial
-from roxene import Organism
+from ..organism import Organism
 
 logger = logging.getLogger(__name__)
 

@@ -8,7 +8,9 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
 
-from .cells import Cell, InputCell, Neuron
+from .cell import Cell
+from .cells.input_cell import InputCell
+from .cells.neuron import Neuron
 from .gene import Gene
 from .persistence import EntityBase
 

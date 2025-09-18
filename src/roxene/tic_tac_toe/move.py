@@ -7,8 +7,7 @@ from typing import List, Set, Optional
 
 from .outcome import Outcome
 from .persistence import Board, Point, OutcomeSet
-from .players import Player
-from roxene.persistence import EntityBase
+from ..persistence import EntityBase
 
 
 class Move(EntityBase):
@@ -30,7 +29,7 @@ class Move(EntityBase):
     organism_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey('organism.id'))
     organism: Mapped[Optional['Organism']] = relationship('Organism')
 
-    def __init__(self, player: Player, initial_board_state: List[List[str]]):
+    def __init__(self, player: "Player", initial_board_state: List[List[str]]):
         self.id = uuid.uuid4()
         self.letter = player.letter
         self.initial_board_state = [row.copy() for row in initial_board_state]

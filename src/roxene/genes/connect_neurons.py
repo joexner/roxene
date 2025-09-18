@@ -3,8 +3,10 @@ import uuid
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-from roxene import Gene, Organism
-from roxene.cells import Cell, Neuron
+from ..gene import Gene
+from ..organism import Organism
+from ..cell import Cell
+from ..cells.neuron import Neuron
 
 
 class ConnectNeurons(Gene):

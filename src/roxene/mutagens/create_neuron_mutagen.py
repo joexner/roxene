@@ -6,7 +6,7 @@ from numpy.random import Generator
 
 from ..constants import NP_PRECISION
 from ..genes.create_neuron import CreateNeuron
-from .mutagen import Mutagen
+from roxene.mutagen import Mutagen
 from .util import wiggle
 
 class CNLayer(Enum):

@@ -1,9 +1,9 @@
 from abc import ABC
 from numpy.random import Generator
-from ..gene import Gene
-from ..genes.composite_gene import CompositeGene
-from ..genes.create_neuron import CreateNeuron
-from .util import wiggle
+from roxene.gene import Gene
+from roxene.genes.composite_gene import CompositeGene
+from roxene.genes.create_neuron import CreateNeuron
+from roxene.mutagens.util import wiggle
 
 
 class Mutagen(ABC):

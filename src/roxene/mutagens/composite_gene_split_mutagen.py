@@ -1,7 +1,7 @@
 from numpy.random import Generator
 
 from ..genes.composite_gene import CompositeGene
-from .mutagen import Mutagen
+from roxene.mutagen import Mutagen
 
 
 class CompositeGeneSplitMutagen(Mutagen):

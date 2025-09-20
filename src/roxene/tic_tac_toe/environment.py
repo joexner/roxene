@@ -18,8 +18,8 @@ from ..genes.connect_neurons import ConnectNeurons
 from ..genes.create_neuron import CreateNeuron
 from ..genes.rotate_cells import RotateCells
 from ..mutagens.create_neuron_mutagen import CNLayer
-from roxene.mutagen import Mutagen
-from ..mutagens.util import wiggle
+from ..mutagen import Mutagen
+from ..util import wiggle
 from ..organism import Organism
 from ..util import random_neuron_state
 

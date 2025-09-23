@@ -61,12 +61,10 @@ class Player(EntityBase):
 
         max_output_value = None
         max_output_label = None
-        logger.debug(f"Outputs for {self.organism} after sync:")
         for x in range(3):
             for y in range(3):
                 output_label = str(x) + "," + str(y)
                 output_value = self.organism.get_output(output_label)
-                logger.debug(f"Output for {output_label} is {output_value}")
                 if max_output_value is None or output_value > max_output_value:
                     max_output_value = output_value
                     max_output_label = (x, y)

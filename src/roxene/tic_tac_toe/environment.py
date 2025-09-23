@@ -17,7 +17,7 @@ from ..genes.composite_gene import CompositeGene
 from ..genes.connect_neurons import ConnectNeurons
 from ..genes.create_neuron import CreateNeuron
 from ..genes.rotate_cells import RotateCells
-from ..mutagens.create_neuron_mutagen import CNLayer
+from ..mutagens.create_neuron_mutagen import CreateNeuronMutagen, CNLayer
 from ..mutagen import Mutagen
 from ..util import wiggle
 from ..organism import Organism

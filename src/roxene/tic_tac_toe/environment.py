@@ -64,19 +64,17 @@ class Environment(object):
         if neuron_shape is None:
             neuron_shape = {"input_size": 10, "feedback_size": 5, "hidden_size": 10}
         for _ in range(num_organisms):
-            with self.sessionmaker.begin() as session:
-                # Create a random initial state for the neuron
-                neuron_initial_state = random_neuron_state(**neuron_shape, rng=self.rng)
-
+            with (self.sessionmaker.begin() as session):
                 # Build the genotype
                 # For each required output, make an output neuron, wire it to all the inputs and rotate it to the back
-                base_genotype = CompositeGene(
-                    child_genes=[
-                        CreateNeuron(**neuron_initial_state),
+                child_genes = list()
+                for n in range(len(REQUIRED_OUTPUTS)):
+                    child_genes.extend([
+                        CreateNeuron(**random_neuron_state(**neuron_shape, rng=self.rng)),
                         *[ConnectNeurons(n, n) for n in range(1, len(REQUIRED_INPUTS) + 1)],
-                        RotateCells()],
-                    iterations=len(REQUIRED_OUTPUTS)
-                )
+                        RotateCells()
+                    ])
+                base_genotype = CompositeGene(child_genes)
 
                 # Create the organism and add it to the population
                 new_organism: Organism = Organism(REQUIRED_INPUTS, REQUIRED_OUTPUTS, base_genotype)

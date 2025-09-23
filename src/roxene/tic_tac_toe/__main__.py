@@ -45,6 +45,8 @@ env = Environment(
     engine=engine,
 )
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 logger.info(f"Populating environment with {num_organisms} organisms and {num_mutagens} mutagens")
 env.populate(num_organisms)
 env.add_mutagens(num_mutagens)

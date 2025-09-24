@@ -45,7 +45,7 @@ env = Environment(
     engine=engine,
 )
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', force=True)
 
 logger.info(f"Populating environment with {num_organisms} organisms and {num_mutagens} mutagens")
 env.populate(num_organisms)
@@ -60,6 +60,7 @@ for iteration in range(1, num_trials + 1):
     trial: Trial = env.start_trial()
     logger.info(f"Starting trial {iteration} between players {trial.participants[0]} and {trial.participants[1]}")
     trial.run()
+    logger.info(f"Trial {iteration} complete, saving results")
     env.complete_trial(trial)
     logger.info(f"Finished trial {iteration} with moves {[(move.letter, move.position, move.outcomes) for move in trial.moves]}")
     if iteration % args.breed_and_cull_interval == 0:

@@ -94,10 +94,8 @@ class Environment(object):
             org_ids: [uuid.UUID] = self.population.sample(2, True, self.rng, session)
             orgs: List[Organism] = [session.get(Organism, oid) for oid in org_ids]
             p1, p2 = Player(orgs[0]), Player(orgs[1])
-            logger.info(f'Starting a trial with {p1} and {p2}')
 
             trial = Trial(p1, p2)
-            logger.info(f"Started trial between {orgs[0]} and {orgs[1]}")
 
             session.add(trial)
             session.commit()

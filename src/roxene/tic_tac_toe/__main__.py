@@ -57,6 +57,7 @@ num_to_cull = num_to_breed = int(max(num_organisms * .05, 5))
 
 # Start trials and do GA stuff in a single-threaded alternating loop
 for iteration in range(1, num_trials + 1):
+    logger.info(f"Building trial {iteration}")
     trial: Trial = env.start_trial()
     logger.info(f"Starting trial {iteration} between players {trial.participants[0]} and {trial.participants[1]}")
     trial.run()

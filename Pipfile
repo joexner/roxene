@@ -9,6 +9,7 @@ tensorflow-macos = {version = "*", markers = "sys_platform == 'darwin'"}
 numpy = "*"
 sqlalchemy = "*"
 roxene = {file = "src", editable = true}
+psycopg2-binary = "*"
 
 [dev-packages]
 pytest = "*"

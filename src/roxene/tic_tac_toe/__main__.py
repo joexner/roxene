@@ -35,8 +35,9 @@ SEED = 11235
 #     'seed': SEED
 # })
 
-filename = "sqlite:///run_%d.db" % int(time.time())
-engine = create_engine(filename)
+db_url = "sqlite:///run_%d.db" % int(time.time())
+# db_url = "postgresql+psycopg2://postgres:foo@localhost:5432/roxene"
+engine = create_engine(db_url)
 EntityBase.metadata.create_all(engine)
 
 

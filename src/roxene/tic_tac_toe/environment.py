@@ -90,7 +90,7 @@ class Environment(object):
             self.mutagens.append(new_mutagen)
 
     def start_trial(self) -> Trial:
-        with (self.sessionmaker() as session):
+        with (self.sessionmaker(expire_on_commit=False) as session):
             org_ids: [uuid.UUID] = self.population.sample(2, True, self.rng, session)
             orgs: List[Organism] = [session.get(Organism, oid) for oid in org_ids]
             p1, p2 = Player(orgs[0]), Player(orgs[1])
@@ -99,9 +99,6 @@ class Environment(object):
 
             session.add(trial)
             session.commit()
-
-            # Committing "expires" everything from the session, so refresh the trial before returning it
-            session.refresh(trial)
 
             return trial
 

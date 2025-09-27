@@ -36,12 +36,12 @@ class Trial(EntityBase):
     end_date: Mapped[datetime] = mapped_column(nullable=True)
 
     participants: Mapped[List[Player]] = relationship(Player, back_populates='trial', lazy="immediate")
-    moves: Mapped[List[Move]] = relationship(Move, back_populates='trial', lazy="immediate")
+    moves: Mapped[List[Move]] = relationship(Move, back_populates='trial', lazy="joined")
 
     def __init__(self, player_1: Player, player_2: Player):
         self.id = uuid.uuid4()
-        self.participants.append(player_1)
-        self.participants.append(player_2)
+        self.participants = [player_1, player_2]
+        self.moves = []  # Initialize the moves list
         player_1.letter = 'X'
         player_2.letter = 'O'
 

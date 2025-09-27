@@ -4,7 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-tensorflow = "*"
+tensorflow = {version = "*", markers = "sys_platform != 'darwin'"}
+tensorflow-macos = {version = "*", markers = "sys_platform == 'darwin'"}
 numpy = "*"
 sqlalchemy = "*"
 roxene = {file = "src", editable = true}

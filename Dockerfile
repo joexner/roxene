@@ -1,4 +1,11 @@
-FROM tensorflow/tensorflow:2.11.0-jupyter
+FROM pytorch/pytorch:2.0.0-cuda11.7-cudnn8-runtime
 
-ADD roxene /tf/notebooks/roxene
-ADD notebooks /tf/notebooks/roxene-notebooks
+# Install Jupyter
+RUN pip install jupyter
+
+ADD roxene /workspace/notebooks/roxene
+ADD notebooks /workspace/notebooks/roxene-notebooks
+
+WORKDIR /workspace/notebooks
+
+CMD ["jupyter", "notebook", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root"]

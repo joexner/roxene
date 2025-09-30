@@ -2,8 +2,7 @@ import argparse
 import logging
 import sys
 import time
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
+from sqlalchemy import create_engine, text
 
 from .trial import Trial
 from .environment import Environment
@@ -26,20 +25,20 @@ num_mutagens = args.num_mutagens
 num_trials = args.num_trials
 SEED = 11235
 
-# import mlflow
-# import pickle
-# mlflow.log_params({
-#     'num_organisms': num_organisms,
-#     'num_mutagens': num_mutagens,
-#     'num_trials': num_trials,
-#     'seed': SEED
-# })
 
-db_url = "sqlite:///run_%d.db" % int(time.time())
-# db_url = "postgresql+psycopg2://postgres:foo@localhost:5432/roxene"
+# Create a fresh Postgres database for this run and initialize schema
+admin_url = "postgresql+psycopg2://postgres:foo@localhost:5432/postgres"
+db_name = f"roxene_{int(time.time())}"
+logger.info(f"Creating database {db_name}")
+admin_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
+with admin_engine.connect() as conn:
+    conn.execute(text(f'CREATE DATABASE "{db_name}"'))
+admin_engine.dispose()
+
+db_url = f"postgresql+psycopg2://postgres:foo@localhost:5432/{db_name}"
 engine = create_engine(db_url)
 EntityBase.metadata.create_all(engine)
-
+logger.info(f"Connected to database {db_name} and initialized schema")
 
 env = Environment(
     seed=SEED,

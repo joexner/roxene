@@ -1,12 +1,12 @@
 import numpy as np
 import pickle
 import sqlalchemy.types
-import tensorflow as tf
+import torch
 from sqlalchemy import PickleType
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.mutable import Mutable
 
-from .constants import TF_PRECISION
+from .constants import TORCH_PRECISION
 
 
 class EntityBase(DeclarativeBase):
@@ -15,30 +15,33 @@ class EntityBase(DeclarativeBase):
 
 class TrackedVariable(Mutable):
 
-    variable: tf.Variable
+    variable: torch.Tensor
 
-    def __init__(self, variable: tf.Variable):
+    def __init__(self, variable: torch.Tensor):
         super(Mutable, self).__init__()
         self.variable = variable
 
     @classmethod
     def coerce(cls, key, value):
         if not isinstance(value, TrackedVariable):
-            if isinstance(value, tf.Variable):
+            if isinstance(value, torch.Tensor):
                 return TrackedVariable(value)
             return Mutable.coerce(key, value)
         return value
 
     def assign(self, value):
-        self.variable.assign(value)
+        if isinstance(value, torch.Tensor):
+            self.variable.data.copy_(value)
+        else:
+            self.variable.data.copy_(torch.tensor(value, dtype=self.variable.dtype))
         self.changed()
 
     def __getattr__(self, item):
         return getattr(self.variable, item)
 
     def __eq__(self, other):
-        if isinstance(other, tf.Variable):
-            return super(tf.Variable, self).__eq__(other)
+        if isinstance(other, torch.Tensor):
+            return torch.equal(self.variable, other)
         return super(Mutable, self).__eq__(other)
 
     @property
@@ -51,11 +54,11 @@ class WrappedVariable(sqlalchemy.types.TypeDecorator):
     impl = PickleType
     cache_ok = True
 
-    def process_bind_param(self, value: tf.Variable, dialect) -> np.ndarray:
-        return value.numpy()
+    def process_bind_param(self, value: torch.Tensor, dialect) -> np.ndarray:
+        return value.detach().cpu().numpy()
 
-    def process_result_value(self, value: np.ndarray, dialect) -> tf.Variable:
-        return tf.Variable(initial_value=value, dtype=TF_PRECISION) if (value is not None) else None
+    def process_result_value(self, value: np.ndarray, dialect) -> torch.Tensor:
+        return torch.tensor(value, dtype=TORCH_PRECISION) if (value is not None) else None
 
 
 class WrappedTensor(sqlalchemy.types.TypeDecorator):
@@ -63,8 +66,8 @@ class WrappedTensor(sqlalchemy.types.TypeDecorator):
     impl = sqlalchemy.types.LargeBinary
     cache_ok = True
 
-    def process_bind_param(self, value: tf.Tensor, dialect) -> bytes:
-        return pickle.dumps(value.numpy(), protocol=5)
+    def process_bind_param(self, value: torch.Tensor, dialect) -> bytes:
+        return pickle.dumps(value.detach().cpu().numpy(), protocol=5)
 
-    def process_result_value(self, value: bytes, dialect) -> tf.Tensor:
-        return tf.convert_to_tensor(pickle.loads(value), dtype=TF_PRECISION) if value else None
+    def process_result_value(self, value: bytes, dialect) -> torch.Tensor:
+        return torch.tensor(pickle.loads(value), dtype=TORCH_PRECISION) if value else None

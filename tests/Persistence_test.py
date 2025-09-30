@@ -1,5 +1,6 @@
 import pickle
-import tensorflow as tf
+import torch
+import unittest
 import uuid
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
@@ -26,13 +27,13 @@ class NeuronDTO(Base):
 
     def __init__(self, neuron: Neuron, id: str):
         self.id = id
-        self.input = pickle.dumps(neuron.input.numpy(), protocol=5)
-        self.feedback = pickle.dumps(neuron.feedback.numpy(), protocol=5)
-        self.output = pickle.dumps(neuron.output.numpy(), protocol=5)
-        self.input_hidden = pickle.dumps(neuron.input_hidden.numpy(), protocol=5)
-        self.hidden_feedback = pickle.dumps(neuron.hidden_feedback.numpy(), protocol=5)
-        self.feedback_hidden = pickle.dumps(neuron.feedback_hidden.numpy(), protocol=5)
-        self.hidden_output = pickle.dumps(neuron.hidden_output.numpy(), protocol=5)
+        self.input = pickle.dumps(neuron.input.detach().cpu().numpy(), protocol=5)
+        self.feedback = pickle.dumps(neuron.feedback.detach().cpu().numpy(), protocol=5)
+        self.output = pickle.dumps(neuron.output.detach().cpu().numpy(), protocol=5)
+        self.input_hidden = pickle.dumps(neuron.input_hidden.detach().cpu().numpy(), protocol=5)
+        self.hidden_feedback = pickle.dumps(neuron.hidden_feedback.detach().cpu().numpy(), protocol=5)
+        self.feedback_hidden = pickle.dumps(neuron.feedback_hidden.detach().cpu().numpy(), protocol=5)
+        self.hidden_output = pickle.dumps(neuron.hidden_output.detach().cpu().numpy(), protocol=5)
 
     def rehydrate(self):
         return Neuron(
@@ -46,7 +47,7 @@ class NeuronDTO(Base):
         ), self.id
 
 
-class Persistence_test(tf.test.TestCase):
+class Persistence_test(unittest.TestCase):
 
     def test_save_new_neuron(self):
         engine = create_engine("sqlite://")
@@ -68,10 +69,11 @@ class Persistence_test(tf.test.TestCase):
                 dto: NeuronDTO = session.get(NeuronDTO, id)
                 reconstituted_neuron, re_id = dto.rehydrate()
                 self.assertEqual(id, re_id)
-                self.assertAllEqual(original_neuron.input, reconstituted_neuron.input)
-                self.assertAllEqual(original_neuron.feedback, reconstituted_neuron.feedback)
-                self.assertAllEqual(original_neuron.output, reconstituted_neuron.output)
-                self.assertAllEqual(original_neuron.input_hidden, reconstituted_neuron.input_hidden)
-                self.assertAllEqual(original_neuron.hidden_feedback, reconstituted_neuron.hidden_feedback)
-                self.assertAllEqual(original_neuron.feedback_hidden, reconstituted_neuron.feedback_hidden)
-                self.assertAllEqual(original_neuron.hidden_output, reconstituted_neuron.hidden_output)
+                import numpy as np
+                np.testing.assert_array_equal(original_neuron.input.detach().cpu().numpy(), reconstituted_neuron.input.detach().cpu().numpy())
+                np.testing.assert_array_equal(original_neuron.feedback.detach().cpu().numpy(), reconstituted_neuron.feedback.detach().cpu().numpy())
+                np.testing.assert_array_equal(original_neuron.output.detach().cpu().numpy(), reconstituted_neuron.output.detach().cpu().numpy())
+                np.testing.assert_array_equal(original_neuron.input_hidden.detach().cpu().numpy(), reconstituted_neuron.input_hidden.detach().cpu().numpy())
+                np.testing.assert_array_equal(original_neuron.hidden_feedback.detach().cpu().numpy(), reconstituted_neuron.hidden_feedback.detach().cpu().numpy())
+                np.testing.assert_array_equal(original_neuron.feedback_hidden.detach().cpu().numpy(), reconstituted_neuron.feedback_hidden.detach().cpu().numpy())
+                np.testing.assert_array_equal(original_neuron.hidden_output.detach().cpu().numpy(), reconstituted_neuron.hidden_output.detach().cpu().numpy())

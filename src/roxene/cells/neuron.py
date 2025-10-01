@@ -55,9 +55,9 @@ class Neuron(Cell):
             that call this c'tor, or else you could build a Neuron that asplodes at runtime
         '''
         self.id = uuid.uuid4()
-        self.input = torch.tensor(input, dtype=TORCH_PRECISION)
-        self.feedback = torch.tensor(feedback, dtype=TORCH_PRECISION)
-        self.output = torch.tensor(output, dtype=TORCH_PRECISION)
+        self.input = TrackedVariable(torch.tensor(input, dtype=TORCH_PRECISION))
+        self.feedback = TrackedVariable(torch.tensor(feedback, dtype=TORCH_PRECISION))
+        self.output = TrackedVariable(torch.tensor(output, dtype=TORCH_PRECISION))
 
         self.input_hidden = torch.tensor(input_hidden, dtype=TORCH_PRECISION)
         self.hidden_feedback = torch.tensor(hidden_feedback, dtype=TORCH_PRECISION)
@@ -69,31 +69,21 @@ class Neuron(Cell):
         # TODO: Optimize / make less wack
         if len(self.bound_ports) > 0:
             for port_num, cell in self.bound_ports.items():
-                # Access underlying tensor for TrackedVariable
-                if hasattr(self.input, 'variable'):
-                    value = cell.get_output()
-                    # Convert numpy scalar to tensor if needed
-                    if isinstance(value, (np.ndarray, np.generic)):
-                        value = torch.tensor(value, dtype=self.input.variable.dtype)
-                    self.input.variable[port_num] = value
-                else:
-                    self.input[port_num] = cell.get_output()
+                value = cell.get_output()
+                # Convert numpy scalar to tensor if needed
+                if isinstance(value, (np.ndarray, np.generic)):
+                    value = torch.tensor(value, dtype=self.input.variable.dtype)
+                self.input.variable[port_num] = value
         
-        # Access underlying tensors for operations
-        input_tensor = self.input.variable if hasattr(self.input, 'variable') else self.input
-        feedback_tensor = self.feedback.variable if hasattr(self.feedback, 'variable') else self.feedback
-        
-        hidden_in = torch.cat([input_tensor, feedback_tensor], dim=0).unsqueeze(0)
+        hidden_in = torch.cat([self.input.variable, self.feedback.variable], dim=0).unsqueeze(0)
         hidden_wts = torch.cat([self.input_hidden, self.feedback_hidden], dim=0)
         hidden = activation_func(torch.matmul(hidden_in, hidden_wts))
         
-        # Use assign method which handles TrackedVariable properly
         self.feedback.assign(activation_func(torch.matmul(hidden, self.hidden_feedback)).squeeze(0))
         self.output.assign(activation_func(torch.matmul(hidden, self.hidden_output)).squeeze(0))
 
     def get_output(self) -> NP_PRECISION:
-        output_tensor = self.output.variable if hasattr(self.output, 'variable') else self.output
-        return output_tensor.detach().cpu().numpy()
+        return self.output.variable.detach().cpu().numpy()
 
     def add_input_connection(self, tx_cell: Cell, req_port: int):
         num_ports = self.input.shape[0]

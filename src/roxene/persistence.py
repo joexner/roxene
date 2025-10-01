@@ -54,11 +54,19 @@ class WrappedVariable(sqlalchemy.types.TypeDecorator):
     impl = PickleType
     cache_ok = True
 
-    def process_bind_param(self, value: torch.Tensor, dialect) -> np.ndarray:
-        return value.detach().cpu().numpy()
+    def process_bind_param(self, value, dialect) -> np.ndarray:
+        # Handle both TrackedVariable and plain torch.Tensor
+        if isinstance(value, TrackedVariable):
+            return value.variable.detach().cpu().numpy()
+        elif isinstance(value, torch.Tensor):
+            return value.detach().cpu().numpy()
+        return value
 
-    def process_result_value(self, value: np.ndarray, dialect) -> torch.Tensor:
-        return torch.tensor(value, dtype=TORCH_PRECISION) if (value is not None) else None
+    def process_result_value(self, value: np.ndarray, dialect):
+        # Return TrackedVariable directly so it's always the right type
+        if value is not None:
+            return TrackedVariable(torch.tensor(value, dtype=TORCH_PRECISION))
+        return None
 
 
 class WrappedTensor(sqlalchemy.types.TypeDecorator):

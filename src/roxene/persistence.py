@@ -52,12 +52,7 @@ class WrappedVariable(sqlalchemy.types.TypeDecorator):
     cache_ok = True
 
     def process_bind_param(self, value, dialect) -> np.ndarray:
-        # Handle both TrackedVariable and plain torch.Tensor
-        if isinstance(value, TrackedVariable):
-            return value.variable.detach().cpu().numpy()
-        elif isinstance(value, torch.Tensor):
-            return value.detach().cpu().numpy()
-        return value
+        return value.variable.detach().cpu().numpy()
 
     def process_result_value(self, value: np.ndarray, dialect):
         # Return TrackedVariable directly so it's always the right type

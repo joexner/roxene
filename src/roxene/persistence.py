@@ -55,10 +55,7 @@ class WrappedVariable(sqlalchemy.types.TypeDecorator):
         return value.variable.detach().cpu().numpy()
 
     def process_result_value(self, value: np.ndarray, dialect):
-        # Return TrackedVariable directly so it's always the right type
-        if value is not None:
-            return TrackedVariable(torch.tensor(value, dtype=TORCH_PRECISION))
-        return None
+        return TrackedVariable(torch.tensor(value, dtype=TORCH_PRECISION)) if value is not None else None
 
 
 class WrappedTensor(sqlalchemy.types.TypeDecorator):

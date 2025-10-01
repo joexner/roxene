@@ -55,9 +55,9 @@ class Neuron(Cell):
             that call this c'tor, or else you could build a Neuron that asplodes at runtime
         '''
         self.id = uuid.uuid4()
-        self.input = TrackedVariable(torch.tensor(input, dtype=TORCH_PRECISION))
-        self.feedback = TrackedVariable(torch.tensor(feedback, dtype=TORCH_PRECISION))
-        self.output = TrackedVariable(torch.tensor(output, dtype=TORCH_PRECISION))
+        self.input = torch.tensor(input, dtype=TORCH_PRECISION)
+        self.feedback = torch.tensor(feedback, dtype=TORCH_PRECISION)
+        self.output = torch.tensor(output, dtype=TORCH_PRECISION)
 
         self.input_hidden = torch.tensor(input_hidden, dtype=TORCH_PRECISION)
         self.hidden_feedback = torch.tensor(hidden_feedback, dtype=TORCH_PRECISION)

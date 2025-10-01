@@ -30,10 +30,7 @@ class TrackedVariable(Mutable):
         return value
 
     def assign(self, value):
-        if isinstance(value, torch.Tensor):
-            self.variable.data.copy_(value)
-        else:
-            self.variable.data.copy_(torch.tensor(value, dtype=self.variable.dtype))
+        self.variable.data.copy_(value)
         self.changed()
 
     def __getattr__(self, item):

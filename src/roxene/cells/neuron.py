@@ -70,7 +70,6 @@ class Neuron(Cell):
         if len(self.bound_ports) > 0:
             for port_num, cell in self.bound_ports.items():
                 value = cell.get_output()
-                # Convert numpy scalar to tensor if needed
                 if isinstance(value, (np.ndarray, np.generic)):
                     value = torch.tensor(value, dtype=self.input.variable.dtype)
                 self.input.variable[port_num] = value

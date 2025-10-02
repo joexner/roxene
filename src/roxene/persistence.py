@@ -36,6 +36,28 @@ class TrackedVariable(Mutable):
     def __getattr__(self, item):
         return getattr(self.variable, item)
 
+    def __getitem__(self, key):
+        return self.variable[key]
+
+    def __setitem__(self, key, value):
+        # Convert numpy values to tensors if needed
+        if isinstance(value, (np.ndarray, np.generic)):
+            value = torch.tensor(value, dtype=self.variable.dtype)
+        self.variable[key] = value
+        self.changed()
+
+    @classmethod
+    def __torch_function__(cls, func, types, args=(), kwargs=None):
+        if kwargs is None:
+            kwargs = {}
+        # Unwrap TrackedVariable instances to their underlying tensors
+        def unwrap(x):
+            return x.variable if isinstance(x, TrackedVariable) else x
+        args = tuple(unwrap(a) if not isinstance(a, (tuple, list)) else 
+                     type(a)(unwrap(i) for i in a) for a in args)
+        kwargs = {k: unwrap(v) for k, v in kwargs.items()}
+        return func(*args, **kwargs)
+
     def __eq__(self, other):
         if isinstance(other, torch.Tensor):
             return torch.equal(self.variable, other)

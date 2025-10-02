@@ -69,12 +69,9 @@ class Neuron(Cell):
         # TODO: Optimize / make less wack
         if len(self.bound_ports) > 0:
             for port_num, cell in self.bound_ports.items():
-                value = cell.get_output()
-                if isinstance(value, (np.ndarray, np.generic)):
-                    value = torch.tensor(value, dtype=self.input.variable.dtype)
-                self.input.variable[port_num] = value
+                self.input[port_num] = cell.get_output()
         
-        hidden_in = torch.cat([self.input.variable, self.feedback.variable], dim=0).unsqueeze(0)
+        hidden_in = torch.cat([self.input, self.feedback], dim=0).unsqueeze(0)
         hidden_wts = torch.cat([self.input_hidden, self.feedback_hidden], dim=0)
         hidden = activation_func(torch.matmul(hidden_in, hidden_wts))
         
@@ -82,7 +79,7 @@ class Neuron(Cell):
         self.output.assign(activation_func(torch.matmul(hidden, self.hidden_output)).squeeze(0))
 
     def get_output(self) -> NP_PRECISION:
-        return self.output.variable.detach().cpu().numpy()
+        return self.output.detach().cpu().numpy()
 
     def add_input_connection(self, tx_cell: Cell, req_port: int):
         num_ports = self.input.shape[0]

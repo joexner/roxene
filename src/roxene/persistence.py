@@ -29,10 +29,6 @@ class TrackedTensor(Mutable):
             return Mutable.coerce(key, value)
         return value
 
-    def assign(self, value):
-        self.variable.data.copy_(value)
-        self.changed()
-
     def __getattr__(self, item):
         return getattr(self.variable, item)
 

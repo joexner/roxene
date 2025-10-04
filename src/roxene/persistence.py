@@ -13,7 +13,7 @@ class EntityBase(DeclarativeBase):
     pass
 
 
-class TrackedVariable(Mutable):
+class TrackedTensor(Mutable):
 
     variable: torch.Tensor
 
@@ -23,9 +23,9 @@ class TrackedVariable(Mutable):
 
     @classmethod
     def coerce(cls, key, value):
-        if not isinstance(value, TrackedVariable):
+        if not isinstance(value, TrackedTensor):
             if isinstance(value, torch.Tensor):
-                return TrackedVariable(value)
+                return TrackedTensor(value)
             return Mutable.coerce(key, value)
         return value
 
@@ -52,7 +52,7 @@ class TrackedVariable(Mutable):
             kwargs = {}
         # Unwrap TrackedVariable instances to their underlying tensors
         def unwrap(x):
-            return x.variable if isinstance(x, TrackedVariable) else x
+            return x.variable if isinstance(x, TrackedTensor) else x
         args = tuple(unwrap(a) if not isinstance(a, (tuple, list)) else 
                      type(a)(unwrap(i) for i in a) for a in args)
         kwargs = {k: unwrap(v) for k, v in kwargs.items()}
@@ -77,7 +77,7 @@ class WrappedVariable(sqlalchemy.types.TypeDecorator):
         return value.variable.detach().cpu().numpy()
 
     def process_result_value(self, value: np.ndarray, dialect):
-        return TrackedVariable(torch.tensor(value, dtype=TORCH_PRECISION)) if value is not None else None
+        return TrackedTensor(torch.tensor(value, dtype=TORCH_PRECISION)) if value is not None else None
 
 
 class WrappedTensor(sqlalchemy.types.TypeDecorator):

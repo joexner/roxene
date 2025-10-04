@@ -10,7 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_
 
 from ..cell import Cell
 from ..constants import NP_PRECISION, TORCH_PRECISION
-from ..persistence import TrackedVariable, WrappedVariable, WrappedTensor, EntityBase
+from ..persistence import TrackedTensor, WrappedVariable, WrappedTensor, EntityBase
 
 activation_func = torch.tanh
 
@@ -21,9 +21,9 @@ class Neuron(Cell):
 
     id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cell.id"), primary_key=True)
 
-    input: Mapped[torch.Tensor] = mapped_column(TrackedVariable.as_mutable(WrappedVariable))
-    feedback: Mapped[torch.Tensor] = mapped_column(TrackedVariable.as_mutable(WrappedVariable))
-    output: Mapped[torch.Tensor] = mapped_column(TrackedVariable.as_mutable(WrappedVariable))
+    input: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedVariable))
+    feedback: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedVariable))
+    output: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedVariable))
     input_hidden: Mapped[torch.Tensor] = mapped_column(WrappedTensor)
     hidden_feedback: Mapped[torch.Tensor] = mapped_column(WrappedTensor)
     feedback_hidden: Mapped[torch.Tensor] = mapped_column(WrappedTensor)
@@ -67,9 +67,8 @@ class Neuron(Cell):
 
     def update(self) -> None:
         # TODO: Optimize / make less wack
-        if len(self.bound_ports) > 0:
-            for port_num, cell in self.bound_ports.items():
-                self.input[port_num] = cell.get_output()
+        for port_num, cell in self.bound_ports.items():
+            self.input[port_num] = cell.get_output()
         
         hidden_in = torch.cat([self.input, self.feedback], dim=0).unsqueeze(0)
         hidden_wts = torch.cat([self.input_hidden, self.feedback_hidden], dim=0)

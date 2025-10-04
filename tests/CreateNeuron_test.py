@@ -19,12 +19,12 @@ class CreateNeuron_test(unittest.TestCase):
         cn1.execute(org)
         neuron1 = org.cells[0]
         import numpy as np
-        np.testing.assert_array_equal(params1["input"], neuron1.input.detach().cpu().numpy())
-        np.testing.assert_array_equal(params1["feedback"], neuron1.feedback.detach().cpu().numpy())
-        np.testing.assert_array_equal(params1["output"], neuron1.output.detach().cpu().numpy())
-        np.testing.assert_array_equal(params1["input_hidden"], neuron1.input_hidden.detach().cpu().numpy())
-        np.testing.assert_array_equal(params1["hidden_feedback"], neuron1.hidden_feedback.detach().cpu().numpy())
-        np.testing.assert_array_equal(params1["hidden_output"], neuron1.hidden_output.detach().cpu().numpy())
+        np.testing.assert_array_equal(params1["input"], neuron1.input.numpy())
+        np.testing.assert_array_equal(params1["feedback"], neuron1.feedback.numpy())
+        np.testing.assert_array_equal(params1["output"], neuron1.output.numpy())
+        np.testing.assert_array_equal(params1["input_hidden"], neuron1.input_hidden.numpy())
+        np.testing.assert_array_equal(params1["hidden_feedback"], neuron1.hidden_feedback.numpy())
+        np.testing.assert_array_equal(params1["hidden_output"], neuron1.hidden_output.numpy())
 
         # CreateNeuron adds a neuron to the *beginning* of the organism's cells list
         cn1.execute(org)
@@ -32,12 +32,12 @@ class CreateNeuron_test(unittest.TestCase):
         self.assertIs(org.cells[1], neuron1)
         neuron2 = org.cells[0]
         self.assertIsNot(neuron2, neuron1)
-        np.testing.assert_array_equal(params1["input"], neuron2.input.detach().cpu().numpy())
-        np.testing.assert_array_equal(params1["feedback"], neuron2.feedback.detach().cpu().numpy())
-        np.testing.assert_array_equal(params1["output"], neuron2.output.detach().cpu().numpy())
-        np.testing.assert_array_equal(params1["input_hidden"], neuron2.input_hidden.detach().cpu().numpy())
-        np.testing.assert_array_equal(params1["hidden_feedback"], neuron2.hidden_feedback.detach().cpu().numpy())
-        np.testing.assert_array_equal(params1["hidden_output"], neuron2.hidden_output.detach().cpu().numpy())
+        np.testing.assert_array_equal(params1["input"], neuron2.input.numpy())
+        np.testing.assert_array_equal(params1["feedback"], neuron2.feedback.numpy())
+        np.testing.assert_array_equal(params1["output"], neuron2.output.numpy())
+        np.testing.assert_array_equal(params1["input_hidden"], neuron2.input_hidden.numpy())
+        np.testing.assert_array_equal(params1["hidden_feedback"], neuron2.hidden_feedback.numpy())
+        np.testing.assert_array_equal(params1["hidden_output"], neuron2.hidden_output.numpy())
 
         params2 = random_neuron_state(input_size, feedback_size, hidden_size)
         cn2 = CreateNeuron(**params2)
@@ -50,12 +50,12 @@ class CreateNeuron_test(unittest.TestCase):
         neuron3 = org.cells[0]
         self.assertIsNot(neuron3, neuron1)
         self.assertIsNot(neuron3, neuron2)
-        np.testing.assert_array_equal(params2["input"], neuron3.input.detach().cpu().numpy())
-        np.testing.assert_array_equal(params2["feedback"], neuron3.feedback.detach().cpu().numpy())
-        np.testing.assert_array_equal(params2["output"], neuron3.output.detach().cpu().numpy())
-        np.testing.assert_array_equal(params2["input_hidden"], neuron3.input_hidden.detach().cpu().numpy())
-        np.testing.assert_array_equal(params2["hidden_feedback"], neuron3.hidden_feedback.detach().cpu().numpy())
-        np.testing.assert_array_equal(params2["hidden_output"], neuron3.hidden_output.detach().cpu().numpy())
+        np.testing.assert_array_equal(params2["input"], neuron3.input.numpy())
+        np.testing.assert_array_equal(params2["feedback"], neuron3.feedback.numpy())
+        np.testing.assert_array_equal(params2["output"], neuron3.output.numpy())
+        np.testing.assert_array_equal(params2["input_hidden"], neuron3.input_hidden.numpy())
+        np.testing.assert_array_equal(params2["hidden_feedback"], neuron3.hidden_feedback.numpy())
+        np.testing.assert_array_equal(params2["hidden_output"], neuron3.hidden_output.numpy())
 
     def test_persistence(self):
         engine = create_engine("sqlite://")

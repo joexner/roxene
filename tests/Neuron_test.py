@@ -50,22 +50,22 @@ class Neuron_test(unittest.TestCase):
     def test_check_math_linear(self):
         neuron: Neuron = Neuron(**random_neuron_state(1, 1, 1, rng=default_rng(SEED)))
 
-        initial_input_val = neuron.input.detach().cpu().numpy()[0]
-        initial_feedback_val = neuron.feedback.detach().cpu().numpy()[0]
+        initial_input_val = neuron.input.numpy()[0]
+        initial_feedback_val = neuron.feedback.numpy()[0]
 
-        input_hidden_weight = neuron.input_hidden.detach().cpu().numpy()[0][0]
-        feedback_hidden_weight = neuron.feedback_hidden.detach().cpu().numpy()[0][0]
+        input_hidden_weight = neuron.input_hidden.numpy()[0][0]
+        feedback_hidden_weight = neuron.feedback_hidden.numpy()[0][0]
 
         neuron.update()
 
         expected_hidden_val = np.tanh(initial_input_val * input_hidden_weight + initial_feedback_val * feedback_hidden_weight)
 
-        hidden_feedback_weight = neuron.hidden_feedback.detach().cpu().numpy()[0][0]
+        hidden_feedback_weight = neuron.hidden_feedback.numpy()[0][0]
         expected_feedback_val = np.tanh(expected_hidden_val * hidden_feedback_weight)
-        actual_feedback_val = neuron.feedback.detach().cpu().numpy()[0]
+        actual_feedback_val = neuron.feedback.numpy()[0]
         self.assertAlmostEqual(actual_feedback_val, expected_feedback_val)
 
-        hidden_out_weight = neuron.hidden_output.detach().cpu().numpy()[0][0]
+        hidden_out_weight = neuron.hidden_output.numpy()[0][0]
         expected_output_val = np.tanh(expected_hidden_val * hidden_out_weight)
         actual_output_val = neuron.get_output()
         self.assertAlmostEqual(actual_output_val, expected_output_val)
@@ -108,7 +108,7 @@ class Neuron_test(unittest.TestCase):
 
         neuron.update()
 
-        neuron_input_value: np.ndarray = neuron.input.detach().cpu().numpy()
+        neuron_input_value: np.ndarray = neuron.input.numpy()
         for port_num in range(0, neuron_input_value.shape[0]):
             if port_num in connected_ports.keys():
                 input_cell = connected_ports[port_num]
@@ -126,13 +126,13 @@ class Neuron_test(unittest.TestCase):
 
         with Session(engine) as session:
             session.add(n1)
-            orig_input = n1.input.detach().cpu().numpy()
-            orig_feedback = n1.feedback.detach().cpu().numpy()
-            orig_output = n1.output.detach().cpu().numpy()
-            orig_input_hidden = n1.input_hidden.detach().cpu().numpy()
-            orig_hidden_feedback = n1.hidden_feedback.detach().cpu().numpy()
-            orig_feedback_hidden = n1.feedback_hidden.detach().cpu().numpy()
-            orig_hidden_output = n1.hidden_output.detach().cpu().numpy()
+            orig_input = n1.input.numpy()
+            orig_feedback = n1.feedback.numpy()
+            orig_output = n1.output.numpy()
+            orig_input_hidden = n1.input_hidden.numpy()
+            orig_hidden_feedback = n1.hidden_feedback.numpy()
+            orig_feedback_hidden = n1.feedback_hidden.numpy()
+            orig_hidden_output = n1.hidden_output.numpy()
             session.commit()
 
         with Session(engine) as session:
@@ -140,18 +140,18 @@ class Neuron_test(unittest.TestCase):
 
             self.assertFalse(n2 is None)
 
-            np.testing.assert_array_equal(n2.input.detach().cpu().numpy(), orig_input)
-            np.testing.assert_array_equal(n2.feedback.detach().cpu().numpy(), orig_feedback)
-            np.testing.assert_array_equal(n2.output.detach().cpu().numpy(), orig_output)
-            np.testing.assert_array_equal(n2.input_hidden.detach().cpu().numpy(), orig_input_hidden)
-            np.testing.assert_array_equal(n2.hidden_feedback.detach().cpu().numpy(), orig_hidden_feedback)
-            np.testing.assert_array_equal(n2.feedback_hidden.detach().cpu().numpy(), orig_feedback_hidden)
-            np.testing.assert_array_equal(n2.hidden_output.detach().cpu().numpy(), orig_hidden_output)
+            np.testing.assert_array_equal(n2.input.numpy(), orig_input)
+            np.testing.assert_array_equal(n2.feedback.numpy(), orig_feedback)
+            np.testing.assert_array_equal(n2.output.numpy(), orig_output)
+            np.testing.assert_array_equal(n2.input_hidden.numpy(), orig_input_hidden)
+            np.testing.assert_array_equal(n2.hidden_feedback.numpy(), orig_hidden_feedback)
+            np.testing.assert_array_equal(n2.feedback_hidden.numpy(), orig_feedback_hidden)
+            np.testing.assert_array_equal(n2.hidden_output.numpy(), orig_hidden_output)
 
             n2.update()
-            n2_input = n2.input.detach().cpu().numpy()
-            n2_feedback = n2.feedback.detach().cpu().numpy()
-            n2_output = n2.output.detach().cpu().numpy()
+            n2_input = n2.input.numpy()
+            n2_feedback = n2.feedback.numpy()
+            n2_output = n2.output.numpy()
             np.testing.assert_array_equal(n2_input, orig_input) # input is not changed w/ update()
             self.assertFalse(np.array_equal(n2_feedback, orig_feedback))
             self.assertNotEqual(n2_output, orig_output)
@@ -159,9 +159,9 @@ class Neuron_test(unittest.TestCase):
 
         with Session(engine) as session:
             n3 = session.get(Neuron, nid)
-            n3_input = n3.input.detach().cpu().numpy()
-            n3_feedback = n3.feedback.detach().cpu().numpy()
-            n3_output = n3.output.detach().cpu().numpy()
+            n3_input = n3.input.numpy()
+            n3_feedback = n3.feedback.numpy()
+            n3_output = n3.output.numpy()
             self.assertNotEqual(n3_output, orig_output)
             np.testing.assert_array_equal(n3_input, n2_input)
             np.testing.assert_array_equal(n3_feedback, n2_feedback)

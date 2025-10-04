@@ -1,5 +1,5 @@
 import numpy
-import tensorflow as tf
+import torch
 
-TF_PRECISION = tf.float16
+TORCH_PRECISION = torch.float16
 NP_PRECISION = numpy.float16

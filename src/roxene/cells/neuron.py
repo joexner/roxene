@@ -74,10 +74,8 @@ class Neuron(Cell):
         hidden_wts = torch.cat([self.input_hidden, self.feedback_hidden], dim=0)
         hidden = activation_func(torch.matmul(hidden_in, hidden_wts))
         
-        self.feedback.data.copy_(activation_func(torch.matmul(hidden, self.hidden_feedback)).squeeze(0))
-        self.feedback.changed()
-        self.output.data.copy_(activation_func(torch.matmul(hidden, self.hidden_output)).squeeze(0))
-        self.output.changed()
+        self.feedback.copy_(activation_func(torch.matmul(hidden, self.hidden_feedback)).squeeze(0))
+        self.output.copy_(activation_func(torch.matmul(hidden, self.hidden_output)).squeeze(0))
 
     def get_output(self) -> NP_PRECISION:
         return self.output.numpy()

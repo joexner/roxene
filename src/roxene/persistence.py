@@ -42,6 +42,12 @@ class TrackedTensor(Mutable):
         self.variable[key] = value
         self.changed()
 
+    def copy_(self, src):
+        """Override copy_ to automatically track changes"""
+        result = self.variable.copy_(src)
+        self.changed()
+        return result
+
     @classmethod
     def __torch_function__(cls, func, types, args=(), kwargs=None):
         if kwargs is None:

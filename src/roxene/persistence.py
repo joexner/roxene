@@ -15,36 +15,36 @@ class EntityBase(DeclarativeBase):
 
 class TrackedTensor(Mutable):
 
-    variable: torch.Tensor
+    tensor: torch.Tensor
 
     def __init__(self, variable: torch.Tensor):
         super(Mutable, self).__init__()
-        self.variable = variable
+        self.tensor = variable
 
     @classmethod
     def coerce(cls, key, value):
-        if not isinstance(value, TrackedTensor):
-            if isinstance(value, torch.Tensor):
-                return TrackedTensor(value)
-            return Mutable.coerce(key, value)
-        return value
+        if isinstance(value, TrackedTensor):
+            return value
+        if isinstance(value, torch.Tensor):
+            return TrackedTensor(value)
+        return Mutable.coerce(key, value)
 
     def __getattr__(self, item):
-        return getattr(self.variable, item)
+        return getattr(self.tensor, item)
 
     def __getitem__(self, key):
-        return self.variable[key]
+        return self.tensor[key]
 
     def __setitem__(self, key, value):
         # Convert numpy values to tensors if needed
         if isinstance(value, (np.ndarray, np.generic)):
-            value = torch.tensor(value, dtype=self.variable.dtype)
-        self.variable[key] = value
+            value = torch.tensor(value, dtype=self.tensor.dtype)
+        self.tensor[key] = value
         self.changed()
 
     def copy_(self, src):
         """Override copy_ to automatically track changes"""
-        result = self.variable.copy_(src)
+        result = self.tensor.copy_(src)
         self.changed()
         return result
 
@@ -54,7 +54,7 @@ class TrackedTensor(Mutable):
             kwargs = {}
         # Unwrap TrackedVariable instances to their underlying tensors
         def unwrap(x):
-            return x.variable if isinstance(x, TrackedTensor) else x
+            return x.tensor if isinstance(x, TrackedTensor) else x
         args = tuple(unwrap(a) if not isinstance(a, (tuple, list)) else 
                      type(a)(unwrap(i) for i in a) for a in args)
         kwargs = {k: unwrap(v) for k, v in kwargs.items()}
@@ -62,12 +62,12 @@ class TrackedTensor(Mutable):
 
     def __eq__(self, other):
         if isinstance(other, torch.Tensor):
-            return torch.equal(self.variable, other)
+            return torch.equal(self.tensor, other)
         return super(Mutable, self).__eq__(other)
-
+    
     @property
     def shape(self):
-        return self.variable.shape
+        return self.tensor.shape
 
 
 class WrappedVariable(sqlalchemy.types.TypeDecorator):

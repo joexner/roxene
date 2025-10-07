@@ -77,8 +77,8 @@ class Neuron(Cell):
         self.feedback.copy_(activation_func(torch.matmul(hidden, self.hidden_feedback)).squeeze(0))
         self.output.copy_(activation_func(torch.matmul(hidden, self.hidden_output)).squeeze(0))
 
-    def get_output(self) -> NP_PRECISION:
-        return self.output.numpy()
+    def get_output(self) -> float:
+        return self.output.item()
 
     def add_input_connection(self, tx_cell: Cell, req_port: int):
         num_ports = self.input.shape[0]

@@ -37,14 +37,14 @@ class Neuron_test(unittest.TestCase):
             feedback_sz):
 
         neuron = Neuron(**random_neuron_state(input_sz, hidden_sz, feedback_sz, rng=default_rng(SEED)))
-        output_before_update = neuron.get_output()
+        output_before_update = neuron.get_output().copy()
 
         neuron.update()
-        output_after_first_update = neuron.get_output()
+        output_after_first_update = neuron.get_output().copy()
         self.assertFalse(np.array_equal(output_before_update, output_after_first_update))
 
         neuron.update()
-        output_after_another_update = neuron.get_output()
+        output_after_another_update = neuron.get_output().copy()
         self.assertFalse(np.array_equal(output_after_first_update, output_after_another_update))
 
     def test_check_math_linear(self):

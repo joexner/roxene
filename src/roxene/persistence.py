@@ -17,9 +17,9 @@ class TrackedTensor(Mutable):
 
     tensor: torch.Tensor
 
-    def __init__(self, variable: torch.Tensor):
+    def __init__(self, tensor: torch.Tensor):
         super(Mutable, self).__init__()
-        self.tensor = variable
+        self.tensor = tensor
 
     @classmethod
     def coerce(cls, key, value):
@@ -75,8 +75,8 @@ class WrappedVariable(sqlalchemy.types.TypeDecorator):
     impl = PickleType
     cache_ok = True
 
-    def process_bind_param(self, value, dialect) -> np.ndarray:
-        return value.variable.numpy()
+    def process_bind_param(self, value: TrackedTensor, dialect) -> np.ndarray:
+        return value.tensor.numpy()
 
     def process_result_value(self, value: np.ndarray, dialect):
         return TrackedTensor(torch.tensor(value, dtype=TORCH_PRECISION)) if value is not None else None

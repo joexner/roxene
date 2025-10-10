@@ -10,7 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_
 
 from ..cell import Cell
 from ..constants import NP_PRECISION, TORCH_PRECISION
-from ..persistence import TrackedTensor, WrappedVariable, WrappedTensor, EntityBase
+from ..persistence import TrackedTensor, WrappedTensor, EntityBase
 
 activation_func = torch.tanh
 
@@ -21,13 +21,13 @@ class Neuron(Cell):
 
     id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cell.id"), primary_key=True)
 
-    input: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedVariable))
-    feedback: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedVariable))
-    output: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedVariable))
-    input_hidden: Mapped[torch.Tensor] = mapped_column(WrappedTensor)
-    hidden_feedback: Mapped[torch.Tensor] = mapped_column(WrappedTensor)
-    feedback_hidden: Mapped[torch.Tensor] = mapped_column(WrappedTensor)
-    hidden_output: Mapped[torch.Tensor] = mapped_column(WrappedTensor)
+    input: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedTensor))
+    feedback: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedTensor))
+    output: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedTensor))
+    input_hidden: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedTensor))
+    hidden_feedback: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedTensor))
+    feedback_hidden: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedTensor))
+    hidden_output: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedTensor))
 
     _ports_map: Mapped[Dict[int, "_Neuron_Input"]] = relationship(
         back_populates="listener_neuron",

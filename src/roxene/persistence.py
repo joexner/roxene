@@ -1,12 +1,11 @@
+from operator import getitem
+
 import numpy as np
-import pickle
 import sqlalchemy.types
 import torch
 from sqlalchemy import PickleType
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.mutable import Mutable
-
-from .constants import TORCH_PRECISION
 
 
 class EntityBase(DeclarativeBase):
@@ -33,7 +32,7 @@ class TrackedTensor(Mutable):
         return getattr(self.tensor, item)
 
     def __getitem__(self, key):
-        return self.tensor[key]
+        return getitem(self.tensor, key)
 
     def __setitem__(self, key, value):
         # Convert numpy values to tensors if needed
@@ -70,25 +69,13 @@ class TrackedTensor(Mutable):
         return self.tensor.shape
 
 
-class WrappedVariable(sqlalchemy.types.TypeDecorator):
+class WrappedTensor(sqlalchemy.types.TypeDecorator):
 
     impl = PickleType
     cache_ok = True
 
-    def process_bind_param(self, value: TrackedTensor, dialect) -> np.ndarray:
-        return value.tensor.numpy()
+    def process_bind_param(self, value: TrackedTensor, dialect) -> torch.Tensor:
+        return value.tensor
 
-    def process_result_value(self, value: np.ndarray, dialect):
-        return TrackedTensor(torch.tensor(value, dtype=TORCH_PRECISION)) if value is not None else None
-
-
-class WrappedTensor(sqlalchemy.types.TypeDecorator):
-
-    impl = sqlalchemy.types.LargeBinary
-    cache_ok = True
-
-    def process_bind_param(self, value: torch.Tensor, dialect) -> bytes:
-        return pickle.dumps(value.numpy(), protocol=5)
-
-    def process_result_value(self, value: bytes, dialect) -> torch.Tensor:
-        return torch.tensor(pickle.loads(value), dtype=TORCH_PRECISION) if value else None
+    def process_result_value(self, value: torch.Tensor, dialect):
+        return TrackedTensor(value) if value is not None else None

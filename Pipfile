@@ -14,7 +14,6 @@ pytest = "*"
 parameterized = "*"
 notebook = "*"
 matplotlib = "*"
-mlflow = "*"
 testcase = "*"
 
 [requires]

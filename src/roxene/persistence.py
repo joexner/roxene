@@ -51,7 +51,7 @@ class TrackedTensor(Mutable):
     def __torch_function__(cls, func, types, args=(), kwargs=None):
         if kwargs is None:
             kwargs = {}
-        # Unwrap TrackedVariable instances to their underlying tensors
+        # Unwrap TrackedTensor instances to their underlying tensors
         def unwrap(x):
             return x.tensor if isinstance(x, TrackedTensor) else x
         args = tuple(unwrap(a) if not isinstance(a, (tuple, list)) else 

@@ -21,7 +21,7 @@ class CompositeGeneSplitMutagen(Mutagen):
 
         # Split the iterations randomly, ensuring both parts get at least 1 iteration
         # For iterations=N, we want first_iterations in range [1, N-1] so second_iterations is also ≥ 1
-        first_iterations = rng.integers(1, parent_gene.iterations)  # 1 to iterations-1 (exclusive upper bound)
+        first_iterations= rng.integers(1, parent_gene.iterations).astype(int)  # 1 to iterations-1 (exclusive upper bound)
         second_iterations = parent_gene.iterations - first_iterations
 
         # Create two new CompositeGenes with the same child genes but split iterations

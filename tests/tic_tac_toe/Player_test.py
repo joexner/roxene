@@ -44,7 +44,7 @@ class Player_test(unittest.TestCase):
             else rng.uniform(-1, 1)
         )
 
-        move: Move = player.get_move_coords(board)
+        player.get_move_coords(board)
 
         # Check that the player set the inputs on the Organism correctly
         expected_set_input_calls = []

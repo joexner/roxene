@@ -13,7 +13,7 @@ class InputCell(Cell):
     __mapper_args__ = {"polymorphic_identity": "input"}
 
     id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cell.id"), primary_key=True)
-    value: Mapped[float] = mapped_column()
+    value: Mapped[Optional[float]] = mapped_column()
 
 
     def __init__(self, initial_value: NP_PRECISION = None):

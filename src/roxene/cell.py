@@ -2,6 +2,7 @@ import uuid
 
 from sqlalchemy.orm import Mapped, mapped_column
 
+from .constants import NP_PRECISION
 from .persistence import EntityBase
 
 
@@ -17,5 +18,5 @@ class Cell(EntityBase):
         "polymorphic_on": "type",
     }
 
-    def get_output(self) -> float:
+    def get_output(self) -> NP_PRECISION:
         pass

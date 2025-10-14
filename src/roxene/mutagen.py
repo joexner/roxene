@@ -7,7 +7,7 @@ from .util import wiggle
 
 
 class Mutagen(ABC):
-    susceptibilities: dict[Gene, float]
+    susceptibilities: dict[Gene | None, float]
     susceptibility_log_wiggle: float
 
     def __init__(self, base_susceptibility: float, susceptibility_log_wiggle: float):

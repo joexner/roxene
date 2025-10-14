@@ -4,6 +4,7 @@ from typing import Optional
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import mapped_column, Mapped
 
+from ..constants import NP_PRECISION
 from ..cell import Cell
 
 
@@ -15,12 +16,12 @@ class InputCell(Cell):
     value: Mapped[Optional[float]] = mapped_column()
 
 
-    def __init__(self, initial_value: float = None):
+    def __init__(self, initial_value: NP_PRECISION = None):
         self.id = uuid.uuid4()
         self.value = initial_value
 
-    def set_output(self, value: float):
+    def set_output(self, value: NP_PRECISION):
         self.value = value
 
-    def get_output(self) -> float:
+    def get_output(self) -> NP_PRECISION:
         return self.value

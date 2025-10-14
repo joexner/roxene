@@ -8,6 +8,7 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
 
+from .constants import NP_PRECISION
 from .cell import Cell
 from .cells.input_cell import InputCell
 from .cells.neuron import Neuron
@@ -134,8 +135,8 @@ class Organism(EntityBase):
         input_cell.set_output(input_value)
 
     # TODO: Make output a @property, and maybe input and cells
-    def get_output(self, output_label) -> float:
-        return float(self.outputs[output_label].get_output())
+    def get_output(self, output_label) -> NP_PRECISION:
+        return self.outputs[output_label].get_output()
 
     def update(self):
         for cell in self.cells:

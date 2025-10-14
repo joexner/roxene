@@ -2,7 +2,7 @@ import logging
 import uuid
 from typing import Set, List
 
-import tensorflow as tf
+import torch
 from numpy.random import default_rng, Generator
 from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session, sessionmaker
@@ -54,7 +54,7 @@ class Environment(object):
         self.sessionmaker = sessionmaker(engine)
 
         logger.info(f"Seed={seed}")
-        tf.random.set_seed(seed)
+        torch.manual_seed(seed)
         uuid.uuid4 = lambda: uuid.UUID(bytes=self.rng.bytes(16))
 
     def populate(self,

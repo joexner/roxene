@@ -20,7 +20,7 @@ jobs:
       run: pip install --upgrade pipenv
 
     - name: Install roxene and dependencies
-      run: pipenv install --skip-lock
+      run: pipenv install --dev --skip-lock
 
     - name: Test with pytest
       run: pipenv run python -m pytest

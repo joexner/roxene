@@ -65,9 +65,11 @@ for iteration in range(1, num_trials + 1):
     env.complete_trial(trial)
     logger.info(f"Finished trial {iteration} with moves {[(move.letter, move.position, move.outcomes) for move in trial.moves]}")
     if iteration % args.breed_and_cull_interval == 0:
-        logger.info("Breeding and culling")
+        logger.info("Culling")
         env.cull(num_to_cull)
+        logger.info("Breeding")
         env.breed(num_to_breed)
+        logger.info("Done breeding")
 
 # mlflow.log_metric("trials_executed", num_trials)
 

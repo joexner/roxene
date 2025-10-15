@@ -2,7 +2,7 @@ import unittest
 import os
 
 import numpy as np
-import tensorflow as tf
+import torch
 from numpy.random import default_rng
 # // maya smells...fine
 from parameterized import parameterized
@@ -15,14 +15,14 @@ from tic_tac_toe.util import get_engine
 
 SEED = 732478534
 
-activation = tf.nn.tanh
-precision = tf.dtypes.float16
+activation = torch.tanh
+precision = torch.float16
 
 
-class Neuron_test(tf.test.TestCase):
+class Neuron_test(unittest.TestCase):
 
     def setUp(self) -> None:
-        tf.compat.v1.set_random_seed(SEED)
+        torch.manual_seed(SEED)
 
     @parameterized.expand([
         (2, 2, 4),
@@ -41,11 +41,11 @@ class Neuron_test(tf.test.TestCase):
 
         neuron.update()
         output_after_first_update = neuron.get_output()
-        self.assertNotEqual(output_before_update, output_after_first_update)
+        self.assertFalse(np.array_equal(output_before_update, output_after_first_update))
 
         neuron.update()
         output_after_another_update = neuron.get_output()
-        self.assertNotEqual(output_after_first_update, output_after_another_update)
+        self.assertFalse(np.array_equal(output_after_first_update, output_after_another_update))
 
     def test_check_math_linear(self):
         neuron: Neuron = Neuron(**random_neuron_state(1, 1, 1, rng=default_rng(SEED)))
@@ -126,13 +126,13 @@ class Neuron_test(tf.test.TestCase):
 
         with Session(engine) as session:
             session.add(n1)
-            orig_input = n1.input.numpy()
-            orig_feedback = n1.feedback.numpy()
-            orig_output = n1.output.numpy()
-            orig_input_hidden = n1.input_hidden.numpy()
-            orig_hidden_feedback = n1.hidden_feedback.numpy()
-            orig_feedback_hidden = n1.feedback_hidden.numpy()
-            orig_hidden_output = n1.hidden_output.numpy()
+            orig_input = n1.input.clone()
+            orig_feedback = n1.feedback.clone()
+            orig_output = n1.output.clone()
+            orig_input_hidden = n1.input_hidden.clone()
+            orig_hidden_feedback = n1.hidden_feedback.clone()
+            orig_feedback_hidden = n1.feedback_hidden.clone()
+            orig_hidden_output = n1.hidden_output.clone()
             session.commit()
 
         with Session(engine) as session:
@@ -140,31 +140,32 @@ class Neuron_test(tf.test.TestCase):
 
             self.assertFalse(n2 is None)
 
-            self.assertAllEqual(n2.input.numpy(), orig_input)
-            self.assertAllEqual(n2.feedback.numpy(), orig_feedback)
-            self.assertAllEqual(n2.output.numpy(), orig_output)
-            self.assertAllEqual(n2.input_hidden.numpy(), orig_input_hidden)
-            self.assertAllEqual(n2.hidden_feedback.numpy(), orig_hidden_feedback)
-            self.assertAllEqual(n2.feedback_hidden.numpy(), orig_feedback_hidden)
-            self.assertAllEqual(n2.hidden_output.numpy(), orig_hidden_output)
+            torch.testing.assert_close(torch.as_tensor(n2.input), orig_input)
+            torch.testing.assert_close(torch.as_tensor(n2.feedback), orig_feedback)
+            torch.testing.assert_close(torch.as_tensor(n2.output), orig_output)
+            torch.testing.assert_close(torch.as_tensor(n2.input_hidden), orig_input_hidden)
+            torch.testing.assert_close(torch.as_tensor(n2.hidden_feedback), orig_hidden_feedback)
+            torch.testing.assert_close(torch.as_tensor(n2.feedback_hidden), orig_feedback_hidden)
+            torch.testing.assert_close(torch.as_tensor(n2.hidden_output), orig_hidden_output)
 
             n2.update()
-            n2_input = n2.input.numpy()
-            n2_feedback = n2.feedback.numpy()
-            n2_output = n2.output.numpy()
-            self.assertAllEqual(n2_input, orig_input) # input is not changed w/ update()
-            self.assertNotAllEqual(n2_feedback, orig_feedback)
+
+            n2_input = n2.input.clone()
+            n2_feedback = n2.feedback.clone()
+            n2_output = n2.output.clone()
+            np.testing.assert_array_equal(n2_input, orig_input) # input is not changed w/ update()
+            self.assertFalse(torch.allclose(n2_feedback, orig_feedback))
             self.assertNotEqual(n2_output, orig_output)
             session.commit()
 
         with Session(engine) as session:
             n3 = session.get(Neuron, nid)
-            n3_input = n3.input.numpy()
-            n3_feedback = n3.feedback.numpy()
-            n3_output = n3.output.numpy()
+            n3_input = n3.input.clone()
+            n3_feedback = n3.feedback.clone()
+            n3_output = n3.output.clone()
             self.assertNotEqual(n3_output, orig_output)
-            self.assertAllEqual(n3_input, n2_input)
-            self.assertAllEqual(n3_feedback, n2_feedback)
+            np.testing.assert_array_equal(n3_input, n2_input)
+            np.testing.assert_array_equal(n3_feedback, n2_feedback)
             self.assertEqual(n3_output, n2_output)
 
     def test_save_linked_neurons(self):

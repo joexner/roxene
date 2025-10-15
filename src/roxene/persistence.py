@@ -1,70 +1,85 @@
+from operator import getitem
+
 import numpy as np
-import pickle
 import sqlalchemy.types
-import tensorflow as tf
+import torch
 from sqlalchemy import PickleType
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.mutable import Mutable
-
-from .constants import TF_PRECISION
 
 
 class EntityBase(DeclarativeBase):
     pass
 
 
-class TrackedVariable(Mutable):
+class TrackedTensor(Mutable):
 
-    variable: tf.Variable
+    tensor: torch.Tensor
 
-    def __init__(self, variable: tf.Variable):
+    def __init__(self, tensor: torch.Tensor):
         super(Mutable, self).__init__()
-        self.variable = variable
+        self.tensor = tensor
 
     @classmethod
     def coerce(cls, key, value):
-        if not isinstance(value, TrackedVariable):
-            if isinstance(value, tf.Variable):
-                return TrackedVariable(value)
-            return Mutable.coerce(key, value)
-        return value
-
-    def assign(self, value):
-        self.variable.assign(value)
-        self.changed()
+        if isinstance(value, TrackedTensor):
+            return value
+        if isinstance(value, torch.Tensor):
+            return TrackedTensor(value)
+        return Mutable.coerce(key, value)
 
     def __getattr__(self, item):
-        return getattr(self.variable, item)
+        return getattr(self.tensor, item)
+
+    def __getitem__(self, key):
+        return getitem(self.tensor, key)
+
+    def __setitem__(self, key, value):
+        # Convert numpy values to tensors if needed
+        if isinstance(value, (np.ndarray, np.generic)):
+            value = torch.tensor(value, dtype=self.tensor.dtype)
+        self.tensor[key] = value
+        self.changed()
+
+    def copy_(self, src):
+        """Override copy_ to automatically track changes"""
+        result = self.tensor.copy_(src)
+        self.changed()
+        return result
+
+    @classmethod
+    def __torch_function__(cls, func, types, args=(), kwargs=None):
+        if kwargs is None:
+            kwargs = {}
+        # Unwrap TrackedTensor instances to their underlying tensors, recursively for tuples/lists
+        def unwrap(x):
+            if isinstance(x, TrackedTensor):
+                return x.tensor
+            elif isinstance(x, (tuple, list)):
+                return type(x)(unwrap(i) for i in x)
+            else:
+                return x
+        args = tuple(unwrap(a) for a in args)
+        kwargs = {k: unwrap(v) for k, v in kwargs.items()}
+        return func(*args, **kwargs)
 
     def __eq__(self, other):
-        if isinstance(other, tf.Variable):
-            return super(tf.Variable, self).__eq__(other)
+        if isinstance(other, torch.Tensor):
+            return torch.equal(self.tensor, other)
         return super(Mutable, self).__eq__(other)
-
+    
     @property
     def shape(self):
-        return self.variable.shape
-
-
-class WrappedVariable(sqlalchemy.types.TypeDecorator):
-
-    impl = PickleType
-    cache_ok = True
-
-    def process_bind_param(self, value: tf.Variable, dialect) -> np.ndarray:
-        return value.numpy()
-
-    def process_result_value(self, value: np.ndarray, dialect) -> tf.Variable:
-        return tf.Variable(initial_value=value, dtype=TF_PRECISION) if (value is not None) else None
+        return self.tensor.shape
 
 
 class WrappedTensor(sqlalchemy.types.TypeDecorator):
 
-    impl = sqlalchemy.types.LargeBinary
+    impl = PickleType
     cache_ok = True
 
-    def process_bind_param(self, value: tf.Tensor, dialect) -> bytes:
-        return pickle.dumps(value.numpy(), protocol=5)
+    def process_bind_param(self, value: TrackedTensor, dialect) -> torch.Tensor:
+        return value.tensor
 
-    def process_result_value(self, value: bytes, dialect) -> tf.Tensor:
-        return tf.convert_to_tensor(pickle.loads(value), dtype=TF_PRECISION) if value else None
+    def process_result_value(self, value: torch.Tensor, dialect):
+        return TrackedTensor(value) if value is not None else None

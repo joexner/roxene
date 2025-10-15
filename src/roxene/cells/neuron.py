@@ -1,17 +1,18 @@
 from numpy import ndarray
+import numpy as np
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from typing import Dict
 
-import tensorflow as tf
+import torch
 import uuid
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
 
 from ..cell import Cell
-from ..constants import NP_PRECISION, TF_PRECISION
-from ..persistence import TrackedVariable, WrappedVariable, WrappedTensor, EntityBase
+from ..constants import NP_PRECISION, TORCH_PRECISION
+from ..persistence import TrackedTensor, WrappedTensor, EntityBase
 
-activation_func = tf.nn.tanh
+activation_func = torch.tanh
 
 
 class Neuron(Cell):
@@ -20,13 +21,13 @@ class Neuron(Cell):
 
     id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cell.id"), primary_key=True)
 
-    input: Mapped[tf.Variable] = mapped_column(TrackedVariable.as_mutable(WrappedVariable))
-    feedback: Mapped[tf.Variable] = mapped_column(TrackedVariable.as_mutable(WrappedVariable))
-    output: Mapped[tf.Variable] = mapped_column(TrackedVariable.as_mutable(WrappedVariable))
-    input_hidden: Mapped[tf.Tensor] = mapped_column(WrappedTensor)
-    hidden_feedback: Mapped[tf.Tensor] = mapped_column(WrappedTensor)
-    feedback_hidden: Mapped[tf.Tensor] = mapped_column(WrappedTensor)
-    hidden_output: Mapped[tf.Tensor] = mapped_column(WrappedTensor)
+    input: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedTensor))
+    feedback: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedTensor))
+    output: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedTensor))
+    input_hidden: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedTensor))
+    hidden_feedback: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedTensor))
+    feedback_hidden: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedTensor))
+    hidden_output: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedTensor))
 
     _ports_map: Mapped[Dict[int, "_Neuron_Input"]] = relationship(
         back_populates="listener_neuron",
@@ -54,30 +55,30 @@ class Neuron(Cell):
             that call this c'tor, or else you could build a Neuron that asplodes at runtime
         '''
         self.id = uuid.uuid4()
-        self.input = tf.Variable(initial_value=input, dtype=TF_PRECISION)
-        self.feedback = tf.Variable(initial_value=feedback, dtype=TF_PRECISION)
-        self.output = tf.Variable(initial_value=output, dtype=TF_PRECISION)
+        self.input = torch.tensor(input, dtype=TORCH_PRECISION)
+        self.feedback = torch.tensor(feedback, dtype=TORCH_PRECISION)
+        self.output = torch.tensor(output, dtype=TORCH_PRECISION)
 
-        self.input_hidden = tf.convert_to_tensor(input_hidden, dtype=TF_PRECISION)
-        self.hidden_feedback = tf.convert_to_tensor(hidden_feedback, dtype=TF_PRECISION)
-        self.feedback_hidden = tf.convert_to_tensor(feedback_hidden, dtype=TF_PRECISION)
-        self.hidden_output = tf.convert_to_tensor(hidden_output, dtype=TF_PRECISION)
+        self.input_hidden = torch.tensor(input_hidden, dtype=TORCH_PRECISION)
+        self.hidden_feedback = torch.tensor(hidden_feedback, dtype=TORCH_PRECISION)
+        self.feedback_hidden = torch.tensor(feedback_hidden, dtype=TORCH_PRECISION)
+        self.hidden_output = torch.tensor(hidden_output, dtype=TORCH_PRECISION)
         self.bound_ports = {}
 
     def update(self) -> None:
         # TODO: Optimize / make less wack
-        if len(self.bound_ports) > 0:
-            ports = [[n] for n in self.bound_ports.keys()]
-            values = [self.bound_ports[port[0]].get_output() for port in ports]
-            self.input.assign(tf.tensor_scatter_nd_update(self.input, ports, values))
-        hidden_in = tf.expand_dims(tf.concat([self.input, self.feedback], 0), 0)
-        hidden_wts = tf.concat([self.input_hidden, self.feedback_hidden], 0)
-        hidden = activation_func(tf.matmul(hidden_in, hidden_wts))
-        self.feedback.assign(tf.squeeze(activation_func(tf.matmul(hidden, self.hidden_feedback)), 0))
-        self.output.assign(tf.squeeze(activation_func(tf.matmul(hidden, self.hidden_output)), [0]))
+        for port_num, cell in self.bound_ports.items():
+            self.input[port_num] = cell.get_output()
+        
+        hidden_in = torch.cat([self.input, self.feedback], dim=0).unsqueeze(0)
+        hidden_wts = torch.cat([self.input_hidden, self.feedback_hidden], dim=0)
+        hidden = activation_func(torch.matmul(hidden_in, hidden_wts))
+        
+        self.feedback.copy_(activation_func(torch.matmul(hidden, self.hidden_feedback)).squeeze(0))
+        self.output.copy_(activation_func(torch.matmul(hidden, self.hidden_output)).squeeze(0))
 
     def get_output(self) -> NP_PRECISION:
-        return self.output.numpy()
+        return NP_PRECISION(self.output.item())
 
     def add_input_connection(self, tx_cell: Cell, req_port: int):
         num_ports = self.input.shape[0]

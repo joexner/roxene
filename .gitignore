@@ -1,7 +1,6 @@
 .idea
 __pycache__
 .pytest_cache
-tests/persistence_test.db
 **build
 **/*.egg-info/
 **/test.db

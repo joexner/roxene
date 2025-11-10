@@ -88,6 +88,9 @@ class Environment(object):
             susceptibility_log_wiggle: float = 0.01
             new_mutagen = CreateNeuronMutagen(layer, base_susceptibility, susceptibility_log_wiggle)
             self.mutagens.append(new_mutagen)
+            # Persist the mutagen to the database
+            with self.sessionmaker.begin() as session:
+                session.add(new_mutagen)
 
     def start_trial(self) -> Trial:
         with (self.sessionmaker(expire_on_commit=False) as session):

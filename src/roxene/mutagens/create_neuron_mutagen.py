@@ -1,8 +1,11 @@
 from enum import Enum, auto
+import uuid
 
 import numpy as np
 from numpy import ndarray
 from numpy.random import Generator
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 
 from ..constants import NP_PRECISION
 from ..genes.create_neuron import CreateNeuron
@@ -19,7 +22,11 @@ class CNLayer(Enum):
     hidden_output = auto()
 
 class CreateNeuronMutagen(Mutagen):
-    layer_to_mutate: CNLayer
+    __tablename__ = "create_neuron_mutagen"
+    __mapper_args__ = {"polymorphic_identity": "create_neuron_mutagen"}
+
+    id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
+    layer_to_mutate_value: Mapped[int]
 
     def __init__(self,
                  layer_to_mutate: CNLayer,
@@ -27,6 +34,15 @@ class CreateNeuronMutagen(Mutagen):
                  susceptibility_log_wiggle: float = 0.01):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)
         self.layer_to_mutate = layer_to_mutate
+        self.layer_to_mutate_value = layer_to_mutate.value
+
+    @property
+    def layer_to_mutate(self) -> CNLayer:
+        return CNLayer(self.layer_to_mutate_value)
+
+    @layer_to_mutate.setter
+    def layer_to_mutate(self, value: CNLayer):
+        self.layer_to_mutate_value = value.value
 
     def mutate_CreateNeuron(self, gene: CreateNeuron, rng: Generator) -> CreateNeuron:
         susceptibility = self.get_mutation_susceptibility(gene, rng)

@@ -29,7 +29,14 @@ class Mutagen(EntityBase, ABC):
         self.base_susceptibility = base_susceptibility
         self.susceptibility_log_wiggle = susceptibility_log_wiggle
         # susceptibilities is runtime state - not persisted
-        self.susceptibilities = {None: base_susceptibility}
+        self._susceptibilities = None
+
+    @property
+    def susceptibilities(self) -> dict[Gene | None, float]:
+        """Lazy-initialized susceptibilities dict for runtime state"""
+        if self._susceptibilities is None:
+            self._susceptibilities = {None: self.base_susceptibility}
+        return self._susceptibilities
 
     def get_mutation_susceptibility(self, gene: Gene, rng: Generator) -> float:
         result = self.susceptibilities.get(gene)

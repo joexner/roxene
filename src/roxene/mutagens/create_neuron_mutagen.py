@@ -33,15 +33,17 @@ class CreateNeuronMutagen(Mutagen):
                  base_susceptibility: float = 0.001,
                  susceptibility_log_wiggle: float = 0.01):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)
-        self.layer_to_mutate = layer_to_mutate
+        # Store the enum value directly for persistence
         self.layer_to_mutate_value = layer_to_mutate.value
 
     @property
     def layer_to_mutate(self) -> CNLayer:
+        """Convert stored integer value back to enum"""
         return CNLayer(self.layer_to_mutate_value)
 
     @layer_to_mutate.setter
     def layer_to_mutate(self, value: CNLayer):
+        """Store enum as integer value"""
         self.layer_to_mutate_value = value.value
 
     def mutate_CreateNeuron(self, gene: CreateNeuron, rng: Generator) -> CreateNeuron:

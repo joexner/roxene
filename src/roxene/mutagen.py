@@ -34,7 +34,7 @@ class Mutagen(EntityBase):
     @property
     def susceptibilities(self) -> dict[Gene | None, float]:
         """Lazy-initialized susceptibilities dict for runtime state"""
-        if self._susceptibilities is None:
+        if not hasattr(self, '_susceptibilities') or self._susceptibilities is None:
             self._susceptibilities = {None: self.base_susceptibility}
         return self._susceptibilities
 

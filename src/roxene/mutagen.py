@@ -1,4 +1,4 @@
-from abc import ABC
+import abc
 import uuid
 from numpy.random import Generator
 from sqlalchemy import ForeignKey
@@ -10,7 +10,7 @@ from .persistence import EntityBase
 from .util import wiggle
 
 
-class Mutagen(EntityBase, ABC):
+class Mutagen(EntityBase):
     __tablename__ = "mutagen"
     __allow_unmapped__ = True
 

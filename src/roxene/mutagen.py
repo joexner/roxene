@@ -1,13 +1,29 @@
 import abc
 import uuid
+from typing import Optional
 from numpy.random import Generator
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
 from .gene import Gene
 from .genes.composite_gene import CompositeGene
 from .genes.create_neuron import CreateNeuron
 from .persistence import EntityBase
 from .util import wiggle
+
+
+class _Mutagen_Susceptibility(EntityBase):
+    __tablename__ = "mutagen_susceptibility"
+
+    mutagen_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
+    gene_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("gene.id"), primary_key=True)
+    susceptibility: Mapped[float]
+
+    mutagen: Mapped["Mutagen"] = relationship(back_populates="_susceptibility_records")
+    gene: Mapped[Optional[Gene]] = relationship()
+
+    def __init__(self, gene: Optional[Gene], susceptibility: float):
+        self.gene = gene
+        self.susceptibility = susceptibility
 
 
 class Mutagen(EntityBase):
@@ -24,27 +40,34 @@ class Mutagen(EntityBase):
         "polymorphic_on": "type",
     }
 
+    _susceptibility_records: Mapped[dict[Optional[Gene], _Mutagen_Susceptibility]] = relationship(
+        collection_class=attribute_keyed_dict("gene"),
+        cascade="all, delete-orphan",
+        back_populates="mutagen"
+    )
+
     def __init__(self, base_susceptibility: float, susceptibility_log_wiggle: float):
         self.id = uuid.uuid4()
         self.base_susceptibility = base_susceptibility
         self.susceptibility_log_wiggle = susceptibility_log_wiggle
-        # susceptibilities is runtime state - not persisted
-        self._susceptibilities = None
+        # Initialize with base susceptibility for None gene
+        self._susceptibility_records[None] = _Mutagen_Susceptibility(None, base_susceptibility)
 
     @property
     def susceptibilities(self) -> dict[Gene | None, float]:
-        """Lazy-initialized susceptibilities dict for runtime state"""
-        if not hasattr(self, '_susceptibilities') or self._susceptibilities is None:
-            self._susceptibilities = {None: self.base_susceptibility}
-        return self._susceptibilities
+        """Access susceptibilities as a dictionary of gene -> susceptibility value"""
+        return {gene: record.susceptibility for gene, record in self._susceptibility_records.items()}
 
     def get_mutation_susceptibility(self, gene: Gene, rng: Generator) -> float:
-        result = self.susceptibilities.get(gene)
-        if result is None:
-            parent_gene = getattr(gene, "parent_gene", None)
-            parent_sus = self.get_mutation_susceptibility(parent_gene, rng)
-            result = wiggle(parent_sus, rng, self.susceptibility_log_wiggle)
-            self.susceptibilities[gene] = result
+        if gene in self._susceptibility_records:
+            return self._susceptibility_records[gene].susceptibility
+        
+        parent_gene = getattr(gene, "parent_gene", None)
+        parent_sus = self.get_mutation_susceptibility(parent_gene, rng)
+        result = wiggle(parent_sus, rng, self.susceptibility_log_wiggle)
+        
+        # Store in database-backed dictionary
+        self._susceptibility_records[gene] = _Mutagen_Susceptibility(gene, result)
         return result
 
     def mutate(self, gene: Gene, rng: Generator) -> Gene:

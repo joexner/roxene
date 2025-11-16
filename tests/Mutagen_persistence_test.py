@@ -164,3 +164,61 @@ class Mutagen_persistence_test(unittest.TestCase):
             # And should still have correct properties
             self.assertEqual(reloaded1.layer_to_mutate, CNLayer.input_hidden)
             self.assertEqual(reloaded2.base_susceptibility, 0.02)
+
+    def test_susceptibilities_with_genes_persistence(self):
+        """Test that susceptibilities with gene keys are persisted"""
+        import numpy as np
+        from roxene.genes.create_neuron import CreateNeuron
+        from roxene import random_neuron_state
+        
+        mutagen = CreateNeuronMutagen(CNLayer.input_hidden, 0.001, 0.01)
+        mutagen_id = mutagen.id
+        
+        # Create some genes and get their susceptibilities
+        rng = np.random.default_rng(42)
+        gene1 = CreateNeuron(**random_neuron_state(10, 10, 10))
+        gene2 = CreateNeuron(**random_neuron_state(10, 10, 10), parent_gene=gene1)
+        
+        gene1_id = gene1.id
+        gene2_id = gene2.id
+        
+        # Get susceptibilities which will be stored in the mutagen
+        sus1 = mutagen.get_mutation_susceptibility(gene1, rng)
+        sus2 = mutagen.get_mutation_susceptibility(gene2, rng)
+        
+        # Verify they were stored
+        self.assertIn(gene1, mutagen.susceptibilities)
+        self.assertIn(gene2, mutagen.susceptibilities)
+        self.assertEqual(mutagen.susceptibilities[gene1], sus1)
+        self.assertEqual(mutagen.susceptibilities[gene2], sus2)
+        
+        # Create in-memory database
+        engine = create_engine("sqlite://")
+        EntityBase.metadata.create_all(engine)
+        
+        # Save to database
+        with Session(engine) as session:
+            session.add(gene1)
+            session.add(gene2)
+            session.add(mutagen)
+            session.commit()
+        
+        # Reload from database
+        with Session(engine) as session:
+            reloaded_mutagen = session.get(Mutagen, mutagen_id)
+            reloaded_gene1 = session.get(CreateNeuron, gene1_id)
+            reloaded_gene2 = session.get(CreateNeuron, gene2_id)
+            
+            # Verify susceptibilities were persisted
+            self.assertIsNotNone(reloaded_mutagen)
+            self.assertIsNotNone(reloaded_gene1)
+            self.assertIsNotNone(reloaded_gene2)
+            
+            # Check that susceptibilities are preserved
+            self.assertIn(None, reloaded_mutagen.susceptibilities)
+            self.assertIn(reloaded_gene1, reloaded_mutagen.susceptibilities)
+            self.assertIn(reloaded_gene2, reloaded_mutagen.susceptibilities)
+            
+            self.assertEqual(reloaded_mutagen.susceptibilities[None], 0.001)
+            self.assertEqual(reloaded_mutagen.susceptibilities[reloaded_gene1], sus1)
+            self.assertEqual(reloaded_mutagen.susceptibilities[reloaded_gene2], sus2)

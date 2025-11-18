@@ -42,10 +42,9 @@ class Mutagen_persistence_test(unittest.TestCase):
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.layer_to_mutate, layer)
-            self.assertEqual(reloaded.base_susceptibility, base_sus)
             self.assertEqual(reloaded.susceptibility_log_wiggle, wiggle)
             
-            # Verify susceptibilities dict is initialized (not persisted)
+            # Verify susceptibilities dict is initialized and persisted
             self.assertIn(None, reloaded.susceptibilities)
             self.assertEqual(reloaded.susceptibilities[None], base_sus)
 
@@ -77,10 +76,9 @@ class Mutagen_persistence_test(unittest.TestCase):
             # Verify all properties are preserved
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
-            self.assertEqual(reloaded.base_susceptibility, base_sus)
             self.assertEqual(reloaded.susceptibility_log_wiggle, wiggle)
             
-            # Verify susceptibilities dict is initialized
+            # Verify susceptibilities dict is initialized and persisted
             self.assertIn(None, reloaded.susceptibilities)
             self.assertEqual(reloaded.susceptibilities[None], base_sus)
 
@@ -164,7 +162,7 @@ class Mutagen_persistence_test(unittest.TestCase):
             
             # And should still have correct properties
             self.assertEqual(reloaded1.layer_to_mutate, CNLayer.input_hidden)
-            self.assertEqual(reloaded2.base_susceptibility, 0.02)
+            self.assertEqual(reloaded2.susceptibilities[None], 0.02)
 
     def test_susceptibilities_with_genes_persistence(self):
         """Test that susceptibilities with gene keys are persisted"""

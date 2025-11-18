@@ -22,11 +22,9 @@ class _Mutagen_Susceptibility(EntityBase):
     mutagen: Mapped["Mutagen"] = relationship(back_populates="_susceptibility_records")
     gene: Mapped[Optional[Gene]] = relationship()
 
-    def __init__(self, gene: Optional[Gene], susceptibility: float, mutagen: Optional["Mutagen"] = None):
+    def __init__(self, gene: Optional[Gene], susceptibility: float):
         self.gene = gene
         self.susceptibility = susceptibility
-        if mutagen is not None:
-            self.mutagen = mutagen
 
 
 class Mutagen(EntityBase):
@@ -48,14 +46,10 @@ class Mutagen(EntityBase):
         back_populates="mutagen"
     )
 
-    def _create_susceptibility_record(self, gene: Optional[Gene], susceptibility: float) -> _Mutagen_Susceptibility:
-        """Creator function for susceptibility records that properly sets the mutagen relationship"""
-        return _Mutagen_Susceptibility(gene, susceptibility, mutagen=self)
-    
     susceptibilities: AssociationProxy[dict[Optional[Gene], float]] = association_proxy(
         target_collection="_susceptibility_records",
         attr="susceptibility",
-        creator=_create_susceptibility_record
+        creator=lambda gene, susceptibility: _Mutagen_Susceptibility(gene, susceptibility)
     )
 
     def __init__(self, base_susceptibility: float, susceptibility_log_wiggle: float):

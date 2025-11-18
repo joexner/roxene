@@ -116,10 +116,11 @@ class Mutagen_persistence_test(unittest.TestCase):
             self.assertEqual(reloaded1.layer_to_mutate, CNLayer.feedback_initial_value)
             self.assertEqual(reloaded2.layer_to_mutate, CNLayer.hidden_output)
             
-            # Verify each has its own independent susceptibilities dict
-            self.assertIsInstance(reloaded1.susceptibilities, dict)
-            self.assertIsInstance(reloaded2.susceptibilities, dict)
-            self.assertIsInstance(reloaded3.susceptibilities, dict)
+            # Verify each has its own independent susceptibilities (dict-like interface)
+            # AssociationProxy provides dict-like access but isn't technically a dict instance
+            self.assertIn(None, reloaded1.susceptibilities)
+            self.assertIn(None, reloaded2.susceptibilities)
+            self.assertIn(None, reloaded3.susceptibilities)
 
     def test_mutagen_str_method(self):
         """Test the __str__ method returns expected format"""

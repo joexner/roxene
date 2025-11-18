@@ -33,7 +33,6 @@ class Mutagen(EntityBase):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
     type: Mapped[str]
-    base_susceptibility: Mapped[float]
     susceptibility_log_wiggle: Mapped[float]
 
     __mapper_args__ = {
@@ -55,10 +54,14 @@ class Mutagen(EntityBase):
 
     def __init__(self, base_susceptibility: float, susceptibility_log_wiggle: float):
         self.id = uuid.uuid4()
-        self.base_susceptibility = base_susceptibility
         self.susceptibility_log_wiggle = susceptibility_log_wiggle
         # Initialize with base susceptibility for None gene
         self.susceptibilities[None] = base_susceptibility
+    
+    @property
+    def base_susceptibility(self) -> float:
+        """Return the base susceptibility value stored in susceptibilities[None]"""
+        return self.susceptibilities.get(None, 0.0)
 
     def get_mutation_susceptibility(self, gene: Gene, rng: Generator) -> float:
         if gene in self.susceptibilities:

@@ -4,6 +4,7 @@ from typing import Optional
 from numpy.random import Generator
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
+from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from .gene import Gene
 from .genes.composite_gene import CompositeGene
 from .genes.create_neuron import CreateNeuron
@@ -46,28 +47,29 @@ class Mutagen(EntityBase):
         back_populates="mutagen"
     )
 
+    susceptibilities: AssociationProxy[dict[Optional[Gene], float]] = association_proxy(
+        target_collection="_susceptibility_records",
+        attr="susceptibility",
+        creator=lambda gene, susceptibility: _Mutagen_Susceptibility(gene, susceptibility)
+    )
+
     def __init__(self, base_susceptibility: float, susceptibility_log_wiggle: float):
         self.id = uuid.uuid4()
         self.base_susceptibility = base_susceptibility
         self.susceptibility_log_wiggle = susceptibility_log_wiggle
         # Initialize with base susceptibility for None gene
-        self._susceptibility_records[None] = _Mutagen_Susceptibility(None, base_susceptibility)
-
-    @property
-    def susceptibilities(self) -> dict[Gene | None, float]:
-        """Access susceptibilities as a dictionary of gene -> susceptibility value"""
-        return {gene: record.susceptibility for gene, record in self._susceptibility_records.items()}
+        self.susceptibilities[None] = base_susceptibility
 
     def get_mutation_susceptibility(self, gene: Gene, rng: Generator) -> float:
-        if gene in self._susceptibility_records:
-            return self._susceptibility_records[gene].susceptibility
+        if gene in self.susceptibilities:
+            return self.susceptibilities[gene]
         
         parent_gene = getattr(gene, "parent_gene", None)
         parent_sus = self.get_mutation_susceptibility(parent_gene, rng)
         result = wiggle(parent_sus, rng, self.susceptibility_log_wiggle)
         
         # Store in database-backed dictionary
-        self._susceptibility_records[gene] = _Mutagen_Susceptibility(gene, result)
+        self.susceptibilities[gene] = result
         return result
 
     def mutate(self, gene: Gene, rng: Generator) -> Gene:

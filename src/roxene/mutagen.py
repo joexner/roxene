@@ -1,8 +1,7 @@
-import abc
 import uuid
 from typing import Optional
 from numpy.random import Generator
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from .gene import Gene
@@ -14,9 +13,13 @@ from .util import wiggle
 
 class _Mutagen_Susceptibility(EntityBase):
     __tablename__ = "mutagen_susceptibility"
+    __table_args__ = (
+        UniqueConstraint('mutagen_id', 'gene_id', name='uq_mutagen_gene'),
+    )
 
-    mutagen_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
-    gene_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("gene.id"), primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    mutagen_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), nullable=False)
+    gene_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("gene.id"), nullable=True)
     susceptibility: Mapped[float]
 
     mutagen: Mapped["Mutagen"] = relationship(back_populates="_susceptibility_records")

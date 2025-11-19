@@ -82,14 +82,14 @@ class Environment(object):
 
     def add_mutagens(self, num_mutagens):
         mutagen_severity_spread_log_wiggle = 3
-        for n in range(num_mutagens):
-            layer = self.rng.choice(CNLayer)
-            base_susceptibility: float = wiggle(0.001, self.rng, mutagen_severity_spread_log_wiggle)
-            susceptibility_log_wiggle: float = 0.01
-            new_mutagen = CreateNeuronMutagen(layer, base_susceptibility, susceptibility_log_wiggle)
-            self.mutagens.append(new_mutagen)
-            # Persist the mutagen to the database
-            with self.sessionmaker.begin() as session:
+        # Persist all mutagens to the database in a single transaction
+        with self.sessionmaker.begin() as session:
+            for n in range(num_mutagens):
+                layer = self.rng.choice(CNLayer)
+                base_susceptibility: float = wiggle(0.001, self.rng, mutagen_severity_spread_log_wiggle)
+                susceptibility_log_wiggle: float = 0.01
+                new_mutagen = CreateNeuronMutagen(layer, base_susceptibility, susceptibility_log_wiggle)
+                self.mutagens.append(new_mutagen)
                 session.add(new_mutagen)
 
     def start_trial(self) -> Trial:

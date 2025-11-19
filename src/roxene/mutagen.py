@@ -49,7 +49,7 @@ class Mutagen(EntityBase):
     susceptibilities: AssociationProxy[dict[Optional[Gene], float]] = association_proxy(
         target_collection="_susceptibility_records",
         attr="susceptibility",
-        creator=lambda gene, susceptibility: _Mutagen_Susceptibility(gene, susceptibility)
+        creator=_Mutagen_Susceptibility
     )
 
     def __init__(self, base_susceptibility: float, susceptibility_log_wiggle: float):

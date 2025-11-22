@@ -3,19 +3,21 @@ import unittest
 import numpy as np
 from numpy import ndarray
 from numpy.random import Generator
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
-from roxene import random_neuron_state
+from roxene import EntityBase, random_neuron_state
 from roxene.genes import CreateNeuron
 from roxene.mutagens import CNLayer, CreateNeuronMutagen
 
 SEED = 2837457
 
 
-class Mutagens_test(unittest.TestCase):
+class CreateNeuronMutagen_test(unittest.TestCase):
 
     def test_CreateNeuronMutagen(self):
         rng: Generator = np.random.default_rng(SEED)
-        gene = CreateNeuron(**random_neuron_state(100, 100, 100))
+        gene = CreateNeuron(**random_neuron_state(100, 100, 100, rng))
         for layer_to_mutate in CNLayer:
             mutagen = CreateNeuronMutagen(layer_to_mutate=layer_to_mutate)
             mutant = mutagen.mutate(gene, rng)
@@ -52,3 +54,19 @@ class Mutagens_test(unittest.TestCase):
                                      "At least of the values should have been unchanged, due to, umm, fp16 precision")
         else:
             self.assertEqual(fraction_changed, 0, "None should have changed")
+
+    def test_persist_reload(self):
+        mutagen = CreateNeuronMutagen(CNLayer.input_hidden, 0.005, 0.02)
+        mutagen_id = mutagen.id
+        engine = create_engine("sqlite://")
+        EntityBase.metadata.create_all(engine)
+        with Session(engine) as session:
+            session.add(mutagen)
+            session.commit()
+        with Session(engine) as session:
+            reloaded = session.get(CreateNeuronMutagen, mutagen_id)
+            self.assertIsNotNone(reloaded)
+            self.assertEqual(reloaded.id, mutagen_id)
+            self.assertEqual(reloaded.layer_to_mutate, CNLayer.input_hidden)
+            self.assertEqual(reloaded.susceptibilities[None], 0.005)
+            self.assertEqual(reloaded.susceptibility_log_wiggle, 0.02)

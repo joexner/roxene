@@ -16,20 +16,20 @@ SEED = 235869903
 class Trial_test(unittest.TestCase):
 
     def test_occupied_square(self):
-        p1 = Player(queued_input=[(0, 0), (0, 1)])
-        p2 = Player(queued_input=[(2, 2), (0, 0)])
+        p1 = Player()
+        p2 = Player()
         trial = Trial(p1, p2)
-        trial.run()
+        trial.run(queued_input=[(0, 0), (2, 2), (0, 1), (0, 0)])
         self.assertEqual(trial.moves[0].outcomes, {Outcome.VALID_MOVE})
         self.assertEqual(trial.moves[1].outcomes, {Outcome.VALID_MOVE})
         self.assertEqual(trial.moves[2].outcomes, {Outcome.VALID_MOVE})
         self.assertEqual(trial.moves[3].outcomes, {Outcome.INVALID_MOVE, Outcome.LOSE})
 
     def test_win(self):
-        p1 = Player(queued_input=[(1, 1), (0, 0), (2, 2)])
-        p2 = Player(queued_input=[(0, 1), (1, 0)])
+        p1 = Player()
+        p2 = Player()
         trial = Trial(p1, p2)
-        trial.run()
+        trial.run(queued_input=[(1, 1), (0, 1), (0, 0), (1, 0), (2, 2)])
         self.assertEqual(trial.moves[0].outcomes, {Outcome.VALID_MOVE})
         self.assertEqual(trial.moves[1].outcomes, {Outcome.VALID_MOVE})
         self.assertEqual(trial.moves[2].outcomes, {Outcome.VALID_MOVE})
@@ -37,10 +37,10 @@ class Trial_test(unittest.TestCase):
         self.assertEqual(trial.moves[4].outcomes, {Outcome.VALID_MOVE, Outcome.WIN})
 
     def test_simple_game_tie(self):
-        p1 = Player(queued_input=[(1, 1), (2, 2), (0, 1), (1, 0), (2, 0)])
-        p2 = Player(queued_input=[(0, 0), (0, 2), (2, 1), (1, 2)])
+        p1 = Player()
+        p2 = Player()
         trial = Trial(p1, p2)
-        trial.run()
+        trial.run(queued_input=[(1, 1), (0, 0), (2, 2), (0, 2), (0, 1), (2, 1), (1, 0), (1, 2), (2, 0)])
         self.assertEqual(len(trial.moves), 9)
         self.assertTrue(all(move.outcomes=={Outcome.VALID_MOVE} for move in trial.moves))
 

@@ -8,7 +8,6 @@ from .persistence import EntityBase
 
 class Cell(EntityBase):
     __tablename__ = "cell"
-    __allow_unmapped__ = True
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
     type: Mapped[str]

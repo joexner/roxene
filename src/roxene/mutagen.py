@@ -28,7 +28,6 @@ class _Mutagen_Susceptibility(EntityBase):
 
 class Mutagen(EntityBase):
     __tablename__ = "mutagen"
-    __allow_unmapped__ = True
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
     type: Mapped[str]

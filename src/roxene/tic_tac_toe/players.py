@@ -23,7 +23,6 @@ REQUIRED_OUTPUTS = [str(x) + ',' + str(y) for x in range(3) for y in range(3)] +
 
 class Player(EntityBase):
     __tablename__ = "player"
-    __allow_unmapped__ = True
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
     trial_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("trial.id"))
@@ -33,19 +32,12 @@ class Player(EntityBase):
     trial: Mapped["Trial"] = relationship("Trial", back_populates='participants', lazy="joined")
     organism: Mapped[Organism] = relationship(Organism, lazy="joined")
 
-    queued_input: List[Tuple[int]] = None
-
-    def __init__(self, organism: Organism = None, letter: str = None, queued_input: list[Tuple[int]] = None):
+    def __init__(self, organism: Organism = None, letter: str = None):
         self.id = uuid.uuid4()
         self.organism = organism
         self.letter = letter
-        self.queued_input = queued_input
 
-    def get_move_coords(self, board, timeout=MAX_UPDATES) -> Tuple[int]:
-        logger = logging.getLogger(str(self.organism)).getChild("player")
-        if self.queued_input is not None and len(self.queued_input) > 0:
-            return self.queued_input.pop(0)
-
+    def get_move_coords(self, board, timeout=MAX_UPDATES) -> Tuple[int, int]:
         for x in range(3):
             for y in range(3):
                 input_label = str(x) + "," + str(y)

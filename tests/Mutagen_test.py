@@ -1,7 +1,6 @@
 import unittest
 import numpy as np
 from numpy.random import default_rng
-from sympy.printing.latex import other_symbols
 
 from roxene import Mutagen, random_neuron_state
 from roxene.genes import CreateNeuron

@@ -82,7 +82,6 @@ class Environment(object):
 
     def add_mutagens(self, num_mutagens):
         mutagen_severity_spread_log_wiggle = 3
-        # Persist all mutagens to the database in a single transaction
         for n in range(num_mutagens):
             with self.sessionmaker.begin() as session:
                 layer = self.rng.choice(CNLayer)
@@ -94,10 +93,9 @@ class Environment(object):
 
     def start_trial(self) -> Trial:
         with (self.sessionmaker(expire_on_commit=False) as session):
-            org_ids: [uuid.UUID] = self.population.sample(2, True, self.rng, session)
-            orgs: List[Organism] = [session.get(Organism, oid) for oid in org_ids]
-            p1, p2 = Player(orgs[0]), Player(orgs[1])
-
+            org_ids: List[uuid.UUID] = self.population.sample(2, True, self.rng, session)
+            p1 = Player(session.get(Organism, org_ids[0]))
+            p2 = Player(session.get(Organism, org_ids[1]))
             trial = Trial(p1, p2)
 
             session.add(trial)

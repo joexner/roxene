@@ -40,7 +40,7 @@ class Environment(object):
     """
 
     population: Population
-    mutagens: [Mutagen]
+    mutagens: List[Mutagen]
     rng: Generator
     sessionmaker: sessionmaker
 
@@ -83,8 +83,8 @@ class Environment(object):
     def add_mutagens(self, num_mutagens):
         mutagen_severity_spread_log_wiggle = 3
         # Persist all mutagens to the database in a single transaction
-        with self.sessionmaker.begin() as session:
-            for n in range(num_mutagens):
+        for n in range(num_mutagens):
+            with self.sessionmaker.begin() as session:
                 layer = self.rng.choice(CNLayer)
                 base_susceptibility: float = wiggle(0.001, self.rng, mutagen_severity_spread_log_wiggle)
                 susceptibility_log_wiggle: float = 0.01

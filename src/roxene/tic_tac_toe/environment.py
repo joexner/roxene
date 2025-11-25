@@ -161,7 +161,7 @@ class Environment(object):
                 logger.info(f"Bred organism {new_organism.id} from {organism_id_to_breed}")
                 self.population.add(new_organism, session)
 
-    def clone(self, organism_id: uuid, session: Session, mutate=True) -> Organism:
+    def clone(self, organism_id: uuid.UUID, session: Session, mutate=True) -> Organism:
         original_genotype = session.scalar(select(Gene)
                              .join_from(Organism, Gene)
                              .where(Organism.id == organism_id))

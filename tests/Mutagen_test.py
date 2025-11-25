@@ -21,7 +21,10 @@ class Mutagen_test(unittest.TestCase):
         rng = default_rng(7)
         mutagen = CreateNeuronMutagen(CNLayer.input_hidden, 0.05, 0.1)
         parent = CreateNeuron(**random_neuron_state(10, 10, 10, rng))
-        child = CreateNeuron(**random_neuron_state(10, 10, 10, rng), parent_gene=parent)
+        # Create child by mutating parent with a different mutagen
+        other_mutagen = CreateNeuronMutagen(CNLayer.hidden_output, 0.05, 0.1)
+        child = other_mutagen.mutate_CreateNeuron(parent, rng)
+        self.assertEqual(child.parent_gene, parent)
         parent_val = mutagen.get_mutation_susceptibility(parent, rng)
         child_val = mutagen.get_mutation_susceptibility(child, rng)
         self.assertNotEqual(parent_val, child_val)

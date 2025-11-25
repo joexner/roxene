@@ -49,7 +49,7 @@ class Trial(EntityBase):
         return len(self.moves) == 9 or \
                any(filter(lambda move: Outcome.WIN in move.outcomes or Outcome.LOSE in move.outcomes, self.moves))
 
-    def run(self, timeout=1000):
+    def run(self, timeout=1000, queued_input: List[tuple[int, int]] = None):
         self.start_date = datetime.now()
         board = [[None, None, None], [None, None, None], [None, None, None]]
         logging.info(f"Beginning trial for {[str(p) for p in self.participants]}")
@@ -64,7 +64,10 @@ class Trial(EntityBase):
             if current_player.organism is not None:
                 this_move.organism = current_player.organism
             try:
-                move_coords = current_player.get_move_coords(board, timeout)
+                if queued_input is not None:
+                    move_coords = queued_input.pop(0)
+                else:
+                    move_coords = current_player.get_move_coords(board, timeout)
                 this_move.position = Point(move_coords[0], move_coords[1])
                 existing_square_value = board[move_coords[0]][move_coords[1]]
                 if existing_square_value:

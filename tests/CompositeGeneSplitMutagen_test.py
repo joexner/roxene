@@ -1,27 +1,24 @@
-import logging
 import unittest
 from typing import List
 
 import numpy as np
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
-from roxene import Gene
+from roxene import EntityBase, Gene
 from roxene.genes import CompositeGene, RotateCells
 from roxene.mutagens import CompositeGeneSplitMutagen
 
 SEED = 11235
 
-logger = logging.getLogger(__name__)
-
 class CompositeGeneSplitMutagen_test(unittest.TestCase):
 
     def test_split_basic(self):
-        # Parent CG with 10 iterations
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.BACKWARD),
                                    RotateCells(RotateCells.Direction.FORWARD),
                                    RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=10)
 
-        # SUT, with 1.0 sus and 0 log-wiggle it will always apply #TODO verify this 👈
         mutagen = CompositeGeneSplitMutagen(1,0)
 
         rng = np.random.default_rng(SEED)
@@ -41,5 +38,18 @@ class CompositeGeneSplitMutagen_test(unittest.TestCase):
             self.assertEqual(first.iterations + second.iterations, 10)
             self.assertGreaterEqual(first.iterations, 1)
             self.assertGreaterEqual(second.iterations, 1)
-            logger.info(f"Split into {first.iterations} and {second.iterations}")
 
+    def test_persist_reload(self):
+        mutagen = CompositeGeneSplitMutagen(0.01, 0.03)
+        mutagen_id = mutagen.id
+        engine = create_engine("sqlite://")
+        EntityBase.metadata.create_all(engine)
+        with Session(engine) as session:
+            session.add(mutagen)
+            session.commit()
+        with Session(engine) as session:
+            reloaded = session.get(CompositeGeneSplitMutagen, mutagen_id)
+            self.assertIsNotNone(reloaded)
+            self.assertEqual(reloaded.id, mutagen_id)
+            self.assertEqual(reloaded.susceptibilities[None], 0.01)
+            self.assertEqual(reloaded.susceptibility_log_wiggle, 0.03)

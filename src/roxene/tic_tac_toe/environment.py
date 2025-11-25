@@ -40,7 +40,7 @@ class Environment(object):
     """
 
     population: Population
-    mutagens: [Mutagen]
+    mutagens: List[Mutagen]
     rng: Generator
     sessionmaker: sessionmaker
 
@@ -83,23 +83,22 @@ class Environment(object):
     def add_mutagens(self, num_mutagens):
         mutagen_severity_spread_log_wiggle = 3
         for n in range(num_mutagens):
-            layer = self.rng.choice(CNLayer)
-            base_susceptibility: float = wiggle(0.001, self.rng, mutagen_severity_spread_log_wiggle)
-            susceptibility_log_wiggle: float = 0.01
-            new_mutagen = CreateNeuronMutagen(layer, base_susceptibility, susceptibility_log_wiggle)
-            self.mutagens.append(new_mutagen)
+            with self.sessionmaker.begin() as session:
+                layer = self.rng.choice(CNLayer)
+                base_susceptibility: float = wiggle(0.001, self.rng, mutagen_severity_spread_log_wiggle)
+                susceptibility_log_wiggle: float = 0.01
+                new_mutagen = CreateNeuronMutagen(layer, base_susceptibility, susceptibility_log_wiggle)
+                self.mutagens.append(new_mutagen)
+                session.add(new_mutagen)
 
     def start_trial(self) -> Trial:
         with (self.sessionmaker(expire_on_commit=False) as session):
-            org_ids: [uuid.UUID] = self.population.sample(2, True, self.rng, session)
-            orgs: List[Organism] = [session.get(Organism, oid) for oid in org_ids]
-            p1, p2 = Player(orgs[0]), Player(orgs[1])
-
+            org_ids: List[uuid.UUID] = self.population.sample(2, True, self.rng, session)
+            p1 = Player(session.get(Organism, org_ids[0]))
+            p2 = Player(session.get(Organism, org_ids[1]))
             trial = Trial(p1, p2)
-
             session.add(trial)
             session.commit()
-
             return trial
 
 
@@ -160,7 +159,7 @@ class Environment(object):
                 logger.info(f"Bred organism {new_organism.id} from {organism_id_to_breed}")
                 self.population.add(new_organism, session)
 
-    def clone(self, organism_id: uuid, session: Session, mutate=True) -> Organism:
+    def clone(self, organism_id: uuid.UUID, session: Session, mutate=True) -> Organism:
         original_genotype = session.scalar(select(Gene)
                              .join_from(Organism, Gene)
                              .where(Organism.id == organism_id))

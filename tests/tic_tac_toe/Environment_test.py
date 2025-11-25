@@ -24,16 +24,15 @@ class Environment_test(unittest.TestCase):
         o1, o2, o3 = Organism(), Organism(), Organism()
         o1_id, o2_id, o3_id = o1.id, o2.id, o3.id
 
-        trial_1 = Trial(Player(o1, queued_input=[(0, 0), (0, 1), (0, 2)]),
-                        Player(o2, queued_input=[(1, 0), (1, 1)]))
+        trial_1 = Trial(Player(o1), Player(o2))
 
-        trial_2 = Trial(Player(o1, queued_input=[(0, 0), (0, 1)]),
-                        Player(o3, queued_input=[(1, 0), (0, 0)]))
+        trial_2 = Trial(Player(o1), Player(o3))
 
-        trial_1.run()
+        trial_1.run(queued_input=[(0, 0), (1, 0), (0, 1), (1, 1), (0, 2)])
+
         environment.complete_trial(trial_1)
 
-        trial_2.run()
+        trial_2.run(queued_input=[(0, 0), (1, 0), (0, 1), (0, 0)])
         environment.complete_trial(trial_2)
 
         with Session(engine) as session:

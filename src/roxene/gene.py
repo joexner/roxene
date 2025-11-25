@@ -12,7 +12,6 @@ from .persistence import EntityBase
 
 class Gene(EntityBase):
     __tablename__ = "gene"
-    __allow_unmapped__ = True
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
     parent_gene_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("gene.id"))

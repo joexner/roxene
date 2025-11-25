@@ -1,17 +1,58 @@
-from abc import ABC
+import uuid
+from typing import Optional
 from numpy.random import Generator
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
+from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from .gene import Gene
 from .genes.composite_gene import CompositeGene
 from .genes.create_neuron import CreateNeuron
+from .persistence import EntityBase
 from .util import wiggle
 
 
-class Mutagen(ABC):
-    susceptibilities: dict[Gene | None, float]
-    susceptibility_log_wiggle: float
+class _Mutagen_Susceptibility(EntityBase):
+    __tablename__ = "mutagen_susceptibility"
+
+    mutagen_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
+    gene_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("gene.id"), primary_key=True)
+    susceptibility: Mapped[float]
+
+    mutagen: Mapped["Mutagen"] = relationship(back_populates="_susceptibility_records")
+    gene: Mapped[Optional[Gene]] = relationship()
+
+    def __init__(self, gene: Optional[Gene], susceptibility: float):
+        self.gene = gene
+        self.susceptibility = susceptibility
+
+
+class Mutagen(EntityBase):
+    __tablename__ = "mutagen"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
+    type: Mapped[str]
+    susceptibility_log_wiggle: Mapped[float]
+
+    __mapper_args__ = {
+        "polymorphic_identity": "mutagen",
+        "polymorphic_on": "type",
+    }
+
+    _susceptibility_records: Mapped[dict[Optional[Gene], _Mutagen_Susceptibility]] = relationship(
+        collection_class=attribute_keyed_dict("gene"),
+        cascade="all, delete-orphan",
+        back_populates="mutagen"
+    )
+
+    susceptibilities: AssociationProxy[dict[Optional[Gene], float]] = association_proxy(
+        target_collection="_susceptibility_records",
+        attr="susceptibility",
+        creator=_Mutagen_Susceptibility
+    )
 
     def __init__(self, base_susceptibility: float, susceptibility_log_wiggle: float):
-        self.susceptibilities = {None: base_susceptibility}
+        self.id = uuid.uuid4()
+        self.susceptibilities[None] = base_susceptibility
         self.susceptibility_log_wiggle = susceptibility_log_wiggle
 
     def get_mutation_susceptibility(self, gene: Gene, rng: Generator) -> float:

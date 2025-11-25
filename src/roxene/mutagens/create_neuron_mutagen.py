@@ -38,12 +38,10 @@ class CreateNeuronMutagen(Mutagen):
 
     @property
     def layer_to_mutate(self) -> CNLayer:
-        """Convert stored integer value back to enum"""
         return CNLayer(self.layer_to_mutate_value)
 
     @layer_to_mutate.setter
     def layer_to_mutate(self, value: CNLayer):
-        """Store enum as integer value"""
         self.layer_to_mutate_value = value.value
 
     def mutate_CreateNeuron(self, gene: CreateNeuron, rng: Generator) -> CreateNeuron:

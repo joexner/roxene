@@ -1,5 +1,4 @@
 import unittest
-import numpy as np
 from numpy.random import default_rng
 
 from roxene import random_neuron_state

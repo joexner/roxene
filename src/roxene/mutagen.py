@@ -52,9 +52,8 @@ class Mutagen(EntityBase):
 
     def __init__(self, base_susceptibility: float, susceptibility_log_wiggle: float):
         self.id = uuid.uuid4()
-        self.susceptibility_log_wiggle = susceptibility_log_wiggle
-        # Initialize with base susceptibility for None gene
         self.susceptibilities[None] = base_susceptibility
+        self.susceptibility_log_wiggle = susceptibility_log_wiggle
 
     def get_mutation_susceptibility(self, gene: Gene, rng: Generator) -> float:
         result = self.susceptibilities.get(gene)

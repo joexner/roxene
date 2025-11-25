@@ -57,15 +57,12 @@ class Mutagen(EntityBase):
         self.susceptibilities[None] = base_susceptibility
 
     def get_mutation_susceptibility(self, gene: Gene, rng: Generator) -> float:
-        if gene in self.susceptibilities:
-            return self.susceptibilities[gene]
-        
-        parent_gene = getattr(gene, "parent_gene", None)
-        parent_sus = self.get_mutation_susceptibility(parent_gene, rng)
-        result = wiggle(parent_sus, rng, self.susceptibility_log_wiggle)
-        
-        # Store in database-backed dictionary
-        self.susceptibilities[gene] = result
+        result = self.susceptibilities.get(gene)
+        if result is None:
+            parent_gene = getattr(gene, "parent_gene", None)
+            parent_sus = self.get_mutation_susceptibility(parent_gene, rng)
+            result = wiggle(parent_sus, rng, self.susceptibility_log_wiggle)
+            self.susceptibilities[gene] = result
         return result
 
     def mutate(self, gene: Gene, rng: Generator) -> Gene:
@@ -90,6 +87,3 @@ class Mutagen(EntityBase):
 
     def mutate_CreateNeuron(self, gene: CreateNeuron, rng: Generator):
         return gene
-
-    def __str__(self):
-        return f"M-{str(self.id)[-7:]}"

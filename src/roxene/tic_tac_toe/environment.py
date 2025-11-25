@@ -97,10 +97,8 @@ class Environment(object):
             p1 = Player(session.get(Organism, org_ids[0]))
             p2 = Player(session.get(Organism, org_ids[1]))
             trial = Trial(p1, p2)
-
             session.add(trial)
             session.commit()
-
             return trial
 
 

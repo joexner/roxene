@@ -36,30 +36,23 @@ class CreateNeuronMutagen(Mutagen):
         # Store the enum value directly for persistence
         self.layer_to_mutate_value = layer_to_mutate.value
 
-    @property
-    def layer_to_mutate(self) -> CNLayer:
-        return CNLayer(self.layer_to_mutate_value)
-
-    @layer_to_mutate.setter
-    def layer_to_mutate(self, value: CNLayer):
-        self.layer_to_mutate_value = value.value
-
     def mutate_CreateNeuron(self, gene: CreateNeuron, rng: Generator) -> CreateNeuron:
         susceptibility = self.get_mutation_susceptibility(gene, rng)
+        layer_to_mutate = CNLayer(self.layer_to_mutate_value)
         return CreateNeuron(
-            input=gene.input if self.layer_to_mutate is not CNLayer.input_initial_value
+            input=gene.input if layer_to_mutate is not CNLayer.input_initial_value
             else self.maybe_wiggle(gene.input, susceptibility, rng).astype(NP_PRECISION),
-            feedback=gene.feedback if self.layer_to_mutate is not CNLayer.feedback_initial_value
+            feedback=gene.feedback if layer_to_mutate is not CNLayer.feedback_initial_value
             else self.maybe_wiggle(gene.feedback, susceptibility, rng).astype(NP_PRECISION),
-            output=gene.output if self.layer_to_mutate is not CNLayer.output_initial_value
+            output=gene.output if layer_to_mutate is not CNLayer.output_initial_value
             else self.maybe_wiggle(gene.output, susceptibility, rng).astype(NP_PRECISION),
-            input_hidden=gene.input_hidden if self.layer_to_mutate is not CNLayer.input_hidden
+            input_hidden=gene.input_hidden if layer_to_mutate is not CNLayer.input_hidden
             else self.maybe_wiggle(gene.input_hidden, susceptibility, rng).astype(NP_PRECISION),
-            hidden_feedback=gene.hidden_feedback if self.layer_to_mutate is not CNLayer.hidden_feedback
+            hidden_feedback=gene.hidden_feedback if layer_to_mutate is not CNLayer.hidden_feedback
             else self.maybe_wiggle(gene.hidden_feedback, susceptibility, rng).astype(NP_PRECISION),
-            feedback_hidden=gene.feedback_hidden if self.layer_to_mutate is not CNLayer.feedback_hidden
+            feedback_hidden=gene.feedback_hidden if layer_to_mutate is not CNLayer.feedback_hidden
             else self.maybe_wiggle(gene.feedback_hidden, susceptibility, rng).astype(NP_PRECISION),
-            hidden_output=gene.hidden_output if self.layer_to_mutate is not CNLayer.hidden_output
+            hidden_output=gene.hidden_output if layer_to_mutate is not CNLayer.hidden_output
             else self.maybe_wiggle(gene.hidden_output, susceptibility, rng).astype(NP_PRECISION),
             parent_gene=gene
         )

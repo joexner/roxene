@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 from numpy.random import default_rng
 
-from roxene import Mutagen, random_neuron_state
+from roxene import random_neuron_state
 from roxene.genes import CreateNeuron
 from roxene.mutagens import CreateNeuronMutagen, CNLayer
 

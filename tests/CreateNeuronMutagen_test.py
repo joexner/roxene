@@ -67,6 +67,6 @@ class CreateNeuronMutagen_test(unittest.TestCase):
             reloaded = session.get(CreateNeuronMutagen, mutagen_id)
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
-            self.assertEqual(reloaded.layer_to_mutate_value, CNLayer.input_hidden.value)
+            self.assertEqual(reloaded.layer_to_mutate, CNLayer.input_hidden)
             self.assertEqual(reloaded.susceptibilities[None], 0.005)
             self.assertEqual(reloaded.susceptibility_log_wiggle, 0.02)

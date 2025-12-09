@@ -100,7 +100,7 @@ class Population_test(unittest.TestCase):
 
             # Sample some organisms
             sample_size = 3
-            org_ids = pop.sample(sample_size, False, rng, session)
+            org_ids = pop.sample(sample_size, False, session)
 
             # Verify correct number returned
             self.assertEqual(sample_size, len(org_ids))
@@ -123,7 +123,7 @@ class Population_test(unittest.TestCase):
                 pop.add(organism, session)
 
             # Sample all organisms
-            org_ids = pop.sample(num_orgs, False, rng, session)
+            org_ids = pop.sample(num_orgs, False, session)
 
             # Verify correct number returned
             self.assertEqual(num_orgs, len(org_ids))
@@ -143,7 +143,7 @@ class Population_test(unittest.TestCase):
 
             # Try to sample 3 organisms - should raise ValueError
             with self.assertRaises(ValueError) as context:
-                pop.sample(3, False, rng, session)
+                pop.sample(3, False, session)
 
             self.assertIn("not enough candidates", str(context.exception))
 
@@ -161,7 +161,7 @@ class Population_test(unittest.TestCase):
                 pop.add(organism, session)
 
         with seshmaker.begin() as session:
-            org_ids = pop.sample(num_orgs, False, rng, session)
+            org_ids = pop.sample(num_orgs, False, session)
 
         self.assertEqual(num_orgs, len(org_ids))
 
@@ -183,7 +183,7 @@ class Population_test(unittest.TestCase):
             # Start 2 trials, which will use 4 organisms (2 per trial)
             for _ in range(2):
                 logging.info("Starting trial")
-                orgs_ids = pop.sample(2, True, rng, session)
+                orgs_ids = pop.sample(2, True, session)
                 player_1 = Player(organism=session.get(Organism, orgs_ids[0]), letter='X')
                 player_2 = Player(organism=session.get(Organism, orgs_ids[1]), letter='O')
                 trial = Trial(player_1, player_2)
@@ -193,12 +193,12 @@ class Population_test(unittest.TestCase):
             # Should have 1 idle organism left
 
             # Sample 1 idle organism - this should work
-            pop.sample(1, True, rng, session)
+            pop.sample(1, True, session)
             logging.info(f"Successfully sampled 1 idle organism")
 
             # Try to sample 2 idle organisms - this should fail since there's only 1
             try:
-                pop.sample(2, True, rng, session)
+                pop.sample(2, True, session)
                 self.fail("Should not be able to sample 2 idle orgs when only 1 exists")
             except BaseException as expected_ex:
                 logging.info(expected_ex)

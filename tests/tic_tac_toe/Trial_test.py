@@ -10,6 +10,7 @@ from ConnectNeurons_test import build_organism
 from roxene.tic_tac_toe import Trial
 from roxene.tic_tac_toe.outcome import Outcome
 from roxene.tic_tac_toe.players import Player, ManualPlayer, REQUIRED_INPUTS, REQUIRED_OUTPUTS
+from roxene.util import set_rng
 
 SEED = 235869903
 
@@ -45,14 +46,13 @@ class Trial_test(unittest.TestCase):
         self.assertTrue(all(move.outcomes=={Outcome.VALID_MOVE} for move in trial.moves))
 
     def test_save_trial_before_run(self):
-        rng: Generator = default_rng(seed=SEED)
-        uuid.uuid4 = lambda: uuid.UUID(bytes=rng.bytes(16))
+        set_rng(default_rng(seed=SEED))
 
         engine = create_engine("sqlite://")
         roxene.EntityBase.metadata.create_all(engine)
 
-        org_1 = build_organism(rng=rng)
-        org_2 = build_organism(rng=rng)
+        org_1 = build_organism()
+        org_2 = build_organism()
         trial = Trial(Player(org_1, 'X'), Player(org_2, 'O'))
         trial_id = trial.id
 
@@ -80,15 +80,14 @@ class Trial_test(unittest.TestCase):
             self.assertEqual(trial_2.id, trial_id)
 
     def test_save_trial_before_and_after_run(self):
-        rng: Generator = default_rng(seed=SEED)
-        uuid.uuid4 = lambda: uuid.UUID(bytes=rng.bytes(16))
+        set_rng(default_rng(seed=SEED))
 
         engine = create_engine("sqlite://")
         roxene.EntityBase.metadata.create_all(engine)
 
         with Session(engine) as session:
-            org_1 = build_organism(input_names=REQUIRED_INPUTS, output_names=REQUIRED_OUTPUTS, rng=rng)
-            org_2 = build_organism(input_names=REQUIRED_INPUTS, output_names=REQUIRED_OUTPUTS, rng=rng)
+            org_1 = build_organism(input_names=REQUIRED_INPUTS, output_names=REQUIRED_OUTPUTS)
+            org_2 = build_organism(input_names=REQUIRED_INPUTS, output_names=REQUIRED_OUTPUTS)
             trial = Trial(Player(org_1, 'X'), Player(org_2, 'O'))
             trial_id = trial.id
 

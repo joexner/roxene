@@ -1,13 +1,14 @@
 import unittest
 from typing import List
 
-import numpy as np
+from numpy.random import default_rng
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from roxene import EntityBase, Gene
 from roxene.genes import CompositeGene, RotateCells
 from roxene.mutagens import CompositeGeneSplitMutagen
+from roxene.util import set_rng
 
 SEED = 11235
 
@@ -21,9 +22,9 @@ class CompositeGeneSplitMutagen_test(unittest.TestCase):
 
         mutagen = CompositeGeneSplitMutagen(1,0)
 
-        rng = np.random.default_rng(SEED)
+        set_rng(default_rng(SEED))
         for _ in range(20):
-            mutant_gene = mutagen.mutate(original_gene, rng)
+            mutant_gene = mutagen.mutate(original_gene)
 
             self.assertIsInstance(mutant_gene, CompositeGene)
             self.assertEqual(mutant_gene.iterations, 1)
@@ -51,5 +52,5 @@ class CompositeGeneSplitMutagen_test(unittest.TestCase):
             reloaded = session.get(CompositeGeneSplitMutagen, mutagen_id)
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
-            self.assertEqual(reloaded.susceptibilities[None], 0.01)
+            self.assertEqual(reloaded.base_susceptibility, 0.01)
             self.assertEqual(reloaded.susceptibility_log_wiggle, 0.03)

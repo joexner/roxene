@@ -2,13 +2,14 @@ import unittest
 
 import numpy as np
 from numpy import ndarray
-from numpy.random import Generator
+from numpy.random import default_rng
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from roxene import EntityBase, random_neuron_state
 from roxene.genes import CreateNeuron
 from roxene.mutagens import CNLayer, CreateNeuronMutagen
+from roxene.util import set_rng
 
 SEED = 2837457
 
@@ -16,11 +17,11 @@ SEED = 2837457
 class CreateNeuronMutagen_test(unittest.TestCase):
 
     def test_CreateNeuronMutagen(self):
-        rng: Generator = np.random.default_rng(SEED)
-        gene = CreateNeuron(**random_neuron_state(100, 100, 100, rng))
+        set_rng(default_rng(SEED))
+        gene = CreateNeuron(**random_neuron_state(100, 100, 100))
         for layer_to_mutate in CNLayer:
             mutagen = CreateNeuronMutagen(layer_to_mutate=layer_to_mutate)
-            mutant = mutagen.mutate(gene, rng)
+            mutant = mutagen.mutate(gene)
             self.check_fraction_changed(layer_to_mutate is CNLayer.input_initial_value,
                                         mutant.input, gene.input)
             self.check_fraction_changed(layer_to_mutate is CNLayer.input_hidden, mutant.input_hidden,
@@ -68,5 +69,5 @@ class CreateNeuronMutagen_test(unittest.TestCase):
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.layer_to_mutate, CNLayer.input_hidden)
-            self.assertEqual(reloaded.susceptibilities[None], 0.005)
+            self.assertEqual(reloaded.base_susceptibility, 0.005)
             self.assertEqual(reloaded.susceptibility_log_wiggle, 0.02)

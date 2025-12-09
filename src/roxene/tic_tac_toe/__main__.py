@@ -2,12 +2,14 @@ import argparse
 import logging
 import sys
 import time
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
+from threading import Thread
 
-from .trial import Trial
+from numpy.random import Generator, default_rng
+from sqlalchemy import create_engine
+
 from .environment import Environment
 from ..persistence import EntityBase
+from ..util import set_rng
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -35,17 +37,16 @@ SEED = 11235
 #     'seed': SEED
 # })
 
-filename = "sqlite:///run_%d.db" % int(time.time())
-engine = create_engine(filename)
+# logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', force=True)
+
+db_url = "sqlite:///run_%d.db" % int(time.time())
+engine = create_engine(db_url)
 EntityBase.metadata.create_all(engine)
 
-
-env = Environment(
-    seed=SEED,
-    engine=engine,
-)
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', force=True)
+logger.info(f"Seed={SEED}")
+main_rng: Generator = default_rng(SEED)
+set_rng(main_rng)
+env = Environment(engine)
 
 logger.info(f"Populating environment with {num_organisms} organisms and {num_mutagens} mutagens")
 env.populate(num_organisms)
@@ -55,21 +56,44 @@ logger.info("Done populating environment")
 # Replace 5% of the herd at a time, up to 5
 num_to_cull = num_to_breed = int(max(num_organisms * .05, 5))
 
-# Start trials and do GA stuff in a single-threaded alternating loop
-for iteration in range(1, num_trials + 1):
-    logger.info(f"Building trial {iteration}")
-    trial: Trial = env.start_trial()
-    logger.info(f"Starting trial {iteration} between players {trial.participants[0]} and {trial.participants[1]}")
-    trial.run()
-    logger.info(f"Trial {iteration} complete, saving results")
-    env.complete_trial(trial)
-    logger.info(f"Finished trial {iteration} with moves {[(move.letter, move.position, move.outcomes) for move in trial.moves]}")
-    if iteration % args.breed_and_cull_interval == 0:
-        logger.info("Culling")
-        env.cull(num_to_cull)
-        logger.info("Breeding")
-        env.breed(num_to_breed)
-        logger.info("Done breeding")
+def run(worker_trials: int, worker_rng: Generator, worker_logger: logging.Logger):
+    set_rng(worker_rng)
+    for iteration in range(worker_trials):
+        worker_logger.info(f"Building trial {iteration}")
+        trial = env.start_trial()
+        worker_logger.info(f"Starting trial {iteration} between players {trial.participants[0]} and {trial.participants[1]}")
+        trial.run()
+        worker_logger.info(f"Trial {iteration} complete, saving results")
+        env.complete_trial(trial)
+        worker_logger.info(f"Finished trial {iteration} with moves {[(move.letter, move.position, move.outcomes) for move in trial.moves]}")
+        if iteration % args.breed_and_cull_interval == 0:
+            worker_logger.info("Culling")
+            env.cull(num_to_cull)
+            worker_logger.info("Done culling, breeding")
+            env.breed(num_to_breed)
+            worker_logger.info("Done breeding")
+
+num_threads = 10
+threads = []
+rngs = main_rng.spawn(num_threads)
+
+for i in range(num_threads):
+    logger.info(f"Starting thread {i}")
+    thread = Thread(
+        target=run,
+        args=(
+            int(( num_trials - 1 ) / num_threads ) + 1, # Estimate, total could be over by (num_threads - 1)
+            rngs.pop(),
+            logger.getChild('_' + str(i)),
+        )
+    )
+    thread.start()
+    threads.append(thread)
+
+for thread in threads:
+    thread.join()
+
+
 
 # mlflow.log_metric("trials_executed", num_trials)
 

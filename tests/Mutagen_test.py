@@ -14,8 +14,8 @@ class Mutagen_test(unittest.TestCase):
         other_mutagen = CreateNeuronMutagen(CNLayer.hidden_feedback, 0.05, 0.1)
 
         grandparent = CreateNeuron(**random_neuron_state(10, 10, 10, rng))
-        parent = other_mutagen.mutate_CreateNeuron(grandparent, rng)
-        child = other_mutagen.mutate_CreateNeuron(parent, rng)
+        parent = other_mutagen.mutate_CreateNeuron(grandparent)
+        child = other_mutagen.mutate_CreateNeuron(parent)
 
         # Test susceptibility inheritance and caching across three generations
         self.assertNotIn(grandparent, mutagen.susceptibilities)
@@ -23,16 +23,16 @@ class Mutagen_test(unittest.TestCase):
         self.assertNotIn(child, mutagen.susceptibilities)
 
         # Check that fetching the sus for the parent gets the grandparent too, but not the child
-        parent_val = mutagen.get_mutation_susceptibility(parent, rng)
+        parent_val = mutagen.get_mutation_susceptibility(parent)
         self.assertIn(grandparent, mutagen.susceptibilities)
         self.assertIn(parent, mutagen.susceptibilities)
         self.assertNotIn(child, mutagen.susceptibilities)
 
         #Fetching the child populates its entry in the cache
-        child_val = mutagen.get_mutation_susceptibility(child, rng)
+        child_val = mutagen.get_mutation_susceptibility(child)
         self.assertIn(child, mutagen.susceptibilities)
 
-        grandparent_val = mutagen.get_mutation_susceptibility(grandparent, rng)
+        grandparent_val = mutagen.get_mutation_susceptibility(grandparent)
 
         self.assertNotEqual(grandparent_val, parent_val)
         self.assertNotEqual(parent_val, child_val)

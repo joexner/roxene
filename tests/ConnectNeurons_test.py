@@ -1,11 +1,13 @@
 import unittest
 
+from numpy.random import default_rng
 from parameterized import parameterized
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from roxene import Neuron, Organism, random_neuron_state, EntityBase
 from roxene.genes import ConnectNeurons
+from roxene.util import set_rng
 
 SEED = 8484856303
 
@@ -20,9 +22,11 @@ class ConnectNeurons_test(unittest.TestCase):
         (50, 9),
     ])
     def test_execute(self, transmitter_idx, listener_port):
+        set_rng(default_rng(seed=SEED))
         organism = build_organism()
         gene = ConnectNeurons(transmitter_idx, listener_port)
         gene.execute(organism)
+        self.assertIsInstance(organism.cells[0], Neuron)
         rx: Neuron = organism.cells[0]
         expected_tx_cell = organism.cells[transmitter_idx % len(organism.cells)]
         self.assertIs(rx.bound_ports[listener_port], expected_tx_cell)
@@ -106,14 +110,13 @@ class ConnectNeurons_test(unittest.TestCase):
             self.assertEqual(reloaded_2.rx_port, -11)
 
 
-def build_organism(num_neurons: int = 20, neuron_input_size: int = 17, input_names=set(), output_names=set(),
-                   rng=None) -> Organism:
+def build_organism(num_neurons: int = 20, neuron_input_size: int = 17, input_names={}, output_names={}) -> Organism:
     organism = Organism(input_names=input_names, output_names=output_names)
     for i in range(num_neurons):
-        neuron = build_Neuron(neuron_input_size, rng)
+        neuron = build_Neuron(neuron_input_size)
         organism.addNeuron(neuron)
     return organism
 
 
-def build_Neuron(input_size, rng=None):
-    return Neuron(**random_neuron_state(input_size, 1, 1, rng))
+def build_Neuron(input_size):
+    return Neuron(**random_neuron_state(input_size, 1, 1))

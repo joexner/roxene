@@ -2,7 +2,6 @@ import logging
 import time
 import uuid
 
-from numpy.random import Generator
 from sqlalchemy import select, delete
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import func
@@ -10,6 +9,7 @@ from sqlalchemy.sql.expression import func
 from .players import Player
 from .trial import Trial
 from ..organism import Organism
+from ..util import get_rng
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class Population:
         """Count the total number of organisms in the population."""
         return session.scalar(select(func.count(Organism.id)))
 
-    def sample(self, num_to_select: int, idle_only: bool, rng: Generator, session: Session):
+    def sample(self, num_to_select: int, idle_only: bool, session: Session):
 
         # Build the base stmt once
         candidate_select_stmt = select(Organism.id).order_by(Organism.id)
@@ -51,9 +51,9 @@ class Population:
         indexes = []
         results = []
         for _ in range(num_to_select):
-            idx = rng.integers(0, num_candidates)
+            idx = get_rng().integers(0, num_candidates)
             while idx in indexes:
-                idx = rng.integers(0, num_candidates)
+                idx = get_rng().integers(0, num_candidates)
             indexes.append(idx)
 
         indexes.sort()

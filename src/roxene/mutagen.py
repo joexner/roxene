@@ -1,9 +1,10 @@
 import uuid
 from typing import Optional
-from numpy.random import Generator
+
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
+from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
+
 from .gene import Gene
 from .genes.composite_gene import CompositeGene
 from .genes.create_neuron import CreateNeuron
@@ -32,19 +33,20 @@ class Mutagen(EntityBase):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
     type: Mapped[str]
     susceptibility_log_wiggle: Mapped[float]
+    base_susceptibility: Mapped[float]
 
     __mapper_args__ = {
         "polymorphic_identity": "mutagen",
         "polymorphic_on": "type",
     }
 
-    _susceptibility_records: Mapped[dict[Optional[Gene], _Mutagen_Susceptibility]] = relationship(
+    _susceptibility_records: Mapped[dict[Gene, _Mutagen_Susceptibility]] = relationship(
         collection_class=attribute_keyed_dict("gene"),
         cascade="all, delete-orphan",
         back_populates="mutagen"
     )
 
-    susceptibilities: AssociationProxy[dict[Optional[Gene], float]] = association_proxy(
+    susceptibilities: AssociationProxy[dict[Gene, float]] = association_proxy(
         target_collection="_susceptibility_records",
         attr="susceptibility",
         creator=_Mutagen_Susceptibility
@@ -52,31 +54,33 @@ class Mutagen(EntityBase):
 
     def __init__(self, base_susceptibility: float, susceptibility_log_wiggle: float):
         self.id = uuid.uuid4()
-        self.susceptibilities[None] = base_susceptibility
+        self.base_susceptibility = base_susceptibility
         self.susceptibility_log_wiggle = susceptibility_log_wiggle
 
-    def get_mutation_susceptibility(self, gene: Gene, rng: Generator) -> float:
+    def get_mutation_susceptibility(self, gene: Gene) -> float:
+        if gene is None:
+            return self.base_susceptibility
         result = self.susceptibilities.get(gene)
         if result is None:
             parent_gene = getattr(gene, "parent_gene", None)
-            parent_sus = self.get_mutation_susceptibility(parent_gene, rng)
-            result = wiggle(parent_sus, rng, self.susceptibility_log_wiggle)
+            parent_sus = self.get_mutation_susceptibility(parent_gene)
+            result = wiggle(parent_sus, self.susceptibility_log_wiggle)
             self.susceptibilities[gene] = result
         return result
 
-    def mutate(self, gene: Gene, rng: Generator) -> Gene:
+    def mutate(self, gene: Gene) -> Gene:
         if isinstance(gene, CompositeGene):
-            return self.mutate_CompositeGene(gene, rng)
+            return self.mutate_CompositeGene(gene)
         elif isinstance(gene, CreateNeuron):
-            return self.mutate_CreateNeuron(gene, rng)
+            return self.mutate_CreateNeuron(gene)
         else:
             return gene
 
-    def mutate_CompositeGene(self, parent_gene: CompositeGene, rng):
+    def mutate_CompositeGene(self, parent_gene: CompositeGene):
         any_changed = False
         new_genes = []
         for orig in parent_gene.child_genes:
-            mutant = self.mutate(orig, rng)
+            mutant = self.mutate(orig)
             new_genes.append(mutant)
             any_changed |= (mutant is not orig)
         if any_changed:
@@ -84,5 +88,5 @@ class Mutagen(EntityBase):
         else:
             return parent_gene
 
-    def mutate_CreateNeuron(self, gene: CreateNeuron, rng: Generator):
+    def mutate_CreateNeuron(self, gene: CreateNeuron):
         return gene

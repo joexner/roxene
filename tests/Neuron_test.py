@@ -1,16 +1,14 @@
 import unittest
-import os
 
 import numpy as np
 import torch
 from numpy.random import default_rng
 # // maya smells...fine
 from parameterized import parameterized
-from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from roxene import InputCell, Neuron, random_neuron_state
-from roxene.persistence import EntityBase
+from roxene.util import set_rng
 from tic_tac_toe.util import get_engine
 
 SEED = 732478534
@@ -170,6 +168,7 @@ class Neuron_test(unittest.TestCase):
 
     def test_save_linked_neurons(self):
         engine = get_engine()
+        set_rng(default_rng(SEED))
 
         n1 = Neuron(**random_neuron_state())
         n2 = Neuron(**random_neuron_state())

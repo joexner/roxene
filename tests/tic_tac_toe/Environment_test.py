@@ -1,12 +1,14 @@
 import logging
 import unittest
 
+from numpy.random import default_rng
 from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session
 
 from roxene import Organism
 from roxene.mutagens import CreateNeuronMutagen, CNLayer
 from roxene.tic_tac_toe import Trial, Player, Environment, Outcome
+from roxene.util import set_rng
 from util import get_engine
 
 SEED = 11235
@@ -16,10 +18,13 @@ class Environment_test(unittest.TestCase):
 
     logger: logging.Logger = logging.getLogger(__name__)
 
+    def setUp(self):
+        set_rng(default_rng(seed=SEED))
+
     def test_get_relevant_moves(self):
         engine: Engine = get_engine()
 
-        environment: Environment = Environment(123, engine)
+        environment: Environment = Environment(engine)
 
         o1, o2, o3 = Organism(), Organism(), Organism()
         o1_id, o2_id, o3_id = o1.id, o2.id, o3.id
@@ -42,7 +47,7 @@ class Environment_test(unittest.TestCase):
 
     def test_start_and_run_trial(self):
         # Build an environment with a population with 2 organisms, start a trial
-        env = Environment(SEED, get_engine())
+        env = Environment(get_engine())
         env.populate(2)
         trial = env.start_trial()
 
@@ -63,13 +68,12 @@ class Environment_test(unittest.TestCase):
 
     def test_cull(self):
         # Build an environment with a larger population
-        env = Environment(SEED, get_engine())
+        env = Environment(get_engine())
         initial_population_size = 50
         env.populate(initial_population_size)
 
         # Count organisms before culling
-        with env.sessionmaker() as session:
-            count_before = env.population.count(session)
+        count_before = env.count_organisms()
 
         self.assertEqual(initial_population_size, count_before)
 
@@ -78,8 +82,7 @@ class Environment_test(unittest.TestCase):
         env.cull(num_to_cull)
 
         # Count organisms after culling
-        with env.sessionmaker() as session:
-            count_after = env.population.count(session)
+        count_after = env.count_organisms()
 
         self.assertEqual(count_before - num_to_cull, count_after)
 
@@ -90,20 +93,18 @@ class Environment_test(unittest.TestCase):
         env.cull(num_to_cull)
 
         # Count organisms after culling
-        with env.sessionmaker() as session:
-            count_after = env.population.count(session)
+        count_after = env.count_organisms()
 
         self.assertEqual(count_before - num_to_cull, count_after)
 
     def test_breed(self):
-        env = Environment(SEED, get_engine())
+        env = Environment(get_engine())
 
         initial_population_size = 100
         env.populate(initial_population_size)
 
         # Count organisms before breeding, because
-        with env.sessionmaker() as session:
-            count_before = env.population.count(session)
+        count_before = env.count_organisms()
 
         self.assertEqual(initial_population_size, count_before)
 
@@ -111,8 +112,7 @@ class Environment_test(unittest.TestCase):
         num_to_breed = 3
         env.breed(num_to_breed)
 
-        with env.sessionmaker() as session:
-            count_after = env.population.count(session)
+        count_after = env.count_organisms()
 
         # Breeding should increase the population
         self.assertEqual(count_after, count_before + num_to_breed)
@@ -123,31 +123,30 @@ class Environment_test(unittest.TestCase):
         num_to_breed = 19
         env.breed(num_to_breed)
 
-        with env.sessionmaker() as session:
-            count_after = env.population.count(session)
+        count_after = env.count_organisms()
 
         # Breeding should increase the population
         self.assertEqual(count_after, count_before + num_to_breed)
 
     def test_clone(self):
-        # Test cloning functionality by checking that a clone is created with and without mutations
-        env = Environment(SEED, get_engine())
+        engine: Engine = get_engine()
+        env = Environment(engine)
 
         # Add a mutagen to ensure mutation occurs during cloning
-        env.mutagens = [CreateNeuronMutagen(CNLayer.input_initial_value, base_susceptibility=1.0)]
+        env.add_mutagen(CreateNeuronMutagen(CNLayer.input_initial_value, base_susceptibility=1.0))
 
         # Create a single organism to clone
         env.populate(1)
 
-        with env.sessionmaker() as session:
+        with Session(engine) as session:
             # Get the only organism
             original_organism = session.scalar(select(Organism))
             self.assertIsNotNone(original_organism)
             original_id = original_organism.id
             original_genotype = original_organism.genotype
 
-            # Test clone with mutation (default behavior)
-            clone = env.clone(original_id, session)
+        # Test clone with mutation (default behavior)
+        clone = env.clone(original_id)
 
         # Verify the clone is a new organism (different ID)
         self.assertIsNot(clone, original_organism)
@@ -158,6 +157,3 @@ class Environment_test(unittest.TestCase):
         self.assertIsNot(clone.genotype, original_genotype)
         self.assertGreaterEqual(len(clone.cells), 0)
 
-
-if __name__ == '__main__':
-    unittest.main()

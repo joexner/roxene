@@ -145,8 +145,8 @@ class Environment_test(unittest.TestCase):
             original_id = original_organism.id
             original_genotype = original_organism.genotype
 
-        # Test clone with mutation (default behavior)
-        clone = env.clone(original_id)
+            # Test clone with mutation (default behavior)
+            clone = env.clone(original_id, session)
 
         # Verify the clone is a new organism (different ID)
         self.assertIsNot(clone, original_organism)

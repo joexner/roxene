@@ -100,7 +100,6 @@ class Environment(object):
 
     def cull(self, num_to_cull: int, num_to_compare: int = 10):
         for n in range(num_to_cull):
-            session: Session
             with self.sessionmaker.begin() as session:
                 selectee_ids = self.population.sample(num_to_compare, False, session)
                 if num_to_compare == 1:

@@ -65,7 +65,7 @@ class Population:
             result = session.scalars(stmt_with_offset).unique().all()[0]
             if logger.isEnabledFor(logging.DEBUG):
                 end = time.perf_counter()
-                logger.debug(f"Organism ID query took {end - start} seconds")
+                logger.debug(f"Organism fetch took {end - start} seconds")
             results.append(result)
 
         return results

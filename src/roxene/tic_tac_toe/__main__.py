@@ -2,6 +2,7 @@ import argparse
 import logging
 import sys
 import time
+from sqlalchemy import create_engine, text
 from threading import Thread
 
 from numpy.random import Generator, default_rng
@@ -11,7 +12,9 @@ from .environment import Environment
 from ..persistence import EntityBase
 from ..util import set_rng
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - [%(threadName)s]\t- %(name)s: %(message)s',
+                    force=True)
 logger = logging.getLogger(__name__)
 
 parser = argparse.ArgumentParser(description='Play some tic-tac-toe')
@@ -37,9 +40,16 @@ SEED = 11235
 #     'seed': SEED
 # })
 
-# logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', force=True)
+# Create a fresh Postgres database for this run and initialize schema
+admin_url = "postgresql+psycopg2://postgres:postgres@localhost:5432/postgres"
+db_name = f"roxene_{int(time.time())}"
+logger.info(f"Creating database {db_name}")
+admin_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
+with admin_engine.connect() as conn:
+    conn.execute(text(f'CREATE DATABASE "{db_name}"'))
+admin_engine.dispose()
 
-db_url = "sqlite:///run_%d.db" % int(time.time())
+db_url = f"postgresql+psycopg2://postgres:postgres@localhost:5432/{db_name}"
 engine = create_engine(db_url)
 EntityBase.metadata.create_all(engine)
 
@@ -66,7 +76,7 @@ def run(worker_trials: int, worker_rng: Generator, worker_logger: logging.Logger
         worker_logger.info(f"Trial {iteration} complete, saving results")
         env.complete_trial(trial)
         worker_logger.info(f"Finished trial {iteration} with moves {[(move.letter, move.position, move.outcomes) for move in trial.moves]}")
-        if iteration % args.breed_and_cull_interval == 0:
+        if iteration % args.breed_and_cull_interval == 0 and iteration > 0:
             worker_logger.info("Culling")
             env.cull(num_to_cull)
             worker_logger.info("Done culling, breeding")

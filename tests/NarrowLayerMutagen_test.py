@@ -63,7 +63,7 @@ class NarrowLayerMutagen_test(unittest.TestCase):
         # Try narrowing multiple times
         for _ in range(10):
             mutant_gene = mutagen.mutate(original_gene)
-            # Should not narrow below 2 (minimum is 2, won't narrow if <= 2)
+            # Layers with size <= 2 won't be narrowed, ensuring at least 1 neuron remains
             self.assertGreaterEqual(mutant_gene.input_hidden.shape[1], 1)
 
     def test_narrow_layer_no_mutation_small_layer(self):

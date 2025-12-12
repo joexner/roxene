@@ -1,5 +1,6 @@
 import unittest
 
+import numpy as np
 from numpy.random import default_rng
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -63,7 +64,6 @@ class WidenLayerMutagen_test(unittest.TestCase):
         mutant_gene = mutagen.mutate(original_gene)
         
         # Check that original weights are preserved in the first columns/rows
-        import numpy as np
         np.testing.assert_array_equal(
             mutant_gene.input_hidden[:, :original_hidden_size],
             original_gene.input_hidden

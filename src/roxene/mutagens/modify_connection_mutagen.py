@@ -21,9 +21,6 @@ class ModifyConnectionMutagen(Mutagen):
     def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)
 
-    def mutate_CreateNeuron(self, gene):
-        # Don't mutate CreateNeuron genes, pass through
-        return gene
 
     def mutate(self, gene):
         if isinstance(gene, ConnectNeurons):

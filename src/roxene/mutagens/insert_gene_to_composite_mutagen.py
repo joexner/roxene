@@ -1,0 +1,77 @@
+import abc
+import uuid
+from typing import List
+
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
+
+from ..gene import Gene
+from ..genes.composite_gene import CompositeGene
+from ..mutagen import Mutagen
+from ..util import get_rng
+
+
+class InsertGeneToCompositeMutagen(Mutagen):
+    """
+    Abstract base class for mutagens that insert genes into a CompositeGene.
+    Provides common functionality for checking susceptibility, recursively mutating
+    child genes, and creating a new CompositeGene with an inserted gene.
+    """
+    __tablename__ = "insert_gene_to_composite_mutagen"
+    __mapper_args__ = {"polymorphic_identity": "insert_gene_to_composite_mutagen"}
+
+    id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
+
+    def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):
+        super().__init__(base_susceptibility, susceptibility_log_wiggle)
+
+    def mutate_CompositeGene(self, parent_gene: CompositeGene) -> CompositeGene:
+        # Check if this gene should be mutated based on susceptibility
+        susceptibility = self.get_mutation_susceptibility(parent_gene)
+        if get_rng().random() >= susceptibility:
+            # No mutation, just recursively mutate child genes
+            return super().mutate_CompositeGene(parent_gene)
+
+        # Recursively mutate child genes
+        new_genes = []
+        for orig in parent_gene.child_genes:
+            mutant = self.mutate(orig)
+            new_genes.append(mutant)
+
+        # Get the gene(s) to insert - subclasses must implement this
+        genes_to_insert = self.get_genes_to_insert(parent_gene, new_genes)
+        
+        # Insert the gene(s) at the specified position
+        insertion_index = self.get_insertion_index(parent_gene, new_genes)
+        for i, gene in enumerate(genes_to_insert):
+            new_genes.insert(insertion_index + i, gene)
+
+        return CompositeGene(new_genes, parent_gene.iterations, parent_gene)
+
+    @abc.abstractmethod
+    def get_genes_to_insert(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> List[Gene]:
+        """
+        Return the gene(s) to insert into the CompositeGene.
+        
+        Args:
+            parent_gene: The original CompositeGene being mutated
+            mutated_children: The list of child genes after recursive mutation
+            
+        Returns:
+            A list of genes to insert
+        """
+        pass
+
+    def get_insertion_index(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> int:
+        """
+        Return the index at which to insert the new gene(s).
+        Default implementation appends to the end.
+        
+        Args:
+            parent_gene: The original CompositeGene being mutated
+            mutated_children: The list of child genes after recursive mutation
+            
+        Returns:
+            The index at which to insert
+        """
+        return len(mutated_children)

@@ -30,8 +30,10 @@ class AddConnectionMutagen(Mutagen):
             return super().mutate_CompositeGene(parent_gene)
 
         # Create a new ConnectNeurons gene with random parameters
-        tx_cell_index = get_rng().integers(0, 10).astype(int)
-        rx_port = get_rng().integers(0, 10).astype(int)
+        num_cells = len(parent_gene.child_genes) if hasattr(parent_gene, "child_genes") else 1
+        num_ports = getattr(parent_gene, "num_ports", 1)
+        tx_cell_index = get_rng().integers(0, num_cells).astype(int)
+        rx_port = get_rng().integers(0, num_ports).astype(int)
         new_connection = ConnectNeurons(tx_cell_index, rx_port, parent_gene=parent_gene)
 
         # Recursively mutate child genes

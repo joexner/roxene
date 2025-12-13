@@ -29,7 +29,7 @@ class PushDownMutagen(Mutagen):
             # No mutation, just recursively mutate if CompositeGene
             return super().mutate(gene)
 
-        # Don't wrap CompositeGenes with iterations != 1, as that would be redundant
+        # Don't wrap CompositeGenes with iterations == 1, as that would be redundant
         if isinstance(gene, CompositeGene) and gene.iterations == 1:
             return super().mutate(gene)
 

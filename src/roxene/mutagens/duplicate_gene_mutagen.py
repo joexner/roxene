@@ -22,19 +22,35 @@ class DuplicateGeneMutagen(InsertGeneToCompositeMutagen):
 
     def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)
-        self._index_to_duplicate = None
+
+    def mutate_CompositeGene(self, parent_gene: CompositeGene) -> CompositeGene:
+        # Check if this gene should be mutated based on susceptibility
+        susceptibility = self.get_mutation_susceptibility(parent_gene)
+        if get_rng().random() >= susceptibility:
+            # No mutation, just recursively mutate child genes
+            return super(InsertGeneToCompositeMutagen, self).mutate_CompositeGene(parent_gene)
+
+        # Recursively mutate child genes
+        new_genes = []
+        for orig in parent_gene.child_genes:
+            mutant = self.mutate(orig)
+            new_genes.append(mutant)
+
+        # Duplicate a random gene
+        if len(new_genes) > 0:
+            index_to_duplicate = get_rng().integers(0, len(new_genes)).astype(int)
+            # Insert the duplicate right after the original
+            new_genes.insert(index_to_duplicate + 1, new_genes[index_to_duplicate])
+
+        return CompositeGene(new_genes, parent_gene.iterations, parent_gene)
 
     def get_genes_to_insert(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> List[Gene]:
-        """Select and duplicate a random gene from the mutated children."""
-        if len(mutated_children) > 0:
-            self._index_to_duplicate = get_rng().integers(0, len(mutated_children)).astype(int)
-            return [mutated_children[self._index_to_duplicate]]
+        """Not used - overridden mutate_CompositeGene handles duplication directly."""
         return []
 
     def get_insertion_index(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> int:
-        """Insert the duplicate right after the original."""
-        if self._index_to_duplicate is not None:
-            return self._index_to_duplicate + 1
-        return 0
+        """Not used - overridden mutate_CompositeGene handles duplication directly."""
+        return len(mutated_children)
+
 
 

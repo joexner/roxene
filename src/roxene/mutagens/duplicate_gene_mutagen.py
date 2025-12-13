@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from ..gene import Gene
 from ..genes.composite_gene import CompositeGene
+from ..mutagen import Mutagen
 from .insert_gene_to_composite_mutagen import InsertGeneToCompositeMutagen
 from ..util import get_rng
 
@@ -14,6 +15,10 @@ class DuplicateGeneMutagen(InsertGeneToCompositeMutagen):
     """
     Duplicates a random child gene in a CompositeGene.
     Adds a copy of the selected gene to the gene list.
+    
+    Note: This mutagen overrides mutate_CompositeGene directly to handle
+    the special case where the duplicate must be inserted right after the
+    original gene, requiring a single random index selection.
     """
     __tablename__ = "duplicate_gene_mutagen"
     __mapper_args__ = {"polymorphic_identity": "duplicate_gene_mutagen"}
@@ -27,8 +32,8 @@ class DuplicateGeneMutagen(InsertGeneToCompositeMutagen):
         # Check if this gene should be mutated based on susceptibility
         susceptibility = self.get_mutation_susceptibility(parent_gene)
         if get_rng().random() >= susceptibility:
-            # No mutation, just recursively mutate child genes
-            return super(InsertGeneToCompositeMutagen, self).mutate_CompositeGene(parent_gene)
+            # No mutation, just recursively mutate child genes using base Mutagen behavior
+            return Mutagen.mutate_CompositeGene(self, parent_gene)
 
         # Recursively mutate child genes
         new_genes = []
@@ -45,12 +50,16 @@ class DuplicateGeneMutagen(InsertGeneToCompositeMutagen):
         return CompositeGene(new_genes, parent_gene.iterations, parent_gene)
 
     def get_genes_to_insert(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> List[Gene]:
-        """Not used - overridden mutate_CompositeGene handles duplication directly."""
-        return []
+        """
+        Not used - this mutagen overrides mutate_CompositeGene directly.
+        Required by abstract base class.
+        """
+        raise NotImplementedError("DuplicateGeneMutagen overrides mutate_CompositeGene directly")
 
     def get_insertion_index(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> int:
-        """Not used - overridden mutate_CompositeGene handles duplication directly."""
+        """
+        Not used - this mutagen overrides mutate_CompositeGene directly.
+        Default implementation provided for completeness.
+        """
         return len(mutated_children)
-
-
 

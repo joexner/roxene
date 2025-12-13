@@ -1,14 +1,16 @@
 import uuid
+from typing import List
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
+from ..gene import Gene
 from ..genes.composite_gene import CompositeGene
-from ..mutagen import Mutagen
+from .insert_gene_to_composite_mutagen import InsertGeneToCompositeMutagen
 from ..util import get_rng
 
 
-class DuplicateGeneMutagen(Mutagen):
+class DuplicateGeneMutagen(InsertGeneToCompositeMutagen):
     """
     Duplicates a random child gene in a CompositeGene.
     Adds a copy of the selected gene to the gene list.
@@ -16,34 +18,23 @@ class DuplicateGeneMutagen(Mutagen):
     __tablename__ = "duplicate_gene_mutagen"
     __mapper_args__ = {"polymorphic_identity": "duplicate_gene_mutagen"}
 
-    id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(ForeignKey("insert_gene_to_composite_mutagen.id"), primary_key=True)
 
     def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)
+        self._index_to_duplicate = None
 
-    def mutate_CompositeGene(self, parent_gene: CompositeGene) -> CompositeGene:
-        # Check if this gene should be mutated based on susceptibility
-        susceptibility = self.get_mutation_susceptibility(parent_gene)
-        if get_rng().random() >= susceptibility:
-            # No mutation, just recursively mutate child genes
-            return super().mutate_CompositeGene(parent_gene)
+    def get_genes_to_insert(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> List[Gene]:
+        """Select and duplicate a random gene from the mutated children."""
+        if len(mutated_children) > 0:
+            self._index_to_duplicate = get_rng().integers(0, len(mutated_children)).astype(int)
+            return [mutated_children[self._index_to_duplicate]]
+        return []
 
-        # Recursively mutate child genes
-        any_changed = False
-        new_genes = []
-        for orig in parent_gene.child_genes:
-            mutant = self.mutate(orig)
-            new_genes.append(mutant)
-            any_changed |= (mutant is not orig)
+    def get_insertion_index(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> int:
+        """Insert the duplicate right after the original."""
+        if self._index_to_duplicate is not None:
+            return self._index_to_duplicate + 1
+        return 0
 
-        # Duplicate a random gene
-        if len(new_genes) > 0:
-            index_to_duplicate = get_rng().integers(0, len(new_genes)).astype(int)
-            # Insert the duplicate right after the original
-            new_genes.insert(index_to_duplicate + 1, new_genes[index_to_duplicate])
-            any_changed = True
 
-        if any_changed:
-            return CompositeGene(new_genes, parent_gene.iterations, parent_gene)
-        else:
-            return parent_gene

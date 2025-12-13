@@ -1,6 +1,7 @@
 from .create_neuron_mutagen import CreateNeuronMutagen, CNLayer
 from .composite_gene_split_mutagen import CompositeGeneSplitMutagen
 from .push_down_mutagen import PushDownMutagen
+from .insert_gene_to_composite_mutagen import InsertGeneToCompositeMutagen
 from .add_connection_mutagen import AddConnectionMutagen
 from .modify_connection_mutagen import ModifyConnectionMutagen
 from .remove_gene_mutagen import RemoveGeneMutagen
@@ -16,6 +17,7 @@ __all__ = [
     'CNLayer', 
     'CompositeGeneSplitMutagen',
     'PushDownMutagen',
+    'InsertGeneToCompositeMutagen',
     'AddConnectionMutagen',
     'ModifyConnectionMutagen',
     'RemoveGeneMutagen',

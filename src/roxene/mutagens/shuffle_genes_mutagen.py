@@ -10,8 +10,9 @@ from ..util import get_rng
 
 class ShuffleGenesMutagen(Mutagen):
     """
-    Randomly shuffles the order of child genes in a CompositeGene.
-    This can affect execution order and behavior.
+    Swaps two child genes in a CompositeGene.
+    The distance between swapped genes is influenced by susceptibility.
+    Higher susceptibility allows genes further apart to be swapped.
     """
     __tablename__ = "shuffle_genes_mutagen"
     __mapper_args__ = {"polymorphic_identity": "shuffle_genes_mutagen"}
@@ -28,20 +29,38 @@ class ShuffleGenesMutagen(Mutagen):
             # No mutation, just recursively mutate child genes
             return super().mutate_CompositeGene(parent_gene)
 
-        # Only shuffle if there are at least 2 child genes
+        # Only swap if there are at least 2 child genes
         if len(parent_gene.child_genes) < 2:
             return super().mutate_CompositeGene(parent_gene)
 
         # Recursively mutate child genes
-        any_changed = False
         new_genes = []
         for orig in parent_gene.child_genes:
             mutant = self.mutate(orig)
             new_genes.append(mutant)
-            any_changed |= (mutant is not orig)
 
-        # Shuffle the gene order
-        get_rng().shuffle(new_genes)
-        any_changed = True
+        # Swap two genes - susceptibility influences maximum distance
+        # Higher susceptibility = can swap genes that are further apart
+        num_genes = len(new_genes)
+        
+        # Select first gene randomly
+        first_index = get_rng().integers(0, num_genes).astype(int)
+        
+        # Calculate max distance based on susceptibility
+        # susceptibility near 0 -> only adjacent swaps
+        # susceptibility near 1 -> can swap across entire list
+        max_distance = max(1, int(susceptibility * num_genes))
+        
+        # Calculate possible second index range
+        min_second = max(0, first_index - max_distance)
+        max_second = min(num_genes - 1, first_index + max_distance)
+        
+        # Ensure we don't swap with self
+        possible_indices = [i for i in range(min_second, max_second + 1) if i != first_index]
+        
+        if possible_indices:
+            second_index = get_rng().choice(possible_indices)
+            # Swap the genes
+            new_genes[first_index], new_genes[second_index] = new_genes[second_index], new_genes[first_index]
 
         return CompositeGene(new_genes, parent_gene.iterations, parent_gene)

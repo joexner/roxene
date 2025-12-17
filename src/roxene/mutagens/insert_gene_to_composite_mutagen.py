@@ -43,7 +43,7 @@ class InsertGeneToCompositeMutagen(Mutagen):
         
         # Insert the gene(s) at a random position
         # Choose a random index between 0 and len(new_genes) inclusive
-        insertion_index = get_rng().integers(0, len(new_genes) + 1).astype(int)
+        insertion_index = get_rng().integers(0, len(new_genes) + 1)
         for i, gene in enumerate(genes_to_insert):
             new_genes.insert(insertion_index + i, gene)
 

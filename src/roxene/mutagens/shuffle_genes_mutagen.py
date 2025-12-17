@@ -44,7 +44,7 @@ class ShuffleGenesMutagen(Mutagen):
         num_genes = len(new_genes)
         
         # Select first gene randomly
-        first_index = int(get_rng().integers(0, num_genes))
+        first_index = get_rng().integers(0, num_genes)
         
         # Calculate max distance based on susceptibility
         # susceptibility near 0 -> only adjacent swaps

@@ -56,10 +56,3 @@ class DuplicateGeneMutagen(InsertGeneToCompositeMutagen):
         """
         raise NotImplementedError("DuplicateGeneMutagen overrides mutate_CompositeGene directly")
 
-    def get_insertion_index(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> int:
-        """
-        Not used - this mutagen overrides mutate_CompositeGene directly.
-        Default implementation provided for completeness.
-        """
-        return len(mutated_children)
-

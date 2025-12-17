@@ -15,7 +15,7 @@ class InsertGeneToCompositeMutagen(Mutagen):
     """
     Abstract base class for mutagens that insert genes into a CompositeGene.
     Provides common functionality for checking susceptibility, recursively mutating
-    child genes, and creating a new CompositeGene with an inserted gene.
+    child genes, and creating a new CompositeGene with an inserted gene at a random position.
     """
     __tablename__ = "insert_gene_to_composite_mutagen"
     __mapper_args__ = {"polymorphic_identity": "insert_gene_to_composite_mutagen"}
@@ -41,8 +41,9 @@ class InsertGeneToCompositeMutagen(Mutagen):
         # Get the gene(s) to insert - subclasses must implement this
         genes_to_insert = self.get_genes_to_insert(parent_gene, new_genes)
         
-        # Insert the gene(s) at the specified position
-        insertion_index = self.get_insertion_index(parent_gene, new_genes)
+        # Insert the gene(s) at a random position
+        # Choose a random index between 0 and len(new_genes) inclusive
+        insertion_index = get_rng().integers(0, len(new_genes) + 1).astype(int)
         for i, gene in enumerate(genes_to_insert):
             new_genes.insert(insertion_index + i, gene)
 
@@ -62,16 +63,3 @@ class InsertGeneToCompositeMutagen(Mutagen):
         """
         pass
 
-    def get_insertion_index(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> int:
-        """
-        Return the index at which to insert the new gene(s).
-        Default implementation appends to the end.
-        
-        Args:
-            parent_gene: The original CompositeGene being mutated
-            mutated_children: The list of child genes after recursive mutation
-            
-        Returns:
-            The index at which to insert
-        """
-        return len(mutated_children)

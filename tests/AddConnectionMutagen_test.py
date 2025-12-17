@@ -33,8 +33,9 @@ class AddConnectionMutagen_test(unittest.TestCase):
         self.assertEqual(mutant_gene.iterations, 3)
         # Should have one more child gene (the connection)
         self.assertEqual(len(mutant_gene.child_genes), len(child_genes) + 1)
-        # Last gene should be a ConnectNeurons
-        self.assertIsInstance(mutant_gene.child_genes[-1], ConnectNeurons)
+        # Should contain exactly one ConnectNeurons gene
+        connect_neurons_genes = [g for g in mutant_gene.child_genes if isinstance(g, ConnectNeurons)]
+        self.assertEqual(len(connect_neurons_genes), 1)
 
     def test_add_connection_no_mutation(self):
         """Test that with 0% susceptibility, no mutation occurs"""
@@ -59,8 +60,11 @@ class AddConnectionMutagen_test(unittest.TestCase):
         
         for _ in range(10):
             mutant_gene = mutagen.mutate(original_gene)
-            connection = mutant_gene.child_genes[-1]
+            # Find the ConnectNeurons gene (could be at any position due to random insertion)
+            connect_neurons_genes = [g for g in mutant_gene.child_genes if isinstance(g, ConnectNeurons)]
+            self.assertEqual(len(connect_neurons_genes), 1)
             
+            connection = connect_neurons_genes[0]
             # Check that parameters are within expected range
             self.assertIsInstance(connection, ConnectNeurons)
             self.assertGreaterEqual(connection.tx_cell_index, 0)

@@ -15,7 +15,7 @@ class InsertGeneToCompositeMutagen(Mutagen):
     """
     Abstract base class for mutagens that insert genes into a CompositeGene.
     Provides common functionality for checking susceptibility, recursively mutating
-    child genes, and creating a new CompositeGene with an inserted gene at a random position.
+    child genes, and inserting new genes at a random position (0 to len inclusive).
     """
     __tablename__ = "insert_gene_to_composite_mutagen"
     __mapper_args__ = {"polymorphic_identity": "insert_gene_to_composite_mutagen"}

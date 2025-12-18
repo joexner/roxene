@@ -32,17 +32,12 @@ class RemoveGeneMutagen(Mutagen):
         if len(parent_gene.child_genes) < 2:
             return super().mutate_CompositeGene(parent_gene)
 
-        # Recursively mutate child genes
-        any_changed = False
-        new_genes = []
-        for orig in parent_gene.child_genes:
-            mutant = self.mutate(orig)
-            new_genes.append(mutant)
-            any_changed |= (mutant is not orig)
+        # Delegate to base class to recursively mutate child genes
+        mutated_gene = super().mutate_CompositeGene(parent_gene)
 
-        # Remove a random gene
-        index_to_remove = get_rng().integers(0, len(new_genes)).astype(int)
+        # Remove a random gene from the mutated children
+        new_genes = list(mutated_gene.child_genes)
+        index_to_remove = get_rng().integers(0, len(new_genes))
         new_genes.pop(index_to_remove)
-        any_changed = True
 
-        return CompositeGene(new_genes, parent_gene.iterations, parent_gene)
+        return CompositeGene(new_genes, mutated_gene.iterations, parent_gene)

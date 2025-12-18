@@ -98,7 +98,7 @@ class ResizeNeuronLayerMutagen(Mutagen):
 
         # Decrease hidden size by 1-2 neurons (but keep at least 1)
         max_remove = min(2, current_hidden_size - 1)
-        neurons_to_remove = get_rng().integers(1, max_remove + 1).astype(int)
+        neurons_to_remove = get_rng().integers(1, max_remove + 1)
         new_hidden_size = current_hidden_size - neurons_to_remove
 
         # Select random indices to keep

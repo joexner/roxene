@@ -29,12 +29,13 @@ class RemoveGeneMutagen(Mutagen):
             # No mutation, just recursively mutate child genes
             return super().mutate_CompositeGene(parent_gene)
 
-        # Delegate to base class to recursively mutate child genes
-        mutated_gene = super().mutate_CompositeGene(parent_gene)
-
-        # Remove a random gene from the mutated children
-        new_genes = list(mutated_gene.child_genes)
+        # Remove a random gene first, before recursing
+        new_genes = list(parent_gene.child_genes)
         index_to_remove = get_rng().integers(0, len(new_genes))
         new_genes.pop(index_to_remove)
 
-        return CompositeGene(new_genes, mutated_gene.iterations, parent_gene)
+        # Create intermediate gene with removed child, then delegate to base class to recursively mutate
+        intermediate_gene = CompositeGene(new_genes, parent_gene.iterations, parent_gene.parent_gene)
+        mutated_gene = super().mutate_CompositeGene(intermediate_gene)
+
+        return CompositeGene(mutated_gene.child_genes, mutated_gene.iterations, parent_gene)

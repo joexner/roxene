@@ -51,7 +51,7 @@ class ResizeNeuronLayerMutagen(Mutagen):
         current_hidden_size = gene.input_hidden.shape[1]
         
         # Increase hidden size by 1-3 neurons
-        additional_neurons = get_rng().integers(1, 4).astype(int)
+        additional_neurons = get_rng().integers(1, 4)
         new_hidden_size = current_hidden_size + additional_neurons
 
         # Expand input_hidden: from [input_size, hidden_size] to [input_size, new_hidden_size]

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_
 
 from .gene import Gene
 from .genes.composite_gene import CompositeGene
+from .genes.connect_neurons import ConnectNeurons
 from .genes.create_neuron import CreateNeuron
 from .persistence import EntityBase
 from .util import wiggle
@@ -73,6 +74,8 @@ class Mutagen(EntityBase):
             return self.mutate_CompositeGene(gene)
         elif isinstance(gene, CreateNeuron):
             return self.mutate_CreateNeuron(gene)
+        elif isinstance(gene, ConnectNeurons):
+            return self.mutate_ConnectNeurons(gene)
         else:
             return gene
 
@@ -89,4 +92,7 @@ class Mutagen(EntityBase):
             return parent_gene
 
     def mutate_CreateNeuron(self, gene: CreateNeuron):
+        return gene
+
+    def mutate_ConnectNeurons(self, gene: ConnectNeurons):
         return gene

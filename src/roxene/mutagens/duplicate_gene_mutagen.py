@@ -43,7 +43,7 @@ class DuplicateGeneMutagen(InsertGeneToCompositeMutagen):
 
         # Duplicate a random gene
         if len(new_genes) > 0:
-            index_to_duplicate = get_rng().integers(0, len(new_genes)).astype(int)
+            index_to_duplicate = get_rng().integers(0, len(new_genes))
             # Insert the duplicate right after the original
             new_genes.insert(index_to_duplicate + 1, new_genes[index_to_duplicate])
 

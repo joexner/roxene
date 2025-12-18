@@ -23,13 +23,10 @@ class RemoveGeneMutagen(Mutagen):
 
     def mutate_CompositeGene(self, parent_gene: CompositeGene) -> CompositeGene:
         # Check if this gene should be mutated based on susceptibility
-        susceptibility = self.get_mutation_susceptibility(parent_gene)
-        if get_rng().random() >= susceptibility:
-            # No mutation, just recursively mutate child genes
-            return super().mutate_CompositeGene(parent_gene)
-
         # Only remove if there are at least 2 child genes
-        if len(parent_gene.child_genes) < 2:
+        susceptibility = self.get_mutation_susceptibility(parent_gene)
+        if get_rng().random() >= susceptibility or len(parent_gene.child_genes) < 2:
+            # No mutation, just recursively mutate child genes
             return super().mutate_CompositeGene(parent_gene)
 
         # Delegate to base class to recursively mutate child genes

@@ -29,13 +29,19 @@ class ModifyWeightMutagen(Mutagen):
 
     id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
     weight_layer: Mapped[WeightLayer] = mapped_column(SQLEnum(WeightLayer))
+    log_wiggle_multiplier: Mapped[float] = mapped_column(default=10.0)
+    absolute_wiggle_multiplier: Mapped[float] = mapped_column(default=0.5)
 
     def __init__(self,
                  weight_layer: WeightLayer,
                  base_susceptibility: float = 0.01,
-                 susceptibility_log_wiggle: float = 0.01):
+                 susceptibility_log_wiggle: float = 0.01,
+                 log_wiggle_multiplier: float = 10.0,
+                 absolute_wiggle_multiplier: float = 0.5):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)
         self.weight_layer = weight_layer
+        self.log_wiggle_multiplier = log_wiggle_multiplier
+        self.absolute_wiggle_multiplier = absolute_wiggle_multiplier
 
     def mutate_CreateNeuron(self, gene: CreateNeuron) -> CreateNeuron:
         susceptibility = self.get_mutation_susceptibility(gene)
@@ -104,8 +110,8 @@ class ModifyWeightMutagen(Mutagen):
         modified = weights.copy()
         for idx in np.ndindex(weights.shape):
             if modify_mask[idx]:
-                log_wiggle = susceptibility * 10
-                absolute_wiggle = susceptibility * 0.5
+                log_wiggle = susceptibility * self.log_wiggle_multiplier
+                absolute_wiggle = susceptibility * self.absolute_wiggle_multiplier
                 modified[idx] = wiggle(weights[idx], log_wiggle, absolute_wiggle)
         
         return modified.astype(NP_PRECISION)

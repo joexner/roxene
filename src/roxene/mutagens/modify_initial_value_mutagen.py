@@ -28,13 +28,19 @@ class ModifyInitialValueMutagen(Mutagen):
 
     id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
     value_type: Mapped[InitialValueType] = mapped_column(SQLEnum(InitialValueType))
+    log_wiggle_multiplier: Mapped[float] = mapped_column(default=15.0)
+    absolute_wiggle_multiplier: Mapped[float] = mapped_column(default=0.3)
 
     def __init__(self,
                  value_type: InitialValueType,
                  base_susceptibility: float = 0.01,
-                 susceptibility_log_wiggle: float = 0.01):
+                 susceptibility_log_wiggle: float = 0.01,
+                 log_wiggle_multiplier: float = 15.0,
+                 absolute_wiggle_multiplier: float = 0.3):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)
         self.value_type = value_type
+        self.log_wiggle_multiplier = log_wiggle_multiplier
+        self.absolute_wiggle_multiplier = absolute_wiggle_multiplier
 
     def mutate_CreateNeuron(self, gene: CreateNeuron) -> CreateNeuron:
         susceptibility = self.get_mutation_susceptibility(gene)
@@ -91,8 +97,8 @@ class ModifyInitialValueMutagen(Mutagen):
         modified = values.copy()
         for idx in np.ndindex(values.shape):
             if modify_mask[idx]:
-                log_wiggle = susceptibility * 15
-                absolute_wiggle = susceptibility * 0.3
+                log_wiggle = susceptibility * self.log_wiggle_multiplier
+                absolute_wiggle = susceptibility * self.absolute_wiggle_multiplier
                 modified[idx] = wiggle(values[idx], log_wiggle, absolute_wiggle)
         
         return modified.astype(NP_PRECISION)

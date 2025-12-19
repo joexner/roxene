@@ -27,13 +27,19 @@ class CreateNeuronMutagen(Mutagen):
 
     id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
     layer_to_mutate: Mapped[CNLayer] = mapped_column(SQLEnum(CNLayer))
+    log_wiggle_multiplier: Mapped[float] = mapped_column(default=25.0)
+    absolute_wiggle_multiplier: Mapped[float] = mapped_column(default=1.0)
 
     def __init__(self,
                  layer_to_mutate: CNLayer,
                  base_susceptibility: float = 0.001,
-                 susceptibility_log_wiggle: float = 0.01):
+                 susceptibility_log_wiggle: float = 0.01,
+                 log_wiggle_multiplier: float = 25.0,
+                 absolute_wiggle_multiplier: float = 1.0):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)
         self.layer_to_mutate = layer_to_mutate
+        self.log_wiggle_multiplier = log_wiggle_multiplier
+        self.absolute_wiggle_multiplier = absolute_wiggle_multiplier
 
     def mutate_CreateNeuron(self, gene: CreateNeuron) -> CreateNeuron:
         susceptibility = self.get_mutation_susceptibility(gene)
@@ -61,8 +67,8 @@ class CreateNeuronMutagen(Mutagen):
         and the log and absolute wiggles to use when mutating
         '''
         wiggle_probability = susceptibility
-        log_wiggle = susceptibility * 25
-        absolute_wiggle = susceptibility
+        log_wiggle = susceptibility * self.log_wiggle_multiplier
+        absolute_wiggle = susceptibility * self.absolute_wiggle_multiplier
         return np.where(
             get_rng().random(x.shape) < wiggle_probability,
             x,

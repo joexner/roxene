@@ -130,19 +130,19 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
         # Try narrowing multiple times
         for _ in range(10):
             mutant_gene = mutagen.mutate(original_gene)
-            # Layers with size <= 2 won't be narrowed, ensuring at least 1 neuron remains
+            # Layers with size <= 1 won't be narrowed, ensuring at least 1 neuron remains
             self.assertGreaterEqual(mutant_gene.input_hidden.shape[1], 1)
 
     def test_narrow_layer_no_mutation_small_layer(self):
-        """Test that very small layers are not narrowed"""
+        """Test that minimum size layers are not narrowed"""
         set_rng(default_rng(SEED))
-        original_gene = CreateNeuron(**random_neuron_state(5, 5, 2))
+        original_gene = CreateNeuron(**random_neuron_state(5, 5, 1))
         
         mutagen = ResizeNeuronLayerMutagen(ResizeDirection.NARROW, 1.0, 0)  # 100% susceptibility
         mutant_gene = mutagen.mutate(original_gene)
         
-        # Should not narrow a layer of size 2
-        self.assertEqual(mutant_gene.input_hidden.shape[1], 2)
+        # Should not narrow a layer of size 1 (minimum size)
+        self.assertEqual(mutant_gene.input_hidden.shape[1], 1)
 
     def test_no_mutation_with_zero_susceptibility(self):
         """Test that with 0% susceptibility, no mutation occurs"""

@@ -92,8 +92,8 @@ class ResizeNeuronLayerMutagen(Mutagen):
         # Get current hidden layer size from the shape of input_hidden
         current_hidden_size = gene.input_hidden.shape[1]
         
-        # Don't narrow if already very small
-        if current_hidden_size <= 2:
+        # Don't narrow if already at minimum size
+        if current_hidden_size <= 1:
             return gene
 
         # Decrease hidden size by 1-2 neurons (but keep at least 1)

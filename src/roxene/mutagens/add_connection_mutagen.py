@@ -27,9 +27,10 @@ class AddConnectionMutagen(InsertGeneToCompositeMutagen):
     def get_genes_to_insert(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> List[Gene]:
         """Create a new ConnectNeurons gene with random parameters."""
         num_cells = len(mutated_children) if mutated_children else 1
-        num_ports = getattr(parent_gene, "num_ports", 1)
-        tx_cell_index = get_rng().integers(0, num_cells).astype(int)
-        rx_port = get_rng().integers(0, num_ports).astype(int)
+        tx_cell_index = get_rng().integers(0, num_cells)
+        # Pick a random low-ish positive integer for rx_port (0-9)
+        # The actual neuron will modulo this by its number of input ports when connecting
+        rx_port = get_rng().integers(0, 10)
         new_connection = ConnectNeurons(tx_cell_index, rx_port, parent_gene=parent_gene)
         return [new_connection]
 

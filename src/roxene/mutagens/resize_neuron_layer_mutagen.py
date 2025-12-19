@@ -46,12 +46,12 @@ class ResizeNeuronLayerMutagen(Mutagen):
             return self._narrow_layer(gene)
 
     def _widen_layer(self, gene: CreateNeuron) -> CreateNeuron:
-        """Increases the size of the hidden layer by adding neurons."""
+        """Increases the size of the hidden layer by adding one neuron."""
         # Get current hidden layer size from the shape of input_hidden
         current_hidden_size = gene.input_hidden.shape[1]
         
-        # Increase hidden size by 1-3 neurons
-        additional_neurons = get_rng().integers(1, 4)
+        # Increase hidden size by 1 neuron
+        additional_neurons = 1
         new_hidden_size = current_hidden_size + additional_neurons
 
         # Expand input_hidden: from [input_size, hidden_size] to [input_size, new_hidden_size]
@@ -88,7 +88,7 @@ class ResizeNeuronLayerMutagen(Mutagen):
         )
 
     def _narrow_layer(self, gene: CreateNeuron) -> CreateNeuron:
-        """Decreases the size of the hidden layer by removing neurons."""
+        """Decreases the size of the hidden layer by removing one neuron."""
         # Get current hidden layer size from the shape of input_hidden
         current_hidden_size = gene.input_hidden.shape[1]
         
@@ -96,9 +96,8 @@ class ResizeNeuronLayerMutagen(Mutagen):
         if current_hidden_size <= 1:
             return gene
 
-        # Decrease hidden size by 1-2 neurons (but keep at least 1)
-        max_remove = min(2, current_hidden_size - 1)
-        neurons_to_remove = get_rng().integers(1, max_remove + 1)
+        # Decrease hidden size by 1 neuron
+        neurons_to_remove = 1
         new_hidden_size = current_hidden_size - neurons_to_remove
 
         # Select random indices to keep

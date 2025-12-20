@@ -36,16 +36,13 @@ class ModifyIterationsMutagen(Mutagen):
             new_genes.append(mutant)
             any_changed |= (mutant is not orig)
 
-        # Modify the iteration count (with a small random delta)
-        # Use exponential to favor smaller changes
+        # Modify the iteration count by incrementing or decrementing by 1
         if get_rng().random() < 0.5:
-            # Increase iterations (multiply by a factor between 1 and 2)
-            factor = 1 + get_rng().random()
-            new_iterations = max(1, int(parent_gene.iterations * factor))
+            # Increment by 1
+            new_iterations = parent_gene.iterations + 1
         else:
-            # Decrease iterations (multiply by a factor between 0.5 and 1)
-            factor = 0.5 + get_rng().random() * 0.5
-            new_iterations = max(1, int(parent_gene.iterations * factor))
+            # Decrement by 1, but never go below 0
+            new_iterations = max(0, parent_gene.iterations - 1)
 
         if new_iterations != parent_gene.iterations:
             any_changed = True

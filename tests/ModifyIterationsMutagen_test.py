@@ -30,8 +30,8 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
             
             # Should still be a CompositeGene
             self.assertIsInstance(mutant_gene, CompositeGene)
-            # Should have at least 1 iteration
-            self.assertGreaterEqual(mutant_gene.iterations, 1)
+            # Should have at least 0 iterations
+            self.assertGreaterEqual(mutant_gene.iterations, 0)
             
             if mutant_gene.iterations != original_gene.iterations:
                 different_iterations_found = True
@@ -52,19 +52,19 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
         # Should not be mutated
         self.assertEqual(mutant_gene, original_gene)
 
-    def test_modify_iterations_minimum_one(self):
-        """Test that iterations never go below 1"""
+    def test_modify_iterations_minimum_zero(self):
+        """Test that iterations never go below 0"""
         set_rng(default_rng(SEED))
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
-        original_gene = CompositeGene(child_genes=child_genes, iterations=1)
+        original_gene = CompositeGene(child_genes=child_genes, iterations=0)
         
         mutagen = ModifyIterationsMutagen(1.0, 0)  # 100% susceptibility
         
-        # Try many times to ensure we never get 0 or negative
+        # Try many times to ensure we never get negative iterations
         for _ in range(50):
             mutant_gene = mutagen.mutate(original_gene)
-            self.assertGreaterEqual(mutant_gene.iterations, 1, 
-                                  "Iterations should never be less than 1")
+            self.assertGreaterEqual(mutant_gene.iterations, 0, 
+                                  "Iterations should never be less than 0")
 
     def test_modify_iterations_range(self):
         """Test that iteration changes are reasonable"""

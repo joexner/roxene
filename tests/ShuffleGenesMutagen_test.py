@@ -111,8 +111,9 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
             
             # Should have same genes (possibly in different order)
             self.assertEqual(len(mutant_gene.child_genes), len(child_genes))
-            self.assertEqual(sorted(mutant_gene.child_genes, key=id), 
-                           sorted(child_genes, key=id))
+            mutant_ids = sorted([id(gene) for gene in mutant_gene.child_genes])
+            original_ids = sorted([id(gene) for gene in child_genes])
+            self.assertEqual(mutant_ids, original_ids)
 
     def test_shuffle_single_gene(self):
         """Test that CompositeGenes with only 1 child are not shuffled"""

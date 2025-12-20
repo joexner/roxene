@@ -8,7 +8,7 @@ from .remove_gene_mutagen import RemoveGeneMutagen
 from .duplicate_gene_mutagen import DuplicateGeneMutagen
 from .shuffle_genes_mutagen import ShuffleGenesMutagen
 from .modify_iterations_mutagen import ModifyIterationsMutagen
-from .resize_neuron_layer_mutagen import ResizeNeuronLayerMutagen, ResizeDirection
+from .resize_neuron_layer_mutagen import ResizeNeuronLayerMutagen, ResizeDirection, LayerToResize
 from .modify_weight_mutagen import ModifyWeightMutagen, WeightLayer
 from .modify_initial_value_mutagen import ModifyInitialValueMutagen, InitialValueType
 
@@ -26,6 +26,7 @@ __all__ = [
     'ModifyIterationsMutagen',
     'ResizeNeuronLayerMutagen',
     'ResizeDirection',
+    'LayerToResize',
     'ModifyWeightMutagen',
     'WeightLayer',
     'ModifyInitialValueMutagen',

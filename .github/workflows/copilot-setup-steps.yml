@@ -21,3 +21,5 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
+      - name: Install roxene and dependencies
+        run: uv sync --all-extras

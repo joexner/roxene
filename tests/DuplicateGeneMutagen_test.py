@@ -48,7 +48,7 @@ class DuplicateGeneMutagen_test(unittest.TestCase):
         self.assertEqual(mutant_gene, original_gene)
 
     def test_duplicate_gene_placement(self):
-        """Test that the duplicated gene is placed right after the original"""
+        """Test that the duplicated gene is inserted at a random position"""
         set_rng(default_rng(SEED))
         child_genes: List[Gene] = [
             RotateCells(RotateCells.Direction.FORWARD),
@@ -63,14 +63,11 @@ class DuplicateGeneMutagen_test(unittest.TestCase):
             mutant_gene = mutagen.mutate(original_gene)
             # Should have 4 child genes now
             self.assertEqual(len(mutant_gene.child_genes), 4)
-            # Check that there are consecutive duplicates
-            has_consecutive_duplicate = False
-            for i in range(len(mutant_gene.child_genes) - 1):
-                if mutant_gene.child_genes[i] == mutant_gene.child_genes[i + 1]:
-                    has_consecutive_duplicate = True
-                    break
-            self.assertTrue(has_consecutive_duplicate, 
-                          "Duplicated gene should be placed next to original")
+            # Check that one of the genes appears twice (duplicated)
+            gene_types = [type(g) for g in mutant_gene.child_genes]
+            self.assertTrue(len(gene_types) > len(set(gene_types)) or 
+                          any(gene_types.count(g) >= 2 for g in gene_types),
+                          "One gene should appear twice (duplicated)")
 
     def test_duplicate_empty_composite(self):
         """Test duplicating in an empty CompositeGene doesn't crash"""

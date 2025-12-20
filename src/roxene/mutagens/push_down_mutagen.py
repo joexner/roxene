@@ -37,5 +37,5 @@ class PushDownMutagen(Mutagen):
         return CompositeGene(
             child_genes=[gene],
             iterations=1,
-            parent_gene=gene.parent_gene
+            parent_gene=gene
         )

@@ -6,7 +6,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from ..gene import Gene
 from ..genes.composite_gene import CompositeGene
-from ..mutagen import Mutagen
 from .insert_gene_to_composite_mutagen import InsertGeneToCompositeMutagen
 from ..util import get_rng
 
@@ -14,11 +13,7 @@ from ..util import get_rng
 class DuplicateGeneMutagen(InsertGeneToCompositeMutagen):
     """
     Duplicates a random child gene in a CompositeGene.
-    Adds a copy of the selected gene to the gene list.
-    
-    Note: This mutagen overrides mutate_CompositeGene directly to handle
-    the special case where the duplicate must be inserted right after the
-    original gene, requiring a single random index selection.
+    Inserts the duplicate at a random position in the gene list.
     """
     __tablename__ = "duplicate_gene_mutagen"
     __mapper_args__ = {"polymorphic_identity": "duplicate_gene_mutagen"}
@@ -28,31 +23,21 @@ class DuplicateGeneMutagen(InsertGeneToCompositeMutagen):
     def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)
 
-    def mutate_CompositeGene(self, parent_gene: CompositeGene) -> CompositeGene:
-        # Check if this gene should be mutated based on susceptibility
-        susceptibility = self.get_mutation_susceptibility(parent_gene)
-        if get_rng().random() >= susceptibility:
-            # No mutation, just recursively mutate child genes using base Mutagen behavior
-            return Mutagen.mutate_CompositeGene(self, parent_gene)
-
-        # Recursively mutate child genes
-        new_genes = []
-        for orig in parent_gene.child_genes:
-            mutant = self.mutate(orig)
-            new_genes.append(mutant)
-
-        # Duplicate a random gene
-        if len(new_genes) > 0:
-            index_to_duplicate = get_rng().integers(0, len(new_genes))
-            # Insert the duplicate right after the original
-            new_genes.insert(index_to_duplicate + 1, new_genes[index_to_duplicate])
-
-        return CompositeGene(new_genes, parent_gene.iterations, parent_gene)
-
     def get_genes_to_insert(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> List[Gene]:
         """
-        Not used - this mutagen overrides mutate_CompositeGene directly.
-        Required by abstract base class.
+        Returns a copy of a randomly selected child gene to duplicate.
+        
+        Args:
+            parent_gene: The original CompositeGene being mutated
+            mutated_children: The list of child genes after recursive mutation
+            
+        Returns:
+            A list containing the duplicated gene, or empty list if no children
         """
-        raise NotImplementedError("DuplicateGeneMutagen overrides mutate_CompositeGene directly")
+        if len(mutated_children) == 0:
+            return []
+        
+        # Select a random gene to duplicate
+        index_to_duplicate = get_rng().integers(0, len(mutated_children))
+        return [mutated_children[index_to_duplicate]]
 

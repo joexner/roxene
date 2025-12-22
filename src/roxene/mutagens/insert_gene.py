@@ -11,14 +11,14 @@ from ..mutagen import Mutagen
 from ..util import get_rng
 
 
-class InsertGeneToComposite(Mutagen):
+class InsertGene(Mutagen):
     """
     Abstract base class for mutagens that insert genes into a CompositeGene.
     Provides common functionality for checking susceptibility, recursively mutating
     child genes, and inserting new genes at a random position (0 to len inclusive).
     """
-    __tablename__ = "insert_gene_to_composite_mutagen"
-    __mapper_args__ = {"polymorphic_identity": "insert_gene_to_composite_mutagen"}
+    __tablename__ = "insert_gene_mutagen"
+    __mapper_args__ = {"polymorphic_identity": "insert_gene_mutagen"}
 
     id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
 

@@ -1,7 +1,7 @@
 from .create_neuron import CreateNeuron, CNLayer
 from .split_composite_gene import SplitCompositeGene
 from .push_down import PushDown
-from .insert_gene_to_composite import InsertGeneToComposite
+from .insert_gene import InsertGene
 from .add_connection import AddConnection
 from .modify_connection import ModifyConnection
 from .remove_gene import RemoveGene
@@ -17,7 +17,7 @@ __all__ = [
     'CNLayer', 
     'SplitCompositeGene',
     'PushDown',
-    'InsertGeneToComposite',
+    'InsertGene',
     'AddConnection',
     'ModifyConnection',
     'RemoveGene',

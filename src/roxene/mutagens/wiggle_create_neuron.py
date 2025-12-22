@@ -21,9 +21,9 @@ class CNLayer(Enum):
     feedback_hidden = auto()
     hidden_output = auto()
 
-class CreateNeuron(Mutagen):
-    __tablename__ = "create_neuron_mutagen"
-    __mapper_args__ = {"polymorphic_identity": "create_neuron_mutagen"}
+class WiggleCreateNeuron(Mutagen):
+    __tablename__ = "wiggle_create_neuron_mutagen"
+    __mapper_args__ = {"polymorphic_identity": "wiggle_create_neuron_mutagen"}
 
     id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
     layer_to_mutate: Mapped[CNLayer] = mapped_column(SQLEnum(CNLayer))

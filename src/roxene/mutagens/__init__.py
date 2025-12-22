@@ -1,7 +1,7 @@
-from .create_neuron import CreateNeuron, CNLayer
+from .wiggle_create_neuron import WiggleCreateNeuron, CNLayer
 from .split_composite_gene import SplitCompositeGene
 from .push_down import PushDown
-from .insert_gene import InsertGene
+from .add_gene import AddGene
 from .add_connection import AddConnection
 from .modify_connection import ModifyConnection
 from .remove_gene import RemoveGene
@@ -13,11 +13,11 @@ from .modify_weight import ModifyWeight, WeightLayer
 from .modify_initial_value import ModifyInitialValue, InitialValueType
 
 __all__ = [
-    'CreateNeuron', 
+    'WiggleCreateNeuron', 
     'CNLayer', 
     'SplitCompositeGene',
     'PushDown',
-    'InsertGene',
+    'AddGene',
     'AddConnection',
     'ModifyConnection',
     'RemoveGene',

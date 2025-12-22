@@ -6,11 +6,11 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from ..gene import Gene
 from ..genes.composite_gene import CompositeGene
-from .insert_gene import InsertGene
+from .add_gene import AddGene
 from ..util import get_rng
 
 
-class DuplicateGene(InsertGene):
+class DuplicateGene(AddGene):
     """
     Duplicates a random child gene in a CompositeGene.
     Inserts the duplicate at a random position in the gene list.
@@ -18,7 +18,7 @@ class DuplicateGene(InsertGene):
     __tablename__ = "duplicate_gene_mutagen"
     __mapper_args__ = {"polymorphic_identity": "duplicate_gene_mutagen"}
 
-    id: Mapped[uuid.UUID] = mapped_column(ForeignKey("insert_gene_mutagen.id"), primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(ForeignKey("add_gene_mutagen.id"), primary_key=True)
 
     def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)

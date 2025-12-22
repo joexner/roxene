@@ -8,7 +8,7 @@ from ..mutagen import Mutagen
 from ..util import get_rng
 
 
-class ModifyConnectionMutagen(Mutagen):
+class ModifyConnection(Mutagen):
     """
     Modifies the parameters of existing ConnectNeurons genes.
     Changes the tx_cell_index and rx_port to create different connections.

@@ -21,7 +21,7 @@ class CNLayer(Enum):
     feedback_hidden = auto()
     hidden_output = auto()
 
-class CreateNeuronMutagen(Mutagen):
+class CreateNeuron(Mutagen):
     __tablename__ = "create_neuron_mutagen"
     __mapper_args__ = {"polymorphic_identity": "create_neuron_mutagen"}
 

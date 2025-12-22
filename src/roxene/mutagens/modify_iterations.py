@@ -8,7 +8,7 @@ from ..mutagen import Mutagen
 from ..util import get_rng
 
 
-class ModifyIterationsMutagen(Mutagen):
+class ModifyIterations(Mutagen):
     """
     Modifies the iteration count of a CompositeGene.
     Can increase or decrease the number of times child genes are executed.

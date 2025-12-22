@@ -1,34 +1,34 @@
-from .create_neuron_mutagen import CreateNeuronMutagen, CNLayer
-from .composite_gene_split_mutagen import CompositeGeneSplitMutagen
-from .push_down_mutagen import PushDownMutagen
-from .insert_gene_to_composite_mutagen import InsertGeneToCompositeMutagen
-from .add_connection_mutagen import AddConnectionMutagen
-from .modify_connection_mutagen import ModifyConnectionMutagen
-from .remove_gene_mutagen import RemoveGeneMutagen
-from .duplicate_gene_mutagen import DuplicateGeneMutagen
-from .shuffle_genes_mutagen import ShuffleGenesMutagen
-from .modify_iterations_mutagen import ModifyIterationsMutagen
-from .resize_neuron_layer_mutagen import ResizeNeuronLayerMutagen, ResizeDirection, LayerToResize
-from .modify_weight_mutagen import ModifyWeightMutagen, WeightLayer
-from .modify_initial_value_mutagen import ModifyInitialValueMutagen, InitialValueType
+from .create_neuron import CreateNeuron, CNLayer
+from .split_composite_gene import SplitCompositeGene
+from .push_down import PushDown
+from .insert_gene_to_composite import InsertGeneToComposite
+from .add_connection import AddConnection
+from .modify_connection import ModifyConnection
+from .remove_gene import RemoveGene
+from .duplicate_gene import DuplicateGene
+from .shuffle_genes import ShuffleGenes
+from .modify_iterations import ModifyIterations
+from .resize_neuron_layer import ResizeNeuronLayer, ResizeDirection, LayerToResize
+from .modify_weight import ModifyWeight, WeightLayer
+from .modify_initial_value import ModifyInitialValue, InitialValueType
 
 __all__ = [
-    'CreateNeuronMutagen', 
+    'CreateNeuron', 
     'CNLayer', 
-    'CompositeGeneSplitMutagen',
-    'PushDownMutagen',
-    'InsertGeneToCompositeMutagen',
-    'AddConnectionMutagen',
-    'ModifyConnectionMutagen',
-    'RemoveGeneMutagen',
-    'DuplicateGeneMutagen',
-    'ShuffleGenesMutagen',
-    'ModifyIterationsMutagen',
-    'ResizeNeuronLayerMutagen',
+    'SplitCompositeGene',
+    'PushDown',
+    'InsertGeneToComposite',
+    'AddConnection',
+    'ModifyConnection',
+    'RemoveGene',
+    'DuplicateGene',
+    'ShuffleGenes',
+    'ModifyIterations',
+    'ResizeNeuronLayer',
     'ResizeDirection',
     'LayerToResize',
-    'ModifyWeightMutagen',
+    'ModifyWeight',
     'WeightLayer',
-    'ModifyInitialValueMutagen',
+    'ModifyInitialValue',
     'InitialValueType',
 ]

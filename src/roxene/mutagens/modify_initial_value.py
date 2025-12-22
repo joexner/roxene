@@ -18,7 +18,7 @@ class InitialValueType(Enum):
     output = auto()
 
 
-class ModifyInitialValueMutagen(Mutagen):
+class ModifyInitialValue(Mutagen):
     """
     Surgically modifies specific initial values in a CreateNeuron gene.
     Targets a specific initial value vector and modifies individual values.

@@ -24,7 +24,7 @@ class LayerToResize(Enum):
     FEEDBACK = auto()
 
 
-class ResizeNeuronLayerMutagen(Mutagen):
+class ResizeNeuronLayer(Mutagen):
     """
     Resizes a layer of a CreateNeuron gene's neuron.
     Can widen by adding neurons or narrow by removing neurons from input, hidden, or feedback layer.

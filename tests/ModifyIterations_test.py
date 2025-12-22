@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from roxene import EntityBase, Gene
 from roxene.genes import CompositeGene, RotateCells
-from roxene.mutagens import ModifyIterationsMutagen
+from roxene.mutagens import ModifyIterations
 from roxene.util import set_rng
 
 SEED = 987
@@ -16,12 +16,12 @@ SEED = 987
 class ModifyIterationsMutagen_test(unittest.TestCase):
 
     def test_modify_iterations(self):
-        """Test that ModifyIterationsMutagen changes iteration count"""
+        """Test that ModifyIterations changes iteration count"""
         set_rng(default_rng(SEED))
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=5)
         
-        mutagen = ModifyIterationsMutagen(1.0, 0)  # 100% susceptibility
+        mutagen = ModifyIterations(1.0, 0)  # 100% susceptibility
         
         # Try multiple times to see variation in iteration changes
         different_iterations_found = False
@@ -45,7 +45,7 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=3)
         
-        mutagen = ModifyIterationsMutagen(0.0, 0)  # 0% susceptibility
+        mutagen = ModifyIterations(0.0, 0)  # 0% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -58,7 +58,7 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=0)
         
-        mutagen = ModifyIterationsMutagen(1.0, 0)  # 100% susceptibility
+        mutagen = ModifyIterations(1.0, 0)  # 100% susceptibility
         
         # Try many times to ensure we never get negative iterations
         for _ in range(50):
@@ -72,7 +72,7 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=10)
         
-        mutagen = ModifyIterationsMutagen(1.0, 0)  # 100% susceptibility
+        mutagen = ModifyIterations(1.0, 0)  # 100% susceptibility
         
         increases = 0
         decreases = 0
@@ -88,8 +88,8 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
         self.assertGreater(decreases, 0, "Should see some iteration decreases")
 
     def test_persist_reload(self):
-        """Test that ModifyIterationsMutagen can be persisted and reloaded"""
-        mutagen = ModifyIterationsMutagen(0.012, 0.019)
+        """Test that ModifyIterations can be persisted and reloaded"""
+        mutagen = ModifyIterations(0.012, 0.019)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -97,7 +97,7 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
             session.add(mutagen)
             session.commit()
         with Session(engine) as session:
-            reloaded = session.get(ModifyIterationsMutagen, mutagen_id)
+            reloaded = session.get(ModifyIterations, mutagen_id)
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.base_susceptibility, 0.012)

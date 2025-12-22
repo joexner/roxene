@@ -8,7 +8,7 @@ from ..mutagen import Mutagen
 from ..util import get_rng
 
 
-class ShuffleGenesMutagen(Mutagen):
+class ShuffleGenes(Mutagen):
     """
     Swaps two child genes in a CompositeGene.
     The distance between swapped genes is influenced by susceptibility.

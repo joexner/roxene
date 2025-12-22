@@ -8,7 +8,7 @@ from ..mutagen import Mutagen
 from ..util import get_rng
 
 
-class RemoveGeneMutagen(Mutagen):
+class RemoveGene(Mutagen):
     """
     Removes a random child gene from a CompositeGene.
     Only removes if the CompositeGene has more than one child gene.

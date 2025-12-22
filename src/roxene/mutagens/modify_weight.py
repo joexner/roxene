@@ -19,7 +19,7 @@ class WeightLayer(Enum):
     hidden_output = auto()
 
 
-class ModifyWeightMutagen(Mutagen):
+class ModifyWeight(Mutagen):
     """
     Surgically modifies specific connection weights in a CreateNeuron gene.
     Targets a specific weight matrix and modifies individual weights.

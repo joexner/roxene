@@ -7,11 +7,11 @@ from sqlalchemy.orm import Mapped, mapped_column
 from ..gene import Gene
 from ..genes.connect_neurons import ConnectNeurons
 from ..genes.composite_gene import CompositeGene
-from .insert_gene_to_composite_mutagen import InsertGeneToCompositeMutagen
+from .insert_gene_to_composite import InsertGeneToComposite
 from ..util import get_rng
 
 
-class AddConnectionMutagen(InsertGeneToCompositeMutagen):
+class AddConnection(InsertGeneToComposite):
     """
     Adds a new ConnectNeurons gene to a CompositeGene.
     This creates new connections between cells in the organism.

@@ -6,11 +6,11 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from ..gene import Gene
 from ..genes.composite_gene import CompositeGene
-from .insert_gene_to_composite_mutagen import InsertGeneToCompositeMutagen
+from .insert_gene_to_composite import InsertGeneToComposite
 from ..util import get_rng
 
 
-class DuplicateGeneMutagen(InsertGeneToCompositeMutagen):
+class DuplicateGene(InsertGeneToComposite):
     """
     Duplicates a random child gene in a CompositeGene.
     Inserts the duplicate at a random position in the gene list.

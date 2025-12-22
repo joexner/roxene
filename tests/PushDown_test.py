@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from roxene import EntityBase, Gene
 from roxene.genes import CompositeGene, RotateCells
-from roxene.mutagens import PushDownMutagen
+from roxene.mutagens import PushDown
 from roxene.util import set_rng
 
 SEED = 42
@@ -16,11 +16,11 @@ SEED = 42
 class PushDownMutagen_test(unittest.TestCase):
 
     def test_push_down_basic(self):
-        """Test that PushDownMutagen wraps a simple gene in a CompositeGene"""
+        """Test that PushDown wraps a simple gene in a CompositeGene"""
         set_rng(default_rng(SEED))
         original_gene = RotateCells(RotateCells.Direction.FORWARD)
         
-        mutagen = PushDownMutagen(1.0, 0)  # 100% susceptibility, no wiggle
+        mutagen = PushDown(1.0, 0)  # 100% susceptibility, no wiggle
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -35,7 +35,7 @@ class PushDownMutagen_test(unittest.TestCase):
         set_rng(default_rng(SEED))
         original_gene = RotateCells(RotateCells.Direction.FORWARD)
         
-        mutagen = PushDownMutagen(0.0, 0)  # 0% susceptibility
+        mutagen = PushDown(0.0, 0)  # 0% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -48,7 +48,7 @@ class PushDownMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=5)
         
-        mutagen = PushDownMutagen(1.0, 0)  # 100% susceptibility
+        mutagen = PushDown(1.0, 0)  # 100% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -64,7 +64,7 @@ class PushDownMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = PushDownMutagen(1.0, 0)  # 100% susceptibility
+        mutagen = PushDown(1.0, 0)  # 100% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -74,8 +74,8 @@ class PushDownMutagen_test(unittest.TestCase):
         self.assertEqual(mutant_gene.iterations, 1)
 
     def test_persist_reload(self):
-        """Test that PushDownMutagen can be persisted and reloaded"""
-        mutagen = PushDownMutagen(0.02, 0.05)
+        """Test that PushDown can be persisted and reloaded"""
+        mutagen = PushDown(0.02, 0.05)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -83,7 +83,7 @@ class PushDownMutagen_test(unittest.TestCase):
             session.add(mutagen)
             session.commit()
         with Session(engine) as session:
-            reloaded = session.get(PushDownMutagen, mutagen_id)
+            reloaded = session.get(PushDown, mutagen_id)
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.base_susceptibility, 0.02)

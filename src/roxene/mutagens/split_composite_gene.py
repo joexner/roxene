@@ -8,7 +8,7 @@ from ..mutagen import Mutagen
 from ..util import get_rng
 
 
-class CompositeGeneSplitMutagen(Mutagen):
+class SplitCompositeGene(Mutagen):
     __tablename__ = "composite_gene_split_mutagen"
     __mapper_args__ = {"polymorphic_identity": "composite_gene_split_mutagen"}
 

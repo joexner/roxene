@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from roxene import EntityBase, Gene
 from roxene.genes import CompositeGene, RotateCells, ConnectNeurons
-from roxene.mutagens import AddConnectionMutagen
+from roxene.mutagens import AddConnection
 from roxene.util import set_rng
 
 SEED = 123
@@ -16,7 +16,7 @@ SEED = 123
 class AddConnectionMutagen_test(unittest.TestCase):
 
     def test_add_connection_to_composite(self):
-        """Test that AddConnectionMutagen adds a ConnectNeurons gene"""
+        """Test that AddConnection adds a ConnectNeurons gene"""
         set_rng(default_rng(SEED))
         child_genes: List[Gene] = [
             RotateCells(RotateCells.Direction.FORWARD),
@@ -24,7 +24,7 @@ class AddConnectionMutagen_test(unittest.TestCase):
         ]
         original_gene = CompositeGene(child_genes=child_genes, iterations=3)
         
-        mutagen = AddConnectionMutagen(1.0, 0)  # 100% susceptibility
+        mutagen = AddConnection(1.0, 0)  # 100% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -43,7 +43,7 @@ class AddConnectionMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = AddConnectionMutagen(0.0, 0)  # 0% susceptibility
+        mutagen = AddConnection(0.0, 0)  # 0% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -56,7 +56,7 @@ class AddConnectionMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = AddConnectionMutagen(1.0, 0)  # 100% susceptibility
+        mutagen = AddConnection(1.0, 0)  # 100% susceptibility
         
         for _ in range(10):
             mutant_gene = mutagen.mutate(original_gene)
@@ -71,8 +71,8 @@ class AddConnectionMutagen_test(unittest.TestCase):
             self.assertGreaterEqual(connection.rx_port, 0)
 
     def test_persist_reload(self):
-        """Test that AddConnectionMutagen can be persisted and reloaded"""
-        mutagen = AddConnectionMutagen(0.03, 0.04)
+        """Test that AddConnection can be persisted and reloaded"""
+        mutagen = AddConnection(0.03, 0.04)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -80,7 +80,7 @@ class AddConnectionMutagen_test(unittest.TestCase):
             session.add(mutagen)
             session.commit()
         with Session(engine) as session:
-            reloaded = session.get(AddConnectionMutagen, mutagen_id)
+            reloaded = session.get(AddConnection, mutagen_id)
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.base_susceptibility, 0.03)

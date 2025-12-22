@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from roxene import EntityBase, random_neuron_state
 from roxene.genes import CreateNeuron
-from roxene.mutagens import ModifyInitialValueMutagen, InitialValueType
+from roxene.mutagens import ModifyInitialValue, InitialValueType
 from roxene.util import set_rng
 
 SEED = 444
@@ -16,11 +16,11 @@ SEED = 444
 class ModifyInitialValueMutagen_test(unittest.TestCase):
 
     def test_modify_initial_value_input(self):
-        """Test that ModifyInitialValueMutagen modifies input initial values"""
+        """Test that ModifyInitialValue modifies input initial values"""
         set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(10, 10, 10))
         
-        mutagen = ModifyInitialValueMutagen(InitialValueType.input, 0.5, 0)
+        mutagen = ModifyInitialValue(InitialValueType.input, 0.5, 0)
         mutant_gene = mutagen.mutate(original_gene)
         
         # Some values should be different
@@ -30,11 +30,11 @@ class ModifyInitialValueMutagen_test(unittest.TestCase):
         np.testing.assert_array_equal(mutant_gene.output, original_gene.output)
 
     def test_modify_initial_value_feedback(self):
-        """Test that ModifyInitialValueMutagen modifies feedback initial values"""
+        """Test that ModifyInitialValue modifies feedback initial values"""
         set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(10, 10, 10))
         
-        mutagen = ModifyInitialValueMutagen(InitialValueType.feedback, 0.5, 0)
+        mutagen = ModifyInitialValue(InitialValueType.feedback, 0.5, 0)
         mutant_gene = mutagen.mutate(original_gene)
         
         # Some values should be different
@@ -44,11 +44,11 @@ class ModifyInitialValueMutagen_test(unittest.TestCase):
         np.testing.assert_array_equal(mutant_gene.output, original_gene.output)
 
     def test_modify_initial_value_output(self):
-        """Test that ModifyInitialValueMutagen modifies output initial values"""
+        """Test that ModifyInitialValue modifies output initial values"""
         set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(10, 10, 10))
         
-        mutagen = ModifyInitialValueMutagen(InitialValueType.output, 0.5, 0)
+        mutagen = ModifyInitialValue(InitialValueType.output, 0.5, 0)
         mutant_gene = mutagen.mutate(original_gene)
         
         # Some values should be different
@@ -63,12 +63,12 @@ class ModifyInitialValueMutagen_test(unittest.TestCase):
         original_gene = CreateNeuron(**random_neuron_state(20, 20, 20))
         
         # Low susceptibility - few changes
-        mutagen_low = ModifyInitialValueMutagen(InitialValueType.input, 0.01, 0)
+        mutagen_low = ModifyInitialValue(InitialValueType.input, 0.01, 0)
         mutant_low = mutagen_low.mutate(original_gene)
         changes_low = np.sum(mutant_low.input != original_gene.input)
         
         # High susceptibility - many changes
-        mutagen_high = ModifyInitialValueMutagen(InitialValueType.input, 0.5, 0)
+        mutagen_high = ModifyInitialValue(InitialValueType.input, 0.5, 0)
         mutant_high = mutagen_high.mutate(original_gene)
         changes_high = np.sum(mutant_high.input != original_gene.input)
         
@@ -80,7 +80,7 @@ class ModifyInitialValueMutagen_test(unittest.TestCase):
         set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(10, 10, 10))
         
-        mutagen = ModifyInitialValueMutagen(InitialValueType.input, 0.5, 0)
+        mutagen = ModifyInitialValue(InitialValueType.input, 0.5, 0)
         mutant_gene = mutagen.mutate(original_gene)
         
         # All weight matrices should be unchanged
@@ -90,8 +90,8 @@ class ModifyInitialValueMutagen_test(unittest.TestCase):
         np.testing.assert_array_equal(mutant_gene.hidden_output, original_gene.hidden_output)
 
     def test_persist_reload(self):
-        """Test that ModifyInitialValueMutagen can be persisted and reloaded"""
-        mutagen = ModifyInitialValueMutagen(InitialValueType.feedback, 0.018, 0.028)
+        """Test that ModifyInitialValue can be persisted and reloaded"""
+        mutagen = ModifyInitialValue(InitialValueType.feedback, 0.018, 0.028)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -99,7 +99,7 @@ class ModifyInitialValueMutagen_test(unittest.TestCase):
             session.add(mutagen)
             session.commit()
         with Session(engine) as session:
-            reloaded = session.get(ModifyInitialValueMutagen, mutagen_id)
+            reloaded = session.get(ModifyInitialValue, mutagen_id)
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.value_type, InitialValueType.feedback)

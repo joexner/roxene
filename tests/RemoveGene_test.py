@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from roxene import EntityBase, Gene
 from roxene.genes import CompositeGene, RotateCells
-from roxene.mutagens import RemoveGeneMutagen
+from roxene.mutagens import RemoveGene
 from roxene.util import set_rng
 
 SEED = 789
@@ -16,7 +16,7 @@ SEED = 789
 class RemoveGeneMutagen_test(unittest.TestCase):
 
     def test_remove_gene_from_composite(self):
-        """Test that RemoveGeneMutagen removes a child gene"""
+        """Test that RemoveGene removes a child gene"""
         set_rng(default_rng(SEED))
         child_genes: List[Gene] = [
             RotateCells(RotateCells.Direction.FORWARD),
@@ -25,7 +25,7 @@ class RemoveGeneMutagen_test(unittest.TestCase):
         ]
         original_gene = CompositeGene(child_genes=child_genes, iterations=2)
         
-        mutagen = RemoveGeneMutagen(1.0, 0)  # 100% susceptibility
+        mutagen = RemoveGene(1.0, 0)  # 100% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -44,7 +44,7 @@ class RemoveGeneMutagen_test(unittest.TestCase):
         ]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = RemoveGeneMutagen(0.0, 0)  # 0% susceptibility
+        mutagen = RemoveGene(0.0, 0)  # 0% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -57,7 +57,7 @@ class RemoveGeneMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = RemoveGeneMutagen(1.0, 0)  # 100% susceptibility
+        mutagen = RemoveGene(1.0, 0)  # 100% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -77,7 +77,7 @@ class RemoveGeneMutagen_test(unittest.TestCase):
         ]
         gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = RemoveGeneMutagen(1.0, 0)  # 100% susceptibility
+        mutagen = RemoveGene(1.0, 0)  # 100% susceptibility
         
         # Remove genes multiple times
         for expected_count in [4, 3, 2, 1, 1]:  # Can't go below 1
@@ -85,8 +85,8 @@ class RemoveGeneMutagen_test(unittest.TestCase):
             self.assertEqual(len(gene.child_genes), expected_count)
 
     def test_persist_reload(self):
-        """Test that RemoveGeneMutagen can be persisted and reloaded"""
-        mutagen = RemoveGeneMutagen(0.015, 0.025)
+        """Test that RemoveGene can be persisted and reloaded"""
+        mutagen = RemoveGene(0.015, 0.025)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -94,7 +94,7 @@ class RemoveGeneMutagen_test(unittest.TestCase):
             session.add(mutagen)
             session.commit()
         with Session(engine) as session:
-            reloaded = session.get(RemoveGeneMutagen, mutagen_id)
+            reloaded = session.get(RemoveGene, mutagen_id)
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.base_susceptibility, 0.015)

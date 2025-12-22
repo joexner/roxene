@@ -11,7 +11,7 @@ from ..mutagen import Mutagen
 from ..util import get_rng
 
 
-class InsertGeneToCompositeMutagen(Mutagen):
+class InsertGeneToComposite(Mutagen):
     """
     Abstract base class for mutagens that insert genes into a CompositeGene.
     Provides common functionality for checking susceptibility, recursively mutating

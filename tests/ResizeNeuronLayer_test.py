@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from roxene import EntityBase, random_neuron_state
 from roxene.genes import CreateNeuron
-from roxene.mutagens import ResizeNeuronLayerMutagen, ResizeDirection, LayerToResize
+from roxene.mutagens import ResizeNeuronLayer, ResizeDirection, LayerToResize
 from roxene.util import set_rng
 
 SEED = 111
@@ -16,12 +16,12 @@ SEED = 111
 class ResizeNeuronLayerMutagen_test(unittest.TestCase):
 
     def test_widen_layer(self):
-        """Test that ResizeNeuronLayerMutagen with WIDEN increases hidden layer size"""
+        """Test that ResizeNeuronLayer with WIDEN increases hidden layer size"""
         set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         original_hidden_size = original_gene.input_hidden.shape[1]
         
-        mutagen = ResizeNeuronLayerMutagen(ResizeDirection.WIDEN, LayerToResize.HIDDEN, 1.0, 0)  # 100% susceptibility
+        mutagen = ResizeNeuronLayer(ResizeDirection.WIDEN, LayerToResize.HIDDEN, 1.0, 0)  # 100% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         new_hidden_size = mutant_gene.input_hidden.shape[1]
@@ -38,7 +38,7 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
         hidden_size = 10
         original_gene = CreateNeuron(**random_neuron_state(input_size, feedback_size, hidden_size))
         
-        mutagen = ResizeNeuronLayerMutagen(ResizeDirection.WIDEN, LayerToResize.HIDDEN, 1.0, 0)  # 100% susceptibility
+        mutagen = ResizeNeuronLayer(ResizeDirection.WIDEN, LayerToResize.HIDDEN, 1.0, 0)  # 100% susceptibility
         mutant_gene = mutagen.mutate(original_gene)
         
         new_hidden_size = mutant_gene.input_hidden.shape[1]
@@ -60,7 +60,7 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         original_hidden_size = original_gene.input_hidden.shape[1]
         
-        mutagen = ResizeNeuronLayerMutagen(ResizeDirection.WIDEN, LayerToResize.HIDDEN, 1.0, 0)  # 100% susceptibility
+        mutagen = ResizeNeuronLayer(ResizeDirection.WIDEN, LayerToResize.HIDDEN, 1.0, 0)  # 100% susceptibility
         mutant_gene = mutagen.mutate(original_gene)
         
         # Check that original weights are preserved in the first columns/rows
@@ -82,12 +82,12 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
         )
 
     def test_narrow_layer(self):
-        """Test that ResizeNeuronLayerMutagen with NARROW decreases hidden layer size"""
+        """Test that ResizeNeuronLayer with NARROW decreases hidden layer size"""
         set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         original_hidden_size = original_gene.input_hidden.shape[1]
         
-        mutagen = ResizeNeuronLayerMutagen(ResizeDirection.NARROW, LayerToResize.HIDDEN, 1.0, 0)  # 100% susceptibility
+        mutagen = ResizeNeuronLayer(ResizeDirection.NARROW, LayerToResize.HIDDEN, 1.0, 0)  # 100% susceptibility
         mutant_gene = mutagen.mutate(original_gene)
         new_hidden_size = mutant_gene.input_hidden.shape[1]
         
@@ -103,7 +103,7 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
         hidden_size = 10
         original_gene = CreateNeuron(**random_neuron_state(input_size, feedback_size, hidden_size))
         
-        mutagen = ResizeNeuronLayerMutagen(ResizeDirection.NARROW, LayerToResize.HIDDEN, 1.0, 0)  # 100% susceptibility
+        mutagen = ResizeNeuronLayer(ResizeDirection.NARROW, LayerToResize.HIDDEN, 1.0, 0)  # 100% susceptibility
         mutant_gene = mutagen.mutate(original_gene)
         
         new_hidden_size = mutant_gene.input_hidden.shape[1]
@@ -125,7 +125,7 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
         # Create a gene with small hidden layer
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 2))
         
-        mutagen = ResizeNeuronLayerMutagen(ResizeDirection.NARROW, LayerToResize.HIDDEN, 1.0, 0)  # 100% susceptibility
+        mutagen = ResizeNeuronLayer(ResizeDirection.NARROW, LayerToResize.HIDDEN, 1.0, 0)  # 100% susceptibility
         
         # Try narrowing multiple times
         for _ in range(10):
@@ -138,7 +138,7 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
         set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 1))
         
-        mutagen = ResizeNeuronLayerMutagen(ResizeDirection.NARROW, LayerToResize.HIDDEN, 1.0, 0)  # 100% susceptibility
+        mutagen = ResizeNeuronLayer(ResizeDirection.NARROW, LayerToResize.HIDDEN, 1.0, 0)  # 100% susceptibility
         mutant_gene = mutagen.mutate(original_gene)
         
         # Should not narrow a layer of size 1 (minimum size)
@@ -151,15 +151,15 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
         
         # Test both directions
         for direction in [ResizeDirection.WIDEN, ResizeDirection.NARROW]:
-            mutagen = ResizeNeuronLayerMutagen(direction, 0.0, 0)  # 0% susceptibility
+            mutagen = ResizeNeuronLayer(direction, 0.0, 0)  # 0% susceptibility
             mutant_gene = mutagen.mutate(original_gene)
             
             # Should not be mutated
             self.assertEqual(mutant_gene, original_gene)
 
     def test_persist_reload_widen(self):
-        """Test that ResizeNeuronLayerMutagen (WIDEN) can be persisted and reloaded"""
-        mutagen = ResizeNeuronLayerMutagen(ResizeDirection.WIDEN, LayerToResize.HIDDEN, 0.03, 0.05)
+        """Test that ResizeNeuronLayer (WIDEN) can be persisted and reloaded"""
+        mutagen = ResizeNeuronLayer(ResizeDirection.WIDEN, LayerToResize.HIDDEN, 0.03, 0.05)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -167,7 +167,7 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
             session.add(mutagen)
             session.commit()
         with Session(engine) as session:
-            reloaded = session.get(ResizeNeuronLayerMutagen, mutagen_id)
+            reloaded = session.get(ResizeNeuronLayer, mutagen_id)
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.direction, ResizeDirection.WIDEN)
@@ -175,8 +175,8 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
             self.assertEqual(reloaded.susceptibility_log_wiggle, 0.05)
 
     def test_persist_reload_narrow(self):
-        """Test that ResizeNeuronLayerMutagen (NARROW) can be persisted and reloaded"""
-        mutagen = ResizeNeuronLayerMutagen(ResizeDirection.NARROW, LayerToResize.HIDDEN, 0.02, 0.04)
+        """Test that ResizeNeuronLayer (NARROW) can be persisted and reloaded"""
+        mutagen = ResizeNeuronLayer(ResizeDirection.NARROW, LayerToResize.HIDDEN, 0.02, 0.04)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -184,7 +184,7 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
             session.add(mutagen)
             session.commit()
         with Session(engine) as session:
-            reloaded = session.get(ResizeNeuronLayerMutagen, mutagen_id)
+            reloaded = session.get(ResizeNeuronLayer, mutagen_id)
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.direction, ResizeDirection.NARROW)

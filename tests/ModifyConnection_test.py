@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from roxene import EntityBase
 from roxene.genes import ConnectNeurons, CompositeGene
-from roxene.mutagens import ModifyConnectionMutagen
+from roxene.mutagens import ModifyConnection
 from roxene.util import set_rng
 
 SEED = 456
@@ -15,11 +15,11 @@ SEED = 456
 class ModifyConnectionMutagen_test(unittest.TestCase):
 
     def test_modify_connection(self):
-        """Test that ModifyConnectionMutagen changes connection parameters"""
+        """Test that ModifyConnection changes connection parameters"""
         set_rng(default_rng(SEED))
         original_connection = ConnectNeurons(tx_cell_index=5, rx_input_port=3)
         
-        mutagen = ModifyConnectionMutagen(1.0, 0)  # 100% susceptibility
+        mutagen = ModifyConnection(1.0, 0)  # 100% susceptibility
         
         mutant_gene = mutagen.mutate(original_connection)
         
@@ -42,7 +42,7 @@ class ModifyConnectionMutagen_test(unittest.TestCase):
         set_rng(default_rng(SEED))
         original_connection = ConnectNeurons(tx_cell_index=5, rx_input_port=3)
         
-        mutagen = ModifyConnectionMutagen(0.0, 0)  # 0% susceptibility
+        mutagen = ModifyConnection(0.0, 0)  # 0% susceptibility
         
         mutant_gene = mutagen.mutate(original_connection)
         
@@ -54,7 +54,7 @@ class ModifyConnectionMutagen_test(unittest.TestCase):
         set_rng(default_rng(SEED))
         original_connection = ConnectNeurons(tx_cell_index=1, rx_input_port=1)
         
-        mutagen = ModifyConnectionMutagen(1.0, 0)  # 100% susceptibility
+        mutagen = ModifyConnection(1.0, 0)  # 100% susceptibility
         
         for _ in range(20):
             mutant = mutagen.mutate(original_connection)
@@ -69,7 +69,7 @@ class ModifyConnectionMutagen_test(unittest.TestCase):
         connection2 = ConnectNeurons(tx_cell_index=2, rx_input_port=7)
         composite = CompositeGene(child_genes=[connection1, connection2], iterations=1)
         
-        mutagen = ModifyConnectionMutagen(1.0, 0)  # 100% susceptibility
+        mutagen = ModifyConnection(1.0, 0)  # 100% susceptibility
         
         mutant_composite = mutagen.mutate(composite)
         
@@ -81,8 +81,8 @@ class ModifyConnectionMutagen_test(unittest.TestCase):
             self.assertIsInstance(gene, ConnectNeurons)
 
     def test_persist_reload(self):
-        """Test that ModifyConnectionMutagen can be persisted and reloaded"""
-        mutagen = ModifyConnectionMutagen(0.025, 0.035)
+        """Test that ModifyConnection can be persisted and reloaded"""
+        mutagen = ModifyConnection(0.025, 0.035)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -90,7 +90,7 @@ class ModifyConnectionMutagen_test(unittest.TestCase):
             session.add(mutagen)
             session.commit()
         with Session(engine) as session:
-            reloaded = session.get(ModifyConnectionMutagen, mutagen_id)
+            reloaded = session.get(ModifyConnection, mutagen_id)
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.base_susceptibility, 0.025)

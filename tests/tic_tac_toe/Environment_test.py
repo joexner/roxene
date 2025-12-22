@@ -6,7 +6,7 @@ from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session
 
 from roxene import Organism
-from roxene.mutagens import CreateNeuronMutagen, CNLayer
+from roxene.mutagens import CreateNeuron, CNLayer
 from roxene.tic_tac_toe import Trial, Player, Environment, Outcome
 from roxene.util import set_rng
 from util import get_engine
@@ -133,7 +133,7 @@ class Environment_test(unittest.TestCase):
         env = Environment(engine)
 
         # Add a mutagen to ensure mutation occurs during cloning
-        env.add_mutagen(CreateNeuronMutagen(CNLayer.input_initial_value, base_susceptibility=1.0))
+        env.add_mutagen(CreateNeuron(CNLayer.input_initial_value, base_susceptibility=1.0))
 
         # Create a single organism to clone
         env.populate(1)

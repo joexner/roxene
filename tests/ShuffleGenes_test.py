@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from roxene import EntityBase, Gene
 from roxene.genes import CompositeGene, RotateCells
-from roxene.mutagens import ShuffleGenesMutagen
+from roxene.mutagens import ShuffleGenes
 from roxene.util import set_rng
 
 SEED = 654
@@ -16,7 +16,7 @@ SEED = 654
 class ShuffleGenesMutagen_test(unittest.TestCase):
 
     def test_shuffle_swaps_two_genes(self):
-        """Test that ShuffleGenesMutagen swaps exactly two genes"""
+        """Test that ShuffleGenes swaps exactly two genes"""
         set_rng(default_rng(SEED))
         child_genes: List[Gene] = [
             RotateCells(RotateCells.Direction.FORWARD),
@@ -26,7 +26,7 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
         ]
         original_gene = CompositeGene(child_genes=child_genes, iterations=2)
         
-        mutagen = ShuffleGenesMutagen(1.0, 0)  # 100% susceptibility
+        mutagen = ShuffleGenes(1.0, 0)  # 100% susceptibility
         
         # Try multiple times to ensure swap happens
         swapped_found = False
@@ -66,10 +66,10 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
         # Low susceptibility should only allow nearby swaps
-        mutagen_low = ShuffleGenesMutagen(0.1, 0)
+        mutagen_low = ShuffleGenes(0.1, 0)
         
         # High susceptibility should allow distant swaps
-        mutagen_high = ShuffleGenesMutagen(1.0, 0)
+        mutagen_high = ShuffleGenes(1.0, 0)
         
         # Just verify they both work without errors
         mutant_low = mutagen_low.mutate(original_gene)
@@ -87,7 +87,7 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
         ]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = ShuffleGenesMutagen(0.0, 0)  # 0% susceptibility
+        mutagen = ShuffleGenes(0.0, 0)  # 0% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -104,7 +104,7 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
         ]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = ShuffleGenesMutagen(1.0, 0)  # 100% susceptibility
+        mutagen = ShuffleGenes(1.0, 0)  # 100% susceptibility
         
         for _ in range(10):
             mutant_gene = mutagen.mutate(original_gene)
@@ -121,7 +121,7 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = ShuffleGenesMutagen(1.0, 0)  # 100% susceptibility
+        mutagen = ShuffleGenes(1.0, 0)  # 100% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -129,8 +129,8 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
         self.assertEqual(len(mutant_gene.child_genes), 1)
 
     def test_persist_reload(self):
-        """Test that ShuffleGenesMutagen can be persisted and reloaded"""
-        mutagen = ShuffleGenesMutagen(0.022, 0.033)
+        """Test that ShuffleGenes can be persisted and reloaded"""
+        mutagen = ShuffleGenes(0.022, 0.033)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -138,7 +138,7 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
             session.add(mutagen)
             session.commit()
         with Session(engine) as session:
-            reloaded = session.get(ShuffleGenesMutagen, mutagen_id)
+            reloaded = session.get(ShuffleGenes, mutagen_id)
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.base_susceptibility, 0.022)

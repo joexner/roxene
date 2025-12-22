@@ -9,7 +9,7 @@ from ..mutagen import Mutagen
 from ..util import get_rng
 
 
-class PushDownMutagen(Mutagen):
+class PushDown(Mutagen):
     """
     Wraps any gene in a single-requesting composite gene.
     This pushes the gene down one level in the hierarchy.

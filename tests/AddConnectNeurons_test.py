@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from roxene import EntityBase, Gene
 from roxene.genes import CompositeGene, RotateCells, ConnectNeurons
-from roxene.mutagens import AddConnection
+from roxene.mutagens import AddConnectNeurons
 from roxene.util import set_rng
 
 SEED = 123
@@ -24,7 +24,7 @@ class AddConnectionMutagen_test(unittest.TestCase):
         ]
         original_gene = CompositeGene(child_genes=child_genes, iterations=3)
         
-        mutagen = AddConnection(1.0, 0)  # 100% susceptibility
+        mutagen = AddConnectNeurons(1.0, 0)  # 100% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -43,7 +43,7 @@ class AddConnectionMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = AddConnection(0.0, 0)  # 0% susceptibility
+        mutagen = AddConnectNeurons(0.0, 0)  # 0% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -56,7 +56,7 @@ class AddConnectionMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = AddConnection(1.0, 0)  # 100% susceptibility
+        mutagen = AddConnectNeurons(1.0, 0)  # 100% susceptibility
         
         for _ in range(10):
             mutant_gene = mutagen.mutate(original_gene)
@@ -72,7 +72,7 @@ class AddConnectionMutagen_test(unittest.TestCase):
 
     def test_persist_reload(self):
         """Test that AddConnection can be persisted and reloaded"""
-        mutagen = AddConnection(0.03, 0.04)
+        mutagen = AddConnectNeurons(0.03, 0.04)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -80,7 +80,7 @@ class AddConnectionMutagen_test(unittest.TestCase):
             session.add(mutagen)
             session.commit()
         with Session(engine) as session:
-            reloaded = session.get(AddConnection, mutagen_id)
+            reloaded = session.get(AddConnectNeurons, mutagen_id)
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.base_susceptibility, 0.03)

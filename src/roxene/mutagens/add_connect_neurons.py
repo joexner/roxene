@@ -11,7 +11,7 @@ from .add_gene import AddGene
 from ..util import get_rng
 
 
-class AddConnection(AddGene):
+class AddConnectNeurons(AddGene):
     """
     Adds a new ConnectNeurons gene to a CompositeGene.
     This creates new connections between cells in the organism.

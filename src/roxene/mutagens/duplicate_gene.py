@@ -23,7 +23,7 @@ class DuplicateGene(AddGene):
     def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)
 
-    def get_genes_to_insert(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> List[Gene]:
+    def get_genes_to_insert(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> Gene:
         """
         Returns a copy of a randomly selected child gene to duplicate.
         
@@ -32,12 +32,9 @@ class DuplicateGene(AddGene):
             mutated_children: The list of child genes after recursive mutation
             
         Returns:
-            A list containing the duplicated gene, or empty list if no children
+            The duplicated gene
         """
-        if len(mutated_children) == 0:
-            return []
-        
         # Select a random gene to duplicate
         index_to_duplicate = get_rng().integers(0, len(mutated_children))
-        return [mutated_children[index_to_duplicate]]
+        return mutated_children[index_to_duplicate]
 

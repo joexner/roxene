@@ -24,7 +24,7 @@ class AddConnectNeurons(AddGene):
     def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)
 
-    def get_genes_to_insert(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> List[Gene]:
+    def get_genes_to_insert(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> Gene:
         """Create a new ConnectNeurons gene with random parameters."""
         num_cells = len(mutated_children) if mutated_children else 1
         tx_cell_index = get_rng().integers(0, num_cells)
@@ -32,5 +32,5 @@ class AddConnectNeurons(AddGene):
         # The actual neuron will modulo this by its number of input ports when connecting
         rx_port = get_rng().integers(0, 10)
         new_connection = ConnectNeurons(tx_cell_index, rx_port, parent_gene=parent_gene)
-        return [new_connection]
+        return new_connection
 

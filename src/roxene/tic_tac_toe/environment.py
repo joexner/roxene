@@ -16,7 +16,7 @@ from ..genes.connect_neurons import ConnectNeurons
 from ..genes.create_neuron import CreateNeuron
 from ..genes.rotate_cells import RotateCells
 from ..mutagen import Mutagen
-from ..mutagens.wiggle_create_neuron import WiggleCreateNeuron, CNLayer
+from ..mutagens.wiggle_cn_layer import WiggleCNLayer, CNLayer
 from ..organism import Organism
 from ..util import random_neuron_state
 from ..util import wiggle, get_rng

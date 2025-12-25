@@ -28,14 +28,6 @@ class ModifyIterations(Mutagen):
             # No mutation, just recursively mutate child genes
             return super().mutate_CompositeGene(parent_gene)
 
-        # Recursively mutate child genes
-        any_changed = False
-        new_genes = []
-        for orig in parent_gene.child_genes:
-            mutant = self.mutate(orig)
-            new_genes.append(mutant)
-            any_changed |= (mutant is not orig)
-
         # Modify the iteration count by incrementing or decrementing by 1
         if get_rng().random() < 0.5:
             # Increment by 1
@@ -44,10 +36,6 @@ class ModifyIterations(Mutagen):
             # Decrement by 1, but never go below 0
             new_iterations = max(0, parent_gene.iterations - 1)
 
-        if new_iterations != parent_gene.iterations:
-            any_changed = True
-
-        if any_changed:
-            return CompositeGene(new_genes, new_iterations, parent_gene)
-        else:
-            return parent_gene
+        # Create a new gene with modified iterations, then recurse via superclass
+        modified_gene = CompositeGene(parent_gene.child_genes, new_iterations, parent_gene)
+        return super().mutate_CompositeGene(modified_gene)

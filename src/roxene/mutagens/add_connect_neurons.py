@@ -20,6 +20,6 @@ class AddConnectNeurons(AddGene):
         self.tx_cell_index = tx_cell_index
         self.rx_port = rx_port
 
-    def get_genes_to_insert(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> Gene:
+    def get_new_gene(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> Gene:
         return ConnectNeurons(self.tx_cell_index, self.rx_port)
 

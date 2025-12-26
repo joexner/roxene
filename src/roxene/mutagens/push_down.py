@@ -1,8 +1,3 @@
-import uuid
-
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
-
 from ..gene import Gene
 from ..genes.composite_gene import CompositeGene
 from ..mutagen import Mutagen
@@ -10,14 +5,8 @@ from ..util import get_rng
 
 
 class PushDown(Mutagen):
-    """
-    Wraps any gene in a single-requesting composite gene.
-    This pushes the gene down one level in the hierarchy.
-    """
-    __tablename__ = "push_down_mutagen"
     __mapper_args__ = {"polymorphic_identity": "push_down_mutagen"}
 
-    id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
 
     def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)

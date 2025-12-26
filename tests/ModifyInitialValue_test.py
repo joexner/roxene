@@ -102,6 +102,6 @@ class ModifyInitialValueMutagen_test(unittest.TestCase):
             reloaded = session.get(ModifyInitialValue, mutagen_id)
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
-            self.assertEqual(reloaded.value_type, InitialValueType.feedback)
+            self.assertEqual(reloaded.layer, InitialValueType.feedback)
             self.assertEqual(reloaded.base_susceptibility, 0.018)
             self.assertEqual(reloaded.susceptibility_log_wiggle, 0.028)

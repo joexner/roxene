@@ -1,22 +1,11 @@
-import uuid
-
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
-
 from ..genes.composite_gene import CompositeGene
 from ..mutagen import Mutagen
 from ..util import get_rng
 
 
 class RemoveGene(Mutagen):
-    """
-    Removes a random child gene from a CompositeGene.
-    Only removes if the CompositeGene has more than one child gene.
-    """
-    __tablename__ = "remove_gene_mutagen"
     __mapper_args__ = {"polymorphic_identity": "remove_gene_mutagen"}
 
-    id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
 
     def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)

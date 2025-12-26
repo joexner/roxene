@@ -1,9 +1,7 @@
-import uuid
-from enum import Enum, auto
+from enum import IntEnum, auto
 
 import numpy as np
-from sqlalchemy import Enum as SQLEnum, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, synonym
 
 from ..constants import NP_PRECISION
 from ..genes.create_neuron import CreateNeuron
@@ -11,8 +9,7 @@ from ..mutagen import Mutagen
 from ..util import wiggle, get_rng
 
 
-class WeightLayer(Enum):
-    """Enum for the different weight matrices in a neuron."""
+class WeightLayer(IntEnum):
     input_hidden = auto()
     hidden_feedback = auto()
     feedback_hidden = auto()
@@ -20,31 +17,20 @@ class WeightLayer(Enum):
 
 
 class ModifyWeight(Mutagen):
-    """
-    Surgically modifies specific connection weights in a CreateNeuron gene.
-    Targets a specific weight matrix and modifies individual weights.
-    """
-    __tablename__ = "modify_weight_mutagen"
     __mapper_args__ = {"polymorphic_identity": "modify_weight_mutagen"}
 
-    id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
-    weight_layer: Mapped[WeightLayer] = mapped_column(SQLEnum(WeightLayer))
-    severity: Mapped[float] = mapped_column(default=1.0)
+    layer: Mapped[WeightLayer] = synonym("_i1")
 
-    def __init__(self,
-                 weight_layer: WeightLayer,
-                 base_susceptibility: float = 0.01,
-                 susceptibility_log_wiggle: float = 0.01,
-                 severity: float = 1.0):
+    def __init__(self, weight_layer: WeightLayer, base_susceptibility: float = 0.01,
+                 susceptibility_log_wiggle: float = 0.01, severity: float = 1.0):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)
-        self.weight_layer = weight_layer
+        self.layer = weight_layer
         self.severity = severity
 
     def mutate_CreateNeuron(self, gene: CreateNeuron) -> CreateNeuron:
         susceptibility = self.get_mutation_susceptibility(gene)
         
-        # Select which weight matrix to modify
-        if self.weight_layer == WeightLayer.input_hidden:
+        if self.layer == WeightLayer.input_hidden:
             modified_weights = self._modify_weights(gene.input_hidden, susceptibility)
             return CreateNeuron(
                 input=gene.input,
@@ -56,7 +42,7 @@ class ModifyWeight(Mutagen):
                 hidden_output=gene.hidden_output,
                 parent_gene=gene
             )
-        elif self.weight_layer == WeightLayer.hidden_feedback:
+        elif self.layer == WeightLayer.hidden_feedback:
             modified_weights = self._modify_weights(gene.hidden_feedback, susceptibility)
             return CreateNeuron(
                 input=gene.input,
@@ -68,7 +54,7 @@ class ModifyWeight(Mutagen):
                 hidden_output=gene.hidden_output,
                 parent_gene=gene
             )
-        elif self.weight_layer == WeightLayer.feedback_hidden:
+        elif self.layer == WeightLayer.feedback_hidden:
             modified_weights = self._modify_weights(gene.feedback_hidden, susceptibility)
             return CreateNeuron(
                 input=gene.input,
@@ -80,7 +66,7 @@ class ModifyWeight(Mutagen):
                 hidden_output=gene.hidden_output,
                 parent_gene=gene
             )
-        elif self.weight_layer == WeightLayer.hidden_output:
+        elif self.layer == WeightLayer.hidden_output:
             modified_weights = self._modify_weights(gene.hidden_output, susceptibility)
             return CreateNeuron(
                 input=gene.input,

@@ -1,7 +1,7 @@
 import uuid
 from typing import Optional
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, Integer, Float, String
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
 
@@ -33,8 +33,16 @@ class Mutagen(EntityBase):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
     type: Mapped[str]
-    susceptibility_log_wiggle: Mapped[float]
+
+    severity: Mapped[Optional[float]] = mapped_column("f1", Float, nullable=True)
+
     base_susceptibility: Mapped[float]
+    susceptibility_log_wiggle: Mapped[float]
+
+    # Columns for subclass use - not used in base Mutagen
+    _i1: Mapped[Optional[int]] = mapped_column("i1", Integer, nullable=True)
+    _i2: Mapped[Optional[int]] = mapped_column("i2", Integer, nullable=True)
+    _i3: Mapped[Optional[int]] = mapped_column("i3", Integer, nullable=True)
 
     __mapper_args__ = {
         "polymorphic_identity": "mutagen",

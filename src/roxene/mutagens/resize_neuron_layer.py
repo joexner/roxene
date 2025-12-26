@@ -1,9 +1,7 @@
-import uuid
-from enum import Enum, auto
+from enum import IntEnum, auto
 
 import numpy as np
-from sqlalchemy import Enum as SQLEnum, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, synonym
 
 from ..constants import NP_PRECISION
 from ..genes.create_neuron import CreateNeuron
@@ -11,51 +9,40 @@ from ..mutagen import Mutagen
 from ..util import get_rng
 
 
-class ResizeDirection(Enum):
-    """Direction to resize the neuron layer."""
+class ResizeDirection(IntEnum):
     WIDEN = auto()
     NARROW = auto()
 
 
-class LayerToResize(Enum):
-    """Which layer to resize in the neuron."""
+class LayerToResize(IntEnum):
     INPUT = auto()
     HIDDEN = auto()
     FEEDBACK = auto()
 
 
 class ResizeNeuronLayer(Mutagen):
-    """
-    Resizes a layer of a CreateNeuron gene's neuron.
-    Can widen by adding neurons or narrow by removing neurons from input, hidden, or feedback layer.
-    """
-    __tablename__ = "resize_neuron_layer_mutagen"
     __mapper_args__ = {"polymorphic_identity": "resize_neuron_layer_mutagen"}
 
-    id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
-    direction: Mapped[ResizeDirection] = mapped_column(SQLEnum(ResizeDirection))
-    layer_to_mutate: Mapped[LayerToResize] = mapped_column(SQLEnum(LayerToResize))
+    direction: Mapped[ResizeDirection] = synonym("_i1")
+    layer: Mapped[LayerToResize] = synonym("_i2")
 
-    def __init__(self, 
-                 direction: ResizeDirection,
-                 layer_to_mutate: LayerToResize,
-                 base_susceptibility: float = 0.01, 
-                 susceptibility_log_wiggle: float = 0.01):
+    def __init__(self, direction: ResizeDirection, layer_to_resize: LayerToResize,
+                 base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)
         self.direction = direction
-        self.layer_to_mutate = layer_to_mutate
+        self.layer = layer_to_resize
 
     def mutate_CreateNeuron(self, gene: CreateNeuron) -> CreateNeuron:
         susceptibility = self.get_mutation_susceptibility(gene)
         if get_rng().random() >= susceptibility:
             return gene
 
-        if self.layer_to_mutate == LayerToResize.INPUT:
+        if self.layer == LayerToResize.INPUT:
             if self.direction == ResizeDirection.WIDEN:
                 return self._widen_input_layer(gene)
             else:
                 return self._narrow_input_layer(gene)
-        elif self.layer_to_mutate == LayerToResize.HIDDEN:
+        elif self.layer == LayerToResize.HIDDEN:
             if self.direction == ResizeDirection.WIDEN:
                 return self._widen_hidden_layer(gene)
             else:

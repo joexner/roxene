@@ -106,6 +106,6 @@ class ModifyWeightMutagen_test(unittest.TestCase):
             reloaded = session.get(ModifyWeight, mutagen_id)
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
-            self.assertEqual(reloaded.weight_layer, WeightLayer.input_hidden)
+            self.assertEqual(reloaded.layer, WeightLayer.input_hidden)
             self.assertEqual(reloaded.base_susceptibility, 0.025)
             self.assertEqual(reloaded.susceptibility_log_wiggle, 0.035)

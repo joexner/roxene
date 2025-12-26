@@ -1,9 +1,7 @@
-import uuid
-from enum import Enum, auto
+from enum import IntEnum, auto
 
 import numpy as np
-from sqlalchemy import Enum as SQLEnum, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, synonym
 
 from ..constants import NP_PRECISION
 from ..genes.create_neuron import CreateNeuron
@@ -11,39 +9,27 @@ from ..mutagen import Mutagen
 from ..util import wiggle, get_rng
 
 
-class InitialValueType(Enum):
-    """Enum for the different initial value vectors in a neuron."""
+class InitialValueType(IntEnum):
     input = auto()
     feedback = auto()
     output = auto()
 
 
 class ModifyInitialValue(Mutagen):
-    """
-    Surgically modifies specific initial values in a CreateNeuron gene.
-    Targets a specific initial value vector and modifies individual values.
-    """
-    __tablename__ = "modify_initial_value_mutagen"
     __mapper_args__ = {"polymorphic_identity": "modify_initial_value_mutagen"}
 
-    id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
-    value_type: Mapped[InitialValueType] = mapped_column(SQLEnum(InitialValueType))
-    severity: Mapped[float] = mapped_column(default=1.0)
+    layer: Mapped[InitialValueType] = synonym("_i1")
 
-    def __init__(self,
-                 value_type: InitialValueType,
-                 base_susceptibility: float = 0.01,
-                 susceptibility_log_wiggle: float = 0.01,
-                 severity: float = 1.0):
+    def __init__(self, value_type: InitialValueType, base_susceptibility: float = 0.01,
+                 susceptibility_log_wiggle: float = 0.01, severity: float = 1.0):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)
-        self.value_type = value_type
+        self.layer = value_type
         self.severity = severity
 
     def mutate_CreateNeuron(self, gene: CreateNeuron) -> CreateNeuron:
         susceptibility = self.get_mutation_susceptibility(gene)
         
-        # Select which initial value vector to modify
-        if self.value_type == InitialValueType.input:
+        if self.layer == InitialValueType.input:
             modified_values = self._modify_values(gene.input, susceptibility)
             return CreateNeuron(
                 input=modified_values,
@@ -55,7 +41,7 @@ class ModifyInitialValue(Mutagen):
                 hidden_output=gene.hidden_output,
                 parent_gene=gene
             )
-        elif self.value_type == InitialValueType.feedback:
+        elif self.layer == InitialValueType.feedback:
             modified_values = self._modify_values(gene.feedback, susceptibility)
             return CreateNeuron(
                 input=gene.input,
@@ -67,7 +53,7 @@ class ModifyInitialValue(Mutagen):
                 hidden_output=gene.hidden_output,
                 parent_gene=gene
             )
-        elif self.value_type == InitialValueType.output:
+        elif self.layer == InitialValueType.output:
             modified_values = self._modify_values(gene.output, susceptibility)
             return CreateNeuron(
                 input=gene.input,

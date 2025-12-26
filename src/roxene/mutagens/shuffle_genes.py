@@ -1,23 +1,11 @@
-import uuid
-
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
-
 from ..genes.composite_gene import CompositeGene
 from ..mutagen import Mutagen
 from ..util import get_rng
 
 
 class ShuffleGenes(Mutagen):
-    """
-    Swaps two child genes in a CompositeGene.
-    The distance between swapped genes is influenced by susceptibility.
-    Higher susceptibility allows genes further apart to be swapped.
-    """
-    __tablename__ = "shuffle_genes_mutagen"
     __mapper_args__ = {"polymorphic_identity": "shuffle_genes_mutagen"}
 
-    id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
 
     def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)

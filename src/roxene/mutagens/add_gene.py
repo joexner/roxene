@@ -1,9 +1,5 @@
 import abc
-import uuid
 from typing import List
-
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
 
 from ..gene import Gene
 from ..genes.composite_gene import CompositeGene
@@ -12,15 +8,8 @@ from ..util import get_rng
 
 
 class AddGene(Mutagen):
-    """
-    Abstract base class for mutagens that insert genes into a CompositeGene.
-    Provides common functionality for checking susceptibility, recursively mutating
-    child genes, and inserting new genes at a random position (0 to len inclusive).
-    """
-    __tablename__ = "add_gene_mutagen"
     __mapper_args__ = {"polymorphic_identity": "add_gene_mutagen"}
 
-    id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
 
     def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)

@@ -1,18 +1,11 @@
-import uuid
-
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
-
 from ..genes.composite_gene import CompositeGene
 from ..mutagen import Mutagen
 from ..util import get_rng
 
 
 class SplitCompositeGene(Mutagen):
-    __tablename__ = "composite_gene_split_mutagen"
     __mapper_args__ = {"polymorphic_identity": "composite_gene_split_mutagen"}
 
-    id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
 
     def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)

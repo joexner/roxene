@@ -1,36 +1,25 @@
-import uuid
 from typing import List
 
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, synonym
 
 from ..gene import Gene
 from ..genes.connect_neurons import ConnectNeurons
 from ..genes.composite_gene import CompositeGene
 from .add_gene import AddGene
-from ..util import get_rng
 
 
 class AddConnectNeurons(AddGene):
-    """
-    Adds a new ConnectNeurons gene to a CompositeGene.
-    This creates new connections between cells in the organism.
-    """
-    __tablename__ = "add_connection_mutagen"
-    __mapper_args__ = {"polymorphic_identity": "add_connection_mutagen"}
+    __mapper_args__ = {"polymorphic_identity": "add_connect_neurons"}
 
-    id: Mapped[uuid.UUID] = mapped_column(ForeignKey("add_gene_mutagen.id"), primary_key=True)
+    tx_cell_index: Mapped[int] = synonym("_i1")
+    rx_port: Mapped[int] = synonym("_i2")
 
-    def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):
+    def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01,
+                 tx_cell_index: int = 0, rx_port: int = 0):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)
+        self.tx_cell_index = tx_cell_index
+        self.rx_port = rx_port
 
     def get_genes_to_insert(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> Gene:
-        """Create a new ConnectNeurons gene with random parameters."""
-        num_cells = len(mutated_children) if mutated_children else 1
-        tx_cell_index = get_rng().integers(0, num_cells)
-        # Pick a random low-ish positive integer for rx_port (0-9)
-        # The actual neuron will modulo this by its number of input ports when connecting
-        rx_port = get_rng().integers(0, 10)
-        new_connection = ConnectNeurons(tx_cell_index, rx_port, parent_gene=parent_gene)
-        return new_connection
+        return ConnectNeurons(self.tx_cell_index, self.rx_port)
 

@@ -1,22 +1,11 @@
-import uuid
-
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
-
 from ..genes.connect_neurons import ConnectNeurons
 from ..mutagen import Mutagen
 from ..util import get_rng
 
 
 class ModifyConnection(Mutagen):
-    """
-    Modifies the parameters of existing ConnectNeurons genes.
-    Changes the tx_cell_index and rx_port to create different connections.
-    """
-    __tablename__ = "modify_connection_mutagen"
     __mapper_args__ = {"polymorphic_identity": "modify_connection_mutagen"}
 
-    id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
 
     def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):
         super().__init__(base_susceptibility, susceptibility_log_wiggle)

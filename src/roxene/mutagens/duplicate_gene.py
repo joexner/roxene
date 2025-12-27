@@ -7,7 +7,7 @@ from ..util import get_rng
 
 
 class DuplicateGene(AddGene):
-    __mapper_args__ = {"polymorphic_identity": "duplicate_gene_mutagen"}
+    __mapper_args__ = {"polymorphic_identity": "duplicate_gene"}
 
 
     def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):

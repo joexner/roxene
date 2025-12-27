@@ -4,7 +4,7 @@ from ..util import get_rng
 
 
 class SplitCompositeGene(Mutagen):
-    __mapper_args__ = {"polymorphic_identity": "composite_gene_split_mutagen"}
+    __mapper_args__ = {"polymorphic_identity": "split_composite_gene"}
 
 
     def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):

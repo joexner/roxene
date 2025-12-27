@@ -21,7 +21,7 @@ class CNLayer(IntEnum):
 
 
 class WiggleCNLayer(Mutagen):
-    __mapper_args__ = {"polymorphic_identity": "wiggle_cn_layer_mutagen"}
+    __mapper_args__ = {"polymorphic_identity": "wiggle_cn_layer"}
 
     layer: Mapped[CNLayer] = synonym("_i1")
 

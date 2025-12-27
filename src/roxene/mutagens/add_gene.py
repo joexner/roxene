@@ -8,7 +8,7 @@ from ..util import get_rng
 
 
 class AddGene(Mutagen):
-    __mapper_args__ = {"polymorphic_identity": "add_gene_mutagen"}
+    __mapper_args__ = {"polymorphic_identity": "add_gene"}
 
 
     def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):

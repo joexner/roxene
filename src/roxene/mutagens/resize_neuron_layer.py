@@ -21,7 +21,7 @@ class LayerToResize(IntEnum):
 
 
 class ResizeNeuronLayer(Mutagen):
-    __mapper_args__ = {"polymorphic_identity": "resize_neuron_layer_mutagen"}
+    __mapper_args__ = {"polymorphic_identity": "resize_neuron_layer"}
 
     direction: Mapped[ResizeDirection] = synonym("_i1")
     layer: Mapped[LayerToResize] = synonym("_i2")

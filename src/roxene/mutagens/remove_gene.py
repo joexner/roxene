@@ -4,7 +4,7 @@ from ..util import get_rng
 
 
 class RemoveGene(Mutagen):
-    __mapper_args__ = {"polymorphic_identity": "remove_gene_mutagen"}
+    __mapper_args__ = {"polymorphic_identity": "remove_gene"}
 
 
     def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):

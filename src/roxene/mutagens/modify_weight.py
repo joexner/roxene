@@ -17,7 +17,7 @@ class WeightLayer(IntEnum):
 
 
 class ModifyWeight(Mutagen):
-    __mapper_args__ = {"polymorphic_identity": "modify_weight_mutagen"}
+    __mapper_args__ = {"polymorphic_identity": "modify_weight"}
 
     layer: Mapped[WeightLayer] = synonym("_i1")
 

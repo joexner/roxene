@@ -4,7 +4,7 @@ from ..util import get_rng
 
 
 class ShuffleGenes(Mutagen):
-    __mapper_args__ = {"polymorphic_identity": "shuffle_genes_mutagen"}
+    __mapper_args__ = {"polymorphic_identity": "shuffle_genes"}
 
 
     def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):

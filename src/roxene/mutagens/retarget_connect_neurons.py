@@ -4,7 +4,7 @@ from ..util import get_rng
 
 
 class RetargetConnectNeurons(Mutagen):
-    __mapper_args__ = {"polymorphic_identity": "retarget_connect_neurons_mutagen"}
+    __mapper_args__ = {"polymorphic_identity": "retarget_connect_neurons"}
 
 
     def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):

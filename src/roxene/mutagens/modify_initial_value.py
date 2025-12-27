@@ -16,7 +16,7 @@ class InitialValueType(IntEnum):
 
 
 class ModifyInitialValue(Mutagen):
-    __mapper_args__ = {"polymorphic_identity": "modify_initial_value_mutagen"}
+    __mapper_args__ = {"polymorphic_identity": "modify_initial_value"}
 
     layer: Mapped[InitialValueType] = synonym("_i1")
 

@@ -25,7 +25,7 @@ class RemoveGeneMutagen_test(unittest.TestCase):
         ]
         original_gene = CompositeGene(child_genes=child_genes, iterations=2)
         
-        mutagen = RemoveGene(1.0, 0)  # 100% susceptibility
+        mutagen = RemoveGene(1.0)  # 100% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -44,7 +44,7 @@ class RemoveGeneMutagen_test(unittest.TestCase):
         ]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = RemoveGene(0.0, 0)  # 0% susceptibility
+        mutagen = RemoveGene(0.0)  # 0% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -57,7 +57,7 @@ class RemoveGeneMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = RemoveGene(1.0, 0)  # 100% susceptibility
+        mutagen = RemoveGene(1.0)  # 100% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -77,7 +77,7 @@ class RemoveGeneMutagen_test(unittest.TestCase):
         ]
         gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = RemoveGene(1.0, 0)  # 100% susceptibility
+        mutagen = RemoveGene(1.0)  # 100% susceptibility
         
         # Remove genes multiple times
         for expected_count in [4, 3, 2, 1, 1]:  # Can't go below 1
@@ -86,7 +86,7 @@ class RemoveGeneMutagen_test(unittest.TestCase):
 
     def test_persist_reload(self):
         """Test that RemoveGene can be persisted and reloaded"""
-        mutagen = RemoveGene(0.015, 0.025)
+        mutagen = RemoveGene(0.015)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -98,4 +98,3 @@ class RemoveGeneMutagen_test(unittest.TestCase):
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.base_susceptibility, 0.015)
-            self.assertEqual(reloaded.susceptibility_log_wiggle, 0.025)

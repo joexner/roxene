@@ -20,7 +20,7 @@ class PushDownMutagen_test(unittest.TestCase):
         set_rng(default_rng(SEED))
         original_gene = RotateCells(RotateCells.Direction.FORWARD)
         
-        mutagen = PushDown(1.0, 0)  # 100% susceptibility, no wiggle
+        mutagen = PushDown(1.0)  # 100% susceptibility, no wiggle
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -35,7 +35,7 @@ class PushDownMutagen_test(unittest.TestCase):
         set_rng(default_rng(SEED))
         original_gene = RotateCells(RotateCells.Direction.FORWARD)
         
-        mutagen = PushDown(0.0, 0)  # 0% susceptibility
+        mutagen = PushDown(0.0)  # 0% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -48,7 +48,7 @@ class PushDownMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=5)
         
-        mutagen = PushDown(1.0, 0)  # 100% susceptibility
+        mutagen = PushDown(1.0)  # 100% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -64,7 +64,7 @@ class PushDownMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = PushDown(1.0, 0)  # 100% susceptibility
+        mutagen = PushDown(1.0)  # 100% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -75,7 +75,7 @@ class PushDownMutagen_test(unittest.TestCase):
 
     def test_persist_reload(self):
         """Test that PushDown can be persisted and reloaded"""
-        mutagen = PushDown(0.02, 0.05)
+        mutagen = PushDown(0.02)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -87,4 +87,3 @@ class PushDownMutagen_test(unittest.TestCase):
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.base_susceptibility, 0.02)
-            self.assertEqual(reloaded.susceptibility_log_wiggle, 0.05)

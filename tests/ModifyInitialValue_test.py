@@ -20,7 +20,7 @@ class ModifyInitialValueMutagen_test(unittest.TestCase):
         set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(10, 10, 10))
         
-        mutagen = ModifyInitialValue(InitialValueType.input, 0.5, 0)
+        mutagen = ModifyInitialValue(InitialValueType.input, 0.5)
         mutant_gene = mutagen.mutate(original_gene)
         
         # Some values should be different
@@ -34,7 +34,7 @@ class ModifyInitialValueMutagen_test(unittest.TestCase):
         set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(10, 10, 10))
         
-        mutagen = ModifyInitialValue(InitialValueType.feedback, 0.5, 0)
+        mutagen = ModifyInitialValue(InitialValueType.feedback, 0.5)
         mutant_gene = mutagen.mutate(original_gene)
         
         # Some values should be different
@@ -48,7 +48,7 @@ class ModifyInitialValueMutagen_test(unittest.TestCase):
         set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(10, 10, 10))
         
-        mutagen = ModifyInitialValue(InitialValueType.output, 0.5, 0)
+        mutagen = ModifyInitialValue(InitialValueType.output, 0.5)
         mutant_gene = mutagen.mutate(original_gene)
         
         # Some values should be different
@@ -63,12 +63,12 @@ class ModifyInitialValueMutagen_test(unittest.TestCase):
         original_gene = CreateNeuron(**random_neuron_state(20, 20, 20))
         
         # Low susceptibility - few changes
-        mutagen_low = ModifyInitialValue(InitialValueType.input, 0.01, 0)
+        mutagen_low = ModifyInitialValue(InitialValueType.input, 0.01)
         mutant_low = mutagen_low.mutate(original_gene)
         changes_low = np.sum(mutant_low.input != original_gene.input)
         
         # High susceptibility - many changes
-        mutagen_high = ModifyInitialValue(InitialValueType.input, 0.5, 0)
+        mutagen_high = ModifyInitialValue(InitialValueType.input, 0.5)
         mutant_high = mutagen_high.mutate(original_gene)
         changes_high = np.sum(mutant_high.input != original_gene.input)
         
@@ -80,7 +80,7 @@ class ModifyInitialValueMutagen_test(unittest.TestCase):
         set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(10, 10, 10))
         
-        mutagen = ModifyInitialValue(InitialValueType.input, 0.5, 0)
+        mutagen = ModifyInitialValue(InitialValueType.input, 0.5)
         mutant_gene = mutagen.mutate(original_gene)
         
         # All weight matrices should be unchanged
@@ -91,7 +91,7 @@ class ModifyInitialValueMutagen_test(unittest.TestCase):
 
     def test_persist_reload(self):
         """Test that ModifyInitialValue can be persisted and reloaded"""
-        mutagen = ModifyInitialValue(InitialValueType.feedback, 0.018, 0.028)
+        mutagen = ModifyInitialValue(InitialValueType.feedback, 0.018)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -104,4 +104,3 @@ class ModifyInitialValueMutagen_test(unittest.TestCase):
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.layer, InitialValueType.feedback)
             self.assertEqual(reloaded.base_susceptibility, 0.018)
-            self.assertEqual(reloaded.susceptibility_log_wiggle, 0.028)

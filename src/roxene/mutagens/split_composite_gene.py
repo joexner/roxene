@@ -7,8 +7,8 @@ class SplitCompositeGene(Mutagen):
     __mapper_args__ = {"polymorphic_identity": "split_composite_gene"}
 
 
-    def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):
-        super().__init__(base_susceptibility, susceptibility_log_wiggle)
+    def __init__(self, base_susceptibility: float = 0.01):
+        super().__init__(base_susceptibility)
 
     def mutate_CompositeGene(self, parent_gene: CompositeGene) -> CompositeGene:
         if parent_gene.iterations < 2:

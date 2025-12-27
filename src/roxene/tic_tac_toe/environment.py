@@ -73,8 +73,7 @@ class Environment(object):
             with self.sessionmaker.begin() as session:
                 layer = get_rng().choice(CNLayer)
                 base_susceptibility: float = wiggle(0.001, mutagen_severity_spread_log_wiggle)
-                susceptibility_log_wiggle: float = 0.01
-                new_mutagen = WiggleCreateNeuron(layer, base_susceptibility, susceptibility_log_wiggle)
+                new_mutagen = WiggleCNLayer(layer, base_susceptibility)
                 session.add(new_mutagen)
 
     def add_mutagen(self, new_mutagen: Mutagen):

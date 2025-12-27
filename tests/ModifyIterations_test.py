@@ -21,7 +21,7 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=5)
         
-        mutagen = ModifyIterations(1.0, 0)  # 100% susceptibility
+        mutagen = ModifyIterations(1.0)  # 100% susceptibility
         
         # Try multiple times to see variation in iteration changes
         different_iterations_found = False
@@ -45,7 +45,7 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=3)
         
-        mutagen = ModifyIterations(0.0, 0)  # 0% susceptibility
+        mutagen = ModifyIterations(0.0)  # 0% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -58,7 +58,7 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=0)
         
-        mutagen = ModifyIterations(1.0, 0)  # 100% susceptibility
+        mutagen = ModifyIterations(1.0)  # 100% susceptibility
         
         # Try many times to ensure we never get negative iterations
         for _ in range(50):
@@ -72,7 +72,7 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=10)
         
-        mutagen = ModifyIterations(1.0, 0)  # 100% susceptibility
+        mutagen = ModifyIterations(1.0)  # 100% susceptibility
         
         increases = 0
         decreases = 0
@@ -89,7 +89,7 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
 
     def test_persist_reload(self):
         """Test that ModifyIterations can be persisted and reloaded"""
-        mutagen = ModifyIterations(0.012, 0.019)
+        mutagen = ModifyIterations(0.012)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -101,4 +101,3 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.base_susceptibility, 0.012)
-            self.assertEqual(reloaded.susceptibility_log_wiggle, 0.019)

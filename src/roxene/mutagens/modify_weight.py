@@ -22,8 +22,8 @@ class ModifyWeight(Mutagen):
     layer: Mapped[WeightLayer] = synonym("_i1")
 
     def __init__(self, weight_layer: WeightLayer, base_susceptibility: float = 0.01,
-                 susceptibility_log_wiggle: float = 0.01, severity: float = 1.0):
-        super().__init__(base_susceptibility, susceptibility_log_wiggle)
+                 severity: float = 1.0):
+        super().__init__(base_susceptibility)
         self.layer = weight_layer
         self.severity = severity
 

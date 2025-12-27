@@ -12,6 +12,9 @@ from .genes.create_neuron import CreateNeuron
 from .persistence import EntityBase
 from .util import wiggle
 
+# Constant for susceptibility log wiggle used across all mutagens
+SUSCEPTIBILITY_LOG_WIGGLE = 0.01
+
 
 class _Mutagen_Susceptibility(EntityBase):
     __tablename__ = "mutagen_susceptibility"
@@ -37,7 +40,6 @@ class Mutagen(EntityBase):
     severity: Mapped[Optional[float]] = mapped_column("f1", Float, nullable=True)
 
     base_susceptibility: Mapped[float]
-    susceptibility_log_wiggle: Mapped[float]
 
     # Columns for subclass use - not used in base Mutagen
     _i1: Mapped[Optional[int]] = mapped_column("i1", Integer, nullable=True)
@@ -61,10 +63,9 @@ class Mutagen(EntityBase):
         creator=_Mutagen_Susceptibility
     )
 
-    def __init__(self, base_susceptibility: float, susceptibility_log_wiggle: float):
+    def __init__(self, base_susceptibility: float):
         self.id = uuid.uuid4()
         self.base_susceptibility = base_susceptibility
-        self.susceptibility_log_wiggle = susceptibility_log_wiggle
 
     def get_mutation_susceptibility(self, gene: Gene) -> float:
         if gene is None:
@@ -73,7 +74,7 @@ class Mutagen(EntityBase):
         if result is None:
             parent_gene = getattr(gene, "parent_gene", None)
             parent_sus = self.get_mutation_susceptibility(parent_gene)
-            result = wiggle(parent_sus, self.susceptibility_log_wiggle)
+            result = wiggle(parent_sus, SUSCEPTIBILITY_LOG_WIGGLE)
             self.susceptibilities[gene] = result
         return result
 

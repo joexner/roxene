@@ -24,7 +24,7 @@ class AddConnectionMutagen_test(unittest.TestCase):
         ]
         original_gene = CompositeGene(child_genes=child_genes, iterations=3)
         
-        mutagen = AddConnectNeurons(1.0, 0)  # 100% susceptibility
+        mutagen = AddConnectNeurons(1.0)  # 100% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -43,7 +43,7 @@ class AddConnectionMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = AddConnectNeurons(0.0, 0)  # 0% susceptibility
+        mutagen = AddConnectNeurons(0.0)  # 0% susceptibility
         
         mutant_gene = mutagen.mutate(original_gene)
         
@@ -56,7 +56,7 @@ class AddConnectionMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = AddConnectNeurons(1.0, 0)  # 100% susceptibility
+        mutagen = AddConnectNeurons(1.0)  # 100% susceptibility
         
         for _ in range(10):
             mutant_gene = mutagen.mutate(original_gene)
@@ -72,7 +72,7 @@ class AddConnectionMutagen_test(unittest.TestCase):
 
     def test_persist_reload(self):
         """Test that AddConnection can be persisted and reloaded"""
-        mutagen = AddConnectNeurons(0.03, 0.04)
+        mutagen = AddConnectNeurons(0.03)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -84,4 +84,3 @@ class AddConnectionMutagen_test(unittest.TestCase):
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.base_susceptibility, 0.03)
-            self.assertEqual(reloaded.susceptibility_log_wiggle, 0.04)

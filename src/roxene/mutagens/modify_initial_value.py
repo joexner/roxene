@@ -21,8 +21,8 @@ class ModifyInitialValue(Mutagen):
     layer: Mapped[InitialValueType] = synonym("_i1")
 
     def __init__(self, value_type: InitialValueType, base_susceptibility: float = 0.01,
-                 susceptibility_log_wiggle: float = 0.01, severity: float = 1.0):
-        super().__init__(base_susceptibility, susceptibility_log_wiggle)
+                 severity: float = 1.0):
+        super().__init__(base_susceptibility)
         self.layer = value_type
         self.severity = severity
 

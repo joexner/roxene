@@ -19,7 +19,7 @@ class RetargetConnectNeuronsMutagen_test(unittest.TestCase):
         set_rng(default_rng(SEED))
         original_connection = ConnectNeurons(tx_cell_index=5, rx_input_port=3)
         
-        mutagen = RetargetConnectNeurons(1.0, 0)  # 100% susceptibility
+        mutagen = RetargetConnectNeurons(1.0)  # 100% susceptibility
         
         mutant_gene = mutagen.mutate(original_connection)
         
@@ -42,7 +42,7 @@ class RetargetConnectNeuronsMutagen_test(unittest.TestCase):
         set_rng(default_rng(SEED))
         original_connection = ConnectNeurons(tx_cell_index=5, rx_input_port=3)
         
-        mutagen = RetargetConnectNeurons(0.0, 0)  # 0% susceptibility
+        mutagen = RetargetConnectNeurons(0.0)  # 0% susceptibility
         
         mutant_gene = mutagen.mutate(original_connection)
         
@@ -54,7 +54,7 @@ class RetargetConnectNeuronsMutagen_test(unittest.TestCase):
         set_rng(default_rng(SEED))
         original_connection = ConnectNeurons(tx_cell_index=1, rx_input_port=1)
         
-        mutagen = RetargetConnectNeurons(1.0, 0)  # 100% susceptibility
+        mutagen = RetargetConnectNeurons(1.0)  # 100% susceptibility
         
         for _ in range(20):
             mutant = mutagen.mutate(original_connection)
@@ -70,7 +70,7 @@ class RetargetConnectNeuronsMutagen_test(unittest.TestCase):
         connection2 = ConnectNeurons(tx_cell_index=2, rx_input_port=7)
         composite = CompositeGene(child_genes=[connection1, connection2], iterations=1)
         
-        mutagen = RetargetConnectNeurons(1.0, 0)  # 100% susceptibility
+        mutagen = RetargetConnectNeurons(1.0)  # 100% susceptibility
         
         mutant_composite = mutagen.mutate(composite)
         
@@ -83,7 +83,7 @@ class RetargetConnectNeuronsMutagen_test(unittest.TestCase):
 
     def test_persist_reload(self):
         """Test that RetargetConnectNeurons can be persisted and reloaded"""
-        mutagen = RetargetConnectNeurons(0.025, 0.035)
+        mutagen = RetargetConnectNeurons(0.025)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -95,4 +95,3 @@ class RetargetConnectNeuronsMutagen_test(unittest.TestCase):
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.base_susceptibility, 0.025)
-            self.assertEqual(reloaded.susceptibility_log_wiggle, 0.035)

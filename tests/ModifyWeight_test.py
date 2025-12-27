@@ -20,7 +20,7 @@ class ModifyWeightMutagen_test(unittest.TestCase):
         set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(10, 10, 10))
         
-        mutagen = ModifyWeight(WeightLayer.input_hidden, 0.5, 0)
+        mutagen = ModifyWeight(WeightLayer.input_hidden, 0.5)
         mutant_gene = mutagen.mutate(original_gene)
         
         # Some weights should be different
@@ -35,7 +35,7 @@ class ModifyWeightMutagen_test(unittest.TestCase):
         set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(10, 10, 10))
         
-        mutagen = ModifyWeight(WeightLayer.hidden_feedback, 0.5, 0)
+        mutagen = ModifyWeight(WeightLayer.hidden_feedback, 0.5)
         mutant_gene = mutagen.mutate(original_gene)
         
         # Some weights should be different
@@ -50,7 +50,7 @@ class ModifyWeightMutagen_test(unittest.TestCase):
         set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(10, 10, 10))
         
-        mutagen = ModifyWeight(WeightLayer.feedback_hidden, 0.5, 0)
+        mutagen = ModifyWeight(WeightLayer.feedback_hidden, 0.5)
         mutant_gene = mutagen.mutate(original_gene)
         
         # Some weights should be different
@@ -65,7 +65,7 @@ class ModifyWeightMutagen_test(unittest.TestCase):
         set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(10, 10, 10))
         
-        mutagen = ModifyWeight(WeightLayer.hidden_output, 0.5, 0)
+        mutagen = ModifyWeight(WeightLayer.hidden_output, 0.5)
         mutant_gene = mutagen.mutate(original_gene)
         
         # Some weights should be different
@@ -81,12 +81,12 @@ class ModifyWeightMutagen_test(unittest.TestCase):
         original_gene = CreateNeuron(**random_neuron_state(20, 20, 20))
         
         # Low susceptibility - few changes
-        mutagen_low = ModifyWeight(WeightLayer.input_hidden, 0.01, 0)
+        mutagen_low = ModifyWeight(WeightLayer.input_hidden, 0.01)
         mutant_low = mutagen_low.mutate(original_gene)
         changes_low = np.sum(mutant_low.input_hidden != original_gene.input_hidden)
         
         # High susceptibility - many changes
-        mutagen_high = ModifyWeight(WeightLayer.input_hidden, 0.5, 0)
+        mutagen_high = ModifyWeight(WeightLayer.input_hidden, 0.5)
         mutant_high = mutagen_high.mutate(original_gene)
         changes_high = np.sum(mutant_high.input_hidden != original_gene.input_hidden)
         
@@ -95,7 +95,7 @@ class ModifyWeightMutagen_test(unittest.TestCase):
 
     def test_persist_reload(self):
         """Test that ModifyWeight can be persisted and reloaded"""
-        mutagen = ModifyWeight(WeightLayer.input_hidden, 0.025, 0.035)
+        mutagen = ModifyWeight(WeightLayer.input_hidden, 0.025)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -108,4 +108,3 @@ class ModifyWeightMutagen_test(unittest.TestCase):
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.layer, WeightLayer.input_hidden)
             self.assertEqual(reloaded.base_susceptibility, 0.025)
-            self.assertEqual(reloaded.susceptibility_log_wiggle, 0.035)

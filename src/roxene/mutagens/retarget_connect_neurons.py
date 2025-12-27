@@ -7,8 +7,8 @@ class RetargetConnectNeurons(Mutagen):
     __mapper_args__ = {"polymorphic_identity": "retarget_connect_neurons"}
 
 
-    def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):
-        super().__init__(base_susceptibility, susceptibility_log_wiggle)
+    def __init__(self, base_susceptibility: float = 0.01):
+        super().__init__(base_susceptibility)
 
     def mutate_ConnectNeurons(self, gene: ConnectNeurons) -> ConnectNeurons:
         # Check if this gene should be mutated based on susceptibility

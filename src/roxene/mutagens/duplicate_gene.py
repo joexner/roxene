@@ -10,8 +10,8 @@ class DuplicateGene(AddGene):
     __mapper_args__ = {"polymorphic_identity": "duplicate_gene"}
 
 
-    def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):
-        super().__init__(base_susceptibility, susceptibility_log_wiggle)
+    def __init__(self, base_susceptibility: float = 0.01):
+        super().__init__(base_susceptibility)
 
     def get_new_gene(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> Gene:
         """

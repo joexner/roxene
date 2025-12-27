@@ -26,8 +26,8 @@ class WiggleCNLayer(Mutagen):
     layer: Mapped[CNLayer] = synonym("_i1")
 
     def __init__(self, layer_to_mutate: CNLayer, base_susceptibility: float = 0.001,
-                 susceptibility_log_wiggle: float = 0.01, severity: float = 1.0):
-        super().__init__(base_susceptibility, susceptibility_log_wiggle)
+                 severity: float = 1.0):
+        super().__init__(base_susceptibility)
         self.layer = layer_to_mutate
         self.severity = severity
 

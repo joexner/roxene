@@ -1,15 +1,19 @@
 import uuid
 from typing import Optional
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, Integer, Float, String
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
 
 from .gene import Gene
 from .genes.composite_gene import CompositeGene
+from .genes.connect_neurons import ConnectNeurons
 from .genes.create_neuron import CreateNeuron
 from .persistence import EntityBase
 from .util import wiggle
+
+# Constant for susceptibility log wiggle used across all mutagens
+SUSCEPTIBILITY_LOG_WIGGLE = 0.01
 
 
 class _Mutagen_Susceptibility(EntityBase):
@@ -32,8 +36,15 @@ class Mutagen(EntityBase):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
     type: Mapped[str]
-    susceptibility_log_wiggle: Mapped[float]
+
+    severity: Mapped[Optional[float]] = mapped_column("f1", Float, nullable=True)
+
     base_susceptibility: Mapped[float]
+
+    # Columns for subclass use - not used in base Mutagen
+    _i1: Mapped[Optional[int]] = mapped_column("i1", Integer, nullable=True)
+    _i2: Mapped[Optional[int]] = mapped_column("i2", Integer, nullable=True)
+    _i3: Mapped[Optional[int]] = mapped_column("i3", Integer, nullable=True)
 
     __mapper_args__ = {
         "polymorphic_identity": "mutagen",
@@ -52,10 +63,9 @@ class Mutagen(EntityBase):
         creator=_Mutagen_Susceptibility
     )
 
-    def __init__(self, base_susceptibility: float, susceptibility_log_wiggle: float):
+    def __init__(self, base_susceptibility: float):
         self.id = uuid.uuid4()
         self.base_susceptibility = base_susceptibility
-        self.susceptibility_log_wiggle = susceptibility_log_wiggle
 
     def get_mutation_susceptibility(self, gene: Gene) -> float:
         if gene is None:
@@ -64,7 +74,7 @@ class Mutagen(EntityBase):
         if result is None:
             parent_gene = getattr(gene, "parent_gene", None)
             parent_sus = self.get_mutation_susceptibility(parent_gene)
-            result = wiggle(parent_sus, self.susceptibility_log_wiggle)
+            result = wiggle(parent_sus, SUSCEPTIBILITY_LOG_WIGGLE)
             self.susceptibilities[gene] = result
         return result
 
@@ -73,6 +83,8 @@ class Mutagen(EntityBase):
             return self.mutate_CompositeGene(gene)
         elif isinstance(gene, CreateNeuron):
             return self.mutate_CreateNeuron(gene)
+        elif isinstance(gene, ConnectNeurons):
+            return self.mutate_ConnectNeurons(gene)
         else:
             return gene
 
@@ -89,4 +101,7 @@ class Mutagen(EntityBase):
             return parent_gene
 
     def mutate_CreateNeuron(self, gene: CreateNeuron):
+        return gene
+
+    def mutate_ConnectNeurons(self, gene: ConnectNeurons):
         return gene

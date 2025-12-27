@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from roxene import EntityBase, Gene
 from roxene.genes import CompositeGene, RotateCells
-from roxene.mutagens import CompositeGeneSplitMutagen
+from roxene.mutagens import SplitCompositeGene
 from roxene.util import set_rng
 
 SEED = 11235
@@ -20,7 +20,7 @@ class CompositeGeneSplitMutagen_test(unittest.TestCase):
                                    RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=10)
 
-        mutagen = CompositeGeneSplitMutagen(1,0)
+        mutagen = SplitCompositeGene(1)
 
         set_rng(default_rng(SEED))
         for _ in range(20):
@@ -41,7 +41,7 @@ class CompositeGeneSplitMutagen_test(unittest.TestCase):
             self.assertGreaterEqual(second.iterations, 1)
 
     def test_persist_reload(self):
-        mutagen = CompositeGeneSplitMutagen(0.01, 0.03)
+        mutagen = SplitCompositeGene(0.01)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -49,8 +49,7 @@ class CompositeGeneSplitMutagen_test(unittest.TestCase):
             session.add(mutagen)
             session.commit()
         with Session(engine) as session:
-            reloaded = session.get(CompositeGeneSplitMutagen, mutagen_id)
+            reloaded = session.get(SplitCompositeGene, mutagen_id)
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.base_susceptibility, 0.01)
-            self.assertEqual(reloaded.susceptibility_log_wiggle, 0.03)

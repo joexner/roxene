@@ -16,7 +16,7 @@ from ..genes.connect_neurons import ConnectNeurons
 from ..genes.create_neuron import CreateNeuron
 from ..genes.rotate_cells import RotateCells
 from ..mutagen import Mutagen
-from ..mutagens.create_neuron_mutagen import CreateNeuronMutagen, CNLayer
+from ..mutagens.wiggle_cn_layer import WiggleCNLayer, CNLayer
 from ..organism import Organism
 from ..util import random_neuron_state
 from ..util import wiggle, get_rng
@@ -73,8 +73,7 @@ class Environment(object):
             with self.sessionmaker.begin() as session:
                 layer = get_rng().choice(CNLayer)
                 base_susceptibility: float = wiggle(0.001, mutagen_severity_spread_log_wiggle)
-                susceptibility_log_wiggle: float = 0.01
-                new_mutagen = CreateNeuronMutagen(layer, base_susceptibility, susceptibility_log_wiggle)
+                new_mutagen = WiggleCNLayer(layer, base_susceptibility)
                 session.add(new_mutagen)
 
     def add_mutagen(self, new_mutagen: Mutagen):

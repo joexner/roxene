@@ -2,18 +2,18 @@ import unittest
 from numpy.random import default_rng
 
 from roxene import random_neuron_state
-from roxene.genes import CreateNeuron
-from roxene.mutagens import CreateNeuronMutagen, CNLayer
+from roxene.genes import CreateNeuron as CreateNeuronGene
+from roxene.mutagens import WiggleCNLayer, CNLayer
 
 class Mutagen_test(unittest.TestCase):
 
     def test_parent_susceptibility_inheritance(self):
         rng = default_rng(7)
-        mutagen = CreateNeuronMutagen(CNLayer.input_hidden, 0.05, 0.1)
+        mutagen = WiggleCNLayer(CNLayer.input_hidden, 0.05, 0.1)
 
-        other_mutagen = CreateNeuronMutagen(CNLayer.hidden_feedback, 0.05, 0.1)
+        other_mutagen = WiggleCNLayer(CNLayer.hidden_feedback, 0.05, 0.1)
 
-        grandparent = CreateNeuron(**random_neuron_state(10, 10, 10, rng))
+        grandparent = CreateNeuronGene(**random_neuron_state(10, 10, 10, rng))
         parent = other_mutagen.mutate_CreateNeuron(grandparent)
         child = other_mutagen.mutate_CreateNeuron(parent)
 

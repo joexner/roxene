@@ -1,10 +1,8 @@
-import uuid
-from enum import Enum, auto
+from enum import IntEnum, auto
 
 import numpy as np
 from numpy import ndarray
-from sqlalchemy import Enum as SQLEnum, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, synonym
 
 from ..constants import NP_PRECISION
 from ..genes.create_neuron import CreateNeuron
@@ -12,7 +10,7 @@ from ..mutagen import Mutagen
 from ..util import wiggle, get_rng
 
 
-class CNLayer(Enum):
+class CNLayer(IntEnum):
     input_initial_value = auto()
     feedback_initial_value = auto()
     output_initial_value = auto()
@@ -21,36 +19,34 @@ class CNLayer(Enum):
     feedback_hidden = auto()
     hidden_output = auto()
 
-class CreateNeuronMutagen(Mutagen):
-    __tablename__ = "create_neuron_mutagen"
-    __mapper_args__ = {"polymorphic_identity": "create_neuron_mutagen"}
 
-    id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
-    layer_to_mutate: Mapped[CNLayer] = mapped_column(SQLEnum(CNLayer))
+class WiggleCNLayer(Mutagen):
+    __mapper_args__ = {"polymorphic_identity": "wiggle_cn_layer"}
 
-    def __init__(self,
-                 layer_to_mutate: CNLayer,
-                 base_susceptibility: float = 0.001,
-                 susceptibility_log_wiggle: float = 0.01):
-        super().__init__(base_susceptibility, susceptibility_log_wiggle)
-        self.layer_to_mutate = layer_to_mutate
+    layer: Mapped[CNLayer] = synonym("_i1")
+
+    def __init__(self, layer_to_mutate: CNLayer, base_susceptibility: float = 0.001,
+                 severity: float = 1.0):
+        super().__init__(base_susceptibility)
+        self.layer = layer_to_mutate
+        self.severity = severity
 
     def mutate_CreateNeuron(self, gene: CreateNeuron) -> CreateNeuron:
         susceptibility = self.get_mutation_susceptibility(gene)
         return CreateNeuron(
-            input=gene.input if self.layer_to_mutate is not CNLayer.input_initial_value
+            input=gene.input if self.layer != CNLayer.input_initial_value
             else self.maybe_wiggle(gene.input, susceptibility).astype(NP_PRECISION),
-            feedback=gene.feedback if self.layer_to_mutate is not CNLayer.feedback_initial_value
+            feedback=gene.feedback if self.layer != CNLayer.feedback_initial_value
             else self.maybe_wiggle(gene.feedback, susceptibility).astype(NP_PRECISION),
-            output=gene.output if self.layer_to_mutate is not CNLayer.output_initial_value
+            output=gene.output if self.layer != CNLayer.output_initial_value
             else self.maybe_wiggle(gene.output, susceptibility).astype(NP_PRECISION),
-            input_hidden=gene.input_hidden if self.layer_to_mutate is not CNLayer.input_hidden
+            input_hidden=gene.input_hidden if self.layer != CNLayer.input_hidden
             else self.maybe_wiggle(gene.input_hidden, susceptibility).astype(NP_PRECISION),
-            hidden_feedback=gene.hidden_feedback if self.layer_to_mutate is not CNLayer.hidden_feedback
+            hidden_feedback=gene.hidden_feedback if self.layer != CNLayer.hidden_feedback
             else self.maybe_wiggle(gene.hidden_feedback, susceptibility).astype(NP_PRECISION),
-            feedback_hidden=gene.feedback_hidden if self.layer_to_mutate is not CNLayer.feedback_hidden
+            feedback_hidden=gene.feedback_hidden if self.layer != CNLayer.feedback_hidden
             else self.maybe_wiggle(gene.feedback_hidden, susceptibility).astype(NP_PRECISION),
-            hidden_output=gene.hidden_output if self.layer_to_mutate is not CNLayer.hidden_output
+            hidden_output=gene.hidden_output if self.layer != CNLayer.hidden_output
             else self.maybe_wiggle(gene.hidden_output, susceptibility).astype(NP_PRECISION),
             parent_gene=gene
         )
@@ -58,11 +54,12 @@ class CreateNeuronMutagen(Mutagen):
     def maybe_wiggle(self, x: ndarray, susceptibility: float) -> ndarray:
         '''
         Use the susceptibility to derive the probability of mutating any given value in the mutated layer,
-        and the log and absolute wiggles to use when mutating
+        and the log and absolute wiggles to use when mutating.
+        Derive wiggle parameters from severity: log_wiggle = severity * 25, absolute_wiggle = severity * 1.0
         '''
         wiggle_probability = susceptibility
-        log_wiggle = susceptibility * 25
-        absolute_wiggle = susceptibility
+        log_wiggle = susceptibility * self.severity * 25.0
+        absolute_wiggle = susceptibility * self.severity * 1.0
         return np.where(
             get_rng().random(x.shape) < wiggle_probability,
             x,

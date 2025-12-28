@@ -10,22 +10,16 @@ class ShuffleGenes(Mutagen):
     def __init__(self, base_susceptibility: float = 0.01):
         super().__init__(base_susceptibility)
 
-    def mutate_CompositeGene(self, parent_gene: CompositeGene) -> CompositeGene:
-        # Check if this gene should be mutated based on susceptibility
-        susceptibility = self.get_mutation_susceptibility(parent_gene)
-        if get_rng().random() >= susceptibility:
-            # No mutation, just recursively mutate child genes
-            return super().mutate_CompositeGene(parent_gene)
-
+    def _mutate_CompositeGene_impl(self, parent_gene: CompositeGene) -> CompositeGene:
         # Only swap if there are at least 2 child genes
         if len(parent_gene.child_genes) < 2:
-            return super().mutate_CompositeGene(parent_gene)
-
-        # Recursively mutate child genes
-        new_genes = []
-        for orig in parent_gene.child_genes:
-            mutant = self.mutate(orig)
-            new_genes.append(mutant)
+            return parent_gene
+        
+        # Get susceptibility for distance calculation
+        susceptibility = self.get_mutation_susceptibility(parent_gene)
+        
+        # Copy the genes list for swapping
+        new_genes = list(parent_gene.child_genes)
 
         # Swap two genes - susceptibility influences maximum distance
         # Higher susceptibility = can swap genes that are further apart

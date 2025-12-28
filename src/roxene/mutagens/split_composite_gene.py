@@ -10,15 +10,9 @@ class SplitCompositeGene(Mutagen):
     def __init__(self, base_susceptibility: float = 0.01):
         super().__init__(base_susceptibility)
 
-    def mutate_CompositeGene(self, parent_gene: CompositeGene) -> CompositeGene:
+    def _mutate_CompositeGene_impl(self, parent_gene: CompositeGene) -> CompositeGene:
         if parent_gene.iterations < 2:
-            return super().mutate_CompositeGene(parent_gene)
-
-        # Check if this gene should be mutated based on susceptibility
-        susceptibility = self.get_mutation_susceptibility(parent_gene)
-        if get_rng().random() >= susceptibility:
-            # No mutation, just recursively mutate child genes
-            return super().mutate_CompositeGene(parent_gene)
+            return parent_gene
 
         # Split the iterations randomly, ensuring both parts get at least 1 iteration
         # For iterations=N, we want first_iterations in range [1, N-1] so second_iterations is also ≥ 1

@@ -14,28 +14,17 @@ class AddGene(Mutagen):
     def __init__(self, base_susceptibility: float = 0.01):
         super().__init__(base_susceptibility)
 
-    def mutate_CompositeGene(self, parent_gene: CompositeGene) -> CompositeGene:
-        # Check if this gene should be mutated based on susceptibility
-        susceptibility = self.get_mutation_susceptibility(parent_gene)
-        if get_rng().random() >= susceptibility:
-            # No mutation, just recursively mutate child genes
-            return super().mutate_CompositeGene(parent_gene)
-
-        # Recursively mutate child genes
-        new_genes = []
-        for orig in parent_gene.child_genes:
-            mutant = self.mutate(orig)
-            new_genes.append(mutant)
-
+    def _mutate_CompositeGene_impl(self, parent_gene: CompositeGene) -> CompositeGene:
         # If there are no children, can't add a gene - return as-is
-        if len(new_genes) == 0:
-            return CompositeGene(new_genes, parent_gene.iterations, parent_gene)
+        if len(parent_gene.child_genes) == 0:
+            return parent_gene
 
         # Get the gene to insert - subclasses must implement this
-        gene_to_insert = self.get_new_gene(parent_gene, new_genes)
+        gene_to_insert = self.get_new_gene(parent_gene, parent_gene.child_genes)
         
         # Insert the gene at a random position
-        # Choose a random index between 0 and len(new_genes) inclusive
+        # Choose a random index between 0 and len(child_genes) inclusive
+        new_genes = list(parent_gene.child_genes)
         insertion_index = get_rng().integers(0, len(new_genes) + 1)
         new_genes.insert(insertion_index, gene_to_insert)
 

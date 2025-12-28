@@ -12,12 +12,10 @@ class PushDown(Mutagen):
         super().__init__(base_susceptibility)
 
     def mutate(self, gene: Gene) -> Gene:
-        # Check if this gene should be mutated based on susceptibility
-        susceptibility = self.get_mutation_susceptibility(gene)
-        if get_rng().random() >= susceptibility:
-            # No mutation, just recursively mutate if CompositeGene
+        # Check if mutation should proceed  
+        if not self.should_mutate(gene):
             return super().mutate(gene)
-
+        
         # Don't wrap CompositeGenes with iterations == 1, as that would be redundant
         if isinstance(gene, CompositeGene) and gene.iterations == 1:
             return super().mutate(gene)

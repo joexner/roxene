@@ -26,7 +26,8 @@ class ModifyInitialValue(Mutagen):
         self.layer = value_type
         self.severity = severity
 
-    def _mutate_CreateNeuron_impl(self, gene: CreateNeuron, susceptibility: float) -> CreateNeuron:
+    def mutate_CreateNeuron(self, gene: CreateNeuron) -> CreateNeuron:
+        susceptibility = self.get_mutation_susceptibility(gene)
         
         if self.layer == InitialValueType.input:
             modified_values = self._modify_values(gene.input, susceptibility)

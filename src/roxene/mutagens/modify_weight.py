@@ -27,7 +27,8 @@ class ModifyWeight(Mutagen):
         self.layer = weight_layer
         self.severity = severity
 
-    def _mutate_CreateNeuron_impl(self, gene: CreateNeuron, susceptibility: float) -> CreateNeuron:
+    def mutate_CreateNeuron(self, gene: CreateNeuron) -> CreateNeuron:
+        susceptibility = self.get_mutation_susceptibility(gene)
         
         if self.layer == WeightLayer.input_hidden:
             modified_weights = self._modify_weights(gene.input_hidden, susceptibility)

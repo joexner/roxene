@@ -33,11 +33,6 @@ class ResizeNeuronLayer(Mutagen):
         self.layer = layer_to_resize
 
     def mutate_CreateNeuron(self, gene: CreateNeuron) -> CreateNeuron:
-        # Call super() to get susceptibility check and delegation to _impl
-        return super().mutate_CreateNeuron(gene)
-    
-    def _mutate_CreateNeuron_impl(self, gene: CreateNeuron, susceptibility: float) -> CreateNeuron:
-        # Implementation - susceptibility already checked by base class
         if self.layer == LayerToResize.INPUT:
             if self.direction == ResizeDirection.WIDEN:
                 return self._widen_input_layer(gene)

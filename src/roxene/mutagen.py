@@ -97,59 +97,26 @@ class Mutagen(EntityBase):
             return gene
 
     def mutate_CompositeGene(self, parent_gene: CompositeGene):
-        # First recurse into children
+        # Recurse into children, checking susceptibility for each child before mutating
         any_changed = False
         new_genes = []
         for orig in parent_gene.child_genes:
-            mutant = self.mutate(orig)
-            new_genes.append(mutant)
-            any_changed |= (mutant is not orig)
+            # Check susceptibility for each child gene before mutating it
+            if self.should_mutate(orig):
+                mutant = self.mutate(orig)
+                new_genes.append(mutant)
+                any_changed |= (mutant is not orig)
+            else:
+                new_genes.append(orig)
         
         # Create intermediate gene with mutated children if any changed
         if any_changed:
             parent_gene = CompositeGene(new_genes, parent_gene.iterations, parent_gene)
         
-        # Check susceptibility before calling specific mutation
-        if not self.should_mutate(parent_gene):
-            return parent_gene
-        
-        # Perform the specific mutation (subclasses override _mutate_CompositeGene_impl)
-        return self._mutate_CompositeGene_impl(parent_gene)
-    
-    def _mutate_CompositeGene_impl(self, parent_gene: CompositeGene):
-        """Default implementation: return unchanged.
-        
-        Subclasses should override this to implement specific mutation logic.
-        The parent_gene passed here already has mutated children.
-        """
         return parent_gene
 
     def mutate_CreateNeuron(self, gene: CreateNeuron):
-        # Check susceptibility before calling specific mutation
-        if not self.should_mutate(gene):
-            return gene
-        
-        # Perform the specific mutation (subclasses override _mutate_CreateNeuron_impl)
-        return self._mutate_CreateNeuron_impl(gene)
-    
-    def _mutate_CreateNeuron_impl(self, gene: CreateNeuron):
-        """Default implementation: return unchanged.
-        
-        Subclasses should override this to implement specific mutation logic.
-        """
         return gene
 
     def mutate_ConnectNeurons(self, gene: ConnectNeurons):
-        # Check susceptibility before calling specific mutation
-        if not self.should_mutate(gene):
-            return gene
-        
-        # Perform the specific mutation (subclasses override _mutate_ConnectNeurons_impl)
-        return self._mutate_ConnectNeurons_impl(gene)
-    
-    def _mutate_ConnectNeurons_impl(self, gene: ConnectNeurons):
-        """Default implementation: return unchanged.
-        
-        Subclasses should override this to implement specific mutation logic.
-        """
         return gene

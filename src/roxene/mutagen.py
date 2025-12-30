@@ -116,6 +116,26 @@ class Mutagen(EntityBase):
         return parent_gene
 
     def mutate_CreateNeuron(self, gene: CreateNeuron):
+        # Check susceptibility before delegating to implementation
+        if not self.should_mutate(gene):
+            return gene
+        # Calculate susceptibility once and pass to implementation
+        susceptibility = self.get_mutation_susceptibility(gene)
+        return self._mutate_CreateNeuron_impl(gene, susceptibility)
+    
+    def _mutate_CreateNeuron_impl(self, gene: CreateNeuron, susceptibility: float):
+        """Override this method in subclasses to implement CreateNeuron-specific mutations.
+        
+        The base mutate_CreateNeuron() handles susceptibility checking and calculation,
+        so implementations receive the calculated susceptibility and don't need to check it.
+        
+        Args:
+            gene: The gene to mutate
+            susceptibility: Pre-calculated mutation susceptibility for this gene
+            
+        Returns:
+            The mutated gene
+        """
         return gene
 
     def mutate_ConnectNeurons(self, gene: ConnectNeurons):

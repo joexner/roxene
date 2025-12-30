@@ -31,8 +31,7 @@ class WiggleCNLayer(Mutagen):
         self.layer = layer_to_mutate
         self.severity = severity
 
-    def mutate_CreateNeuron(self, gene: CreateNeuron) -> CreateNeuron:
-        susceptibility = self.get_mutation_susceptibility(gene)
+    def _mutate_CreateNeuron_impl(self, gene: CreateNeuron, susceptibility: float) -> CreateNeuron:
         return CreateNeuron(
             input=gene.input if self.layer != CNLayer.input_initial_value
             else self.maybe_wiggle(gene.input, susceptibility).astype(NP_PRECISION),

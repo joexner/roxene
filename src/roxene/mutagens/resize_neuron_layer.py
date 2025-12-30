@@ -33,6 +33,10 @@ class ResizeNeuronLayer(Mutagen):
         self.layer = layer_to_resize
 
     def mutate_CreateNeuron(self, gene: CreateNeuron) -> CreateNeuron:
+        # Check susceptibility before resizing
+        if not self.should_mutate(gene):
+            return gene
+        
         if self.layer == LayerToResize.INPUT:
             if self.direction == ResizeDirection.WIDEN:
                 return self._widen_input_layer(gene)

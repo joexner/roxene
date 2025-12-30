@@ -10,14 +10,7 @@ class ShuffleGenes(Mutagen):
     def __init__(self, base_susceptibility: float = 0.01):
         super().__init__(base_susceptibility)
 
-    def mutate_CompositeGene(self, parent_gene: CompositeGene) -> CompositeGene:
-        # First recurse into children via base class
-        parent_gene = super().mutate_CompositeGene(parent_gene)
-        
-        # Check susceptibility before shuffling
-        if not self.should_mutate(parent_gene):
-            return parent_gene
-        
+    def _mutate_CompositeGene_impl(self, parent_gene: CompositeGene) -> CompositeGene:
         # Only swap if there are at least 2 child genes
         if len(parent_gene.child_genes) < 2:
             return parent_gene

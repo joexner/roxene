@@ -14,14 +14,7 @@ class AddGene(Mutagen):
     def __init__(self, base_susceptibility: float = 0.01):
         super().__init__(base_susceptibility)
 
-    def mutate_CompositeGene(self, parent_gene: CompositeGene) -> CompositeGene:
-        # First recurse into children via base class
-        parent_gene = super().mutate_CompositeGene(parent_gene)
-        
-        # Check susceptibility before adding gene
-        if not self.should_mutate(parent_gene):
-            return parent_gene
-        
+    def _mutate_CompositeGene_impl(self, parent_gene: CompositeGene) -> CompositeGene:
         # If there are no children, can't add a gene - return as-is
         if len(parent_gene.child_genes) == 0:
             return parent_gene

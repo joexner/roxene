@@ -113,6 +113,26 @@ class Mutagen(EntityBase):
         if any_changed:
             parent_gene = CompositeGene(new_genes, parent_gene.iterations, parent_gene)
         
+        # Check susceptibility before calling subclass implementation
+        if not self.should_mutate(parent_gene):
+            return parent_gene
+        
+        # Delegate to subclass-specific implementation
+        return self._mutate_CompositeGene_impl(parent_gene)
+    
+    def _mutate_CompositeGene_impl(self, parent_gene: CompositeGene):
+        """Override this method in subclasses to implement CompositeGene-specific mutations.
+        
+        The base class has already:
+        - Recursed into children and mutated them
+        - Checked susceptibility (so you don't need to call should_mutate())
+        
+        Args:
+            parent_gene: The CompositeGene to mutate (with children already mutated)
+        
+        Returns:
+            Mutated CompositeGene or the original gene unchanged
+        """
         return parent_gene
 
     def mutate_CreateNeuron(self, gene: CreateNeuron):

@@ -24,7 +24,10 @@ class RemoveGene(Mutagen):
         new_genes.pop(index_to_remove)
 
         # Create intermediate gene with removed child, then delegate to base class to recursively mutate
+        # Note: We skip the _impl call by calling super().mutate_CompositeGene directly
         intermediate_gene = CompositeGene(new_genes, parent_gene.iterations, parent_gene.parent_gene)
-        mutated_gene = super().mutate_CompositeGene(intermediate_gene)
+        
+        # Recursively mutate children (but not implement any CompositeGene-level mutation)
+        mutated_gene = Mutagen.mutate_CompositeGene(self, intermediate_gene)
 
         return CompositeGene(mutated_gene.child_genes, mutated_gene.iterations, parent_gene)

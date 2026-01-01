@@ -7,31 +7,29 @@ class ShuffleGenes(Mutagen):
     __mapper_args__ = {"polymorphic_identity": "shuffle_genes"}
 
 
-    def __init__(self, base_susceptibility: float = 0.01):
+    def __init__(self, base_susceptibility: float = 0.01, severity: float = 1.0):
         super().__init__(base_susceptibility)
+        self.severity = severity
 
     def _mutate_CompositeGene_impl(self, parent_gene: CompositeGene) -> CompositeGene:
         # Only swap if there are at least 2 child genes
         if len(parent_gene.child_genes) < 2:
             return parent_gene
         
-        # Get susceptibility for distance calculation
-        susceptibility = self.get_mutation_susceptibility(parent_gene)
-        
         # Copy the genes list for swapping
         new_genes = list(parent_gene.child_genes)
 
-        # Swap two genes - susceptibility influences maximum distance
-        # Higher susceptibility = can swap genes that are further apart
+        # Swap two genes - severity influences maximum distance
+        # Higher severity = can swap genes that are further apart
         num_genes = len(new_genes)
         
         # Select first gene randomly
         first_index = get_rng().integers(0, num_genes)
         
-        # Calculate max distance based on susceptibility
-        # susceptibility near 0 -> only adjacent swaps
-        # susceptibility near 1 -> can swap across entire list
-        max_distance = max(1, int(susceptibility * num_genes))
+        # Calculate max distance based on severity
+        # severity near 0 -> only adjacent swaps
+        # severity near 1 -> can swap across entire list
+        max_distance = max(1, int(self.severity * num_genes))
         
         # Calculate possible second index range
         min_second = max(0, first_index - max_distance)

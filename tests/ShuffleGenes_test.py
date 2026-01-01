@@ -51,8 +51,8 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
         
         self.assertTrue(swapped_found, "Expected genes to be swapped in at least one of 20 tries")
 
-    def test_shuffle_susceptibility_affects_distance(self):
-        """Test that susceptibility affects how far apart swapped genes can be"""
+    def test_shuffle_severity_affects_distance(self):
+        """Test that severity affects how far apart swapped genes can be"""
         set_rng(default_rng(SEED))
         # Create a longer list to test distance
         child_genes: List[Gene] = [
@@ -65,11 +65,11 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
         ]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        # Low susceptibility should only allow nearby swaps
-        mutagen_low = ShuffleGenes(0.1)
+        # Low severity should only allow nearby swaps
+        mutagen_low = ShuffleGenes(base_susceptibility=1.0, severity=0.1)
         
-        # High susceptibility should allow distant swaps
-        mutagen_high = ShuffleGenes(1.0)
+        # High severity should allow distant swaps
+        mutagen_high = ShuffleGenes(base_susceptibility=1.0, severity=1.0)
         
         # Just verify they both work without errors
         mutant_low = mutagen_low.mutate(original_gene)
@@ -130,7 +130,7 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
 
     def test_persist_reload(self):
         """Test that ShuffleGenes can be persisted and reloaded"""
-        mutagen = ShuffleGenes(0.022)
+        mutagen = ShuffleGenes(base_susceptibility=0.022, severity=0.5)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -142,3 +142,4 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.base_susceptibility, 0.022)
+            self.assertEqual(reloaded.severity, 0.5)

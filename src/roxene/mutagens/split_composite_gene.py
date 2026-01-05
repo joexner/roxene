@@ -10,7 +10,7 @@ class SplitCompositeGene(Mutagen):
     def __init__(self, base_susceptibility: float = 0.01):
         super().__init__(base_susceptibility)
 
-    def _mutate_CompositeGene_impl(self, parent_gene: CompositeGene) -> CompositeGene:
+    def mutate_CompositeGene(self, parent_gene: CompositeGene) -> CompositeGene:
         if parent_gene.iterations < 2:
             return parent_gene
 

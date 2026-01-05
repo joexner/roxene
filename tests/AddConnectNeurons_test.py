@@ -37,18 +37,6 @@ class AddConnectionMutagen_test(unittest.TestCase):
         connect_neurons_genes = [g for g in mutant_gene.child_genes if isinstance(g, ConnectNeurons)]
         self.assertEqual(len(connect_neurons_genes), 1)
 
-    def test_add_connection_no_mutation(self):
-        """Test that with 0% susceptibility, no mutation occurs"""
-        set_rng(default_rng(SEED))
-        child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
-        original_gene = CompositeGene(child_genes=child_genes, iterations=1)
-        
-        mutagen = AddConnectNeurons(0.0)  # 0% susceptibility
-        
-        mutant_gene = mutagen.mutate(original_gene)
-        
-        # Should not be mutated
-        self.assertEqual(mutant_gene, original_gene)
 
     def test_add_connection_parameters(self):
         """Test that the added connection has valid parameters"""

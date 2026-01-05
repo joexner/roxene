@@ -14,7 +14,7 @@ class AddGene(Mutagen):
     def __init__(self, base_susceptibility: float = 0.01):
         super().__init__(base_susceptibility)
 
-    def _mutate_CompositeGene_impl(self, parent_gene: CompositeGene) -> CompositeGene:
+    def mutate_CompositeGene(self, parent_gene: CompositeGene) -> CompositeGene:
         # If there are no children, can't add a gene - return as-is
         if len(parent_gene.child_genes) == 0:
             return parent_gene

@@ -7,17 +7,12 @@ class ModifyIterations(Mutagen):
     __mapper_args__ = {"polymorphic_identity": "modify_iterations"}
 
 
-    def __init__(self, base_susceptibility: float = 0.01):
+    def __init__(self, base_susceptibility: float = 0.01, severity: float = 1.0):
         super().__init__(base_susceptibility)
+        self.severity = severity
 
-    def _mutate_CompositeGene_impl(self, parent_gene: CompositeGene) -> CompositeGene:
-        # Modify the iteration count by incrementing or decrementing by 1
-        if get_rng().random() < 0.5:
-            # Increment by 1
-            new_iterations = parent_gene.iterations + 1
-        else:
-            # Decrement by 1, but never go below 0
-            new_iterations = max(0, parent_gene.iterations - 1)
-
-        # Return new gene with modified iterations
+    def mutate_CompositeGene(self, parent_gene: CompositeGene) -> CompositeGene:
+        max_delta = max(1, int(self.severity * 5))
+        delta = int(get_rng().integers(-max_delta, max_delta + 1))
+        new_iterations = max(0, parent_gene.iterations + delta)
         return CompositeGene(parent_gene.child_genes, new_iterations, parent_gene)

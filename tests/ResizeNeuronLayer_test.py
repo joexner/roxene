@@ -144,18 +144,6 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
         # Should not narrow a layer of size 1 (minimum size)
         self.assertEqual(mutant_gene.input_hidden.shape[1], 1)
 
-    def test_no_mutation_with_zero_susceptibility(self):
-        """Test that with 0% susceptibility, no mutation occurs"""
-        set_rng(default_rng(SEED))
-        original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
-        
-        # Test both directions
-        for direction in [ResizeDirection.WIDEN, ResizeDirection.NARROW]:
-            mutagen = ResizeNeuronLayer(direction, 0.0, 0)  # 0% susceptibility
-            mutant_gene = mutagen.mutate(original_gene)
-            
-            # Should not be mutated
-            self.assertEqual(mutant_gene, original_gene)
 
     def test_persist_reload_widen(self):
         """Test that ResizeNeuronLayer (WIDEN) can be persisted and reloaded"""

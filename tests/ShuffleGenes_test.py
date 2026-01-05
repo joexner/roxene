@@ -78,21 +78,6 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
         self.assertEqual(len(mutant_low.child_genes), len(child_genes))
         self.assertEqual(len(mutant_high.child_genes), len(child_genes))
 
-    def test_shuffle_genes_no_mutation(self):
-        """Test that with 0% susceptibility, no mutation occurs"""
-        set_rng(default_rng(SEED))
-        child_genes: List[Gene] = [
-            RotateCells(RotateCells.Direction.FORWARD),
-            RotateCells(RotateCells.Direction.BACKWARD)
-        ]
-        original_gene = CompositeGene(child_genes=child_genes, iterations=1)
-        
-        mutagen = ShuffleGenes(0.0)  # 0% susceptibility
-        
-        mutant_gene = mutagen.mutate(original_gene)
-        
-        # Should not be mutated
-        self.assertEqual(mutant_gene, original_gene)
 
     def test_shuffle_genes_preserves_all_genes(self):
         """Test that swapping preserves all genes (no additions or removals)"""

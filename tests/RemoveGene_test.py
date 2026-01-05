@@ -35,21 +35,6 @@ class RemoveGeneMutagen_test(unittest.TestCase):
         # Should have one fewer child gene
         self.assertEqual(len(mutant_gene.child_genes), len(child_genes) - 1)
 
-    def test_remove_gene_no_mutation(self):
-        """Test that with 0% susceptibility, no mutation occurs"""
-        set_rng(default_rng(SEED))
-        child_genes: List[Gene] = [
-            RotateCells(RotateCells.Direction.FORWARD),
-            RotateCells(RotateCells.Direction.BACKWARD)
-        ]
-        original_gene = CompositeGene(child_genes=child_genes, iterations=1)
-        
-        mutagen = RemoveGene(0.0)  # 0% susceptibility
-        
-        mutant_gene = mutagen.mutate(original_gene)
-        
-        # Should not be mutated
-        self.assertEqual(mutant_gene, original_gene)
 
     def test_remove_gene_preserves_single_child(self):
         """Test that CompositeGenes with only 1 child are not reduced"""

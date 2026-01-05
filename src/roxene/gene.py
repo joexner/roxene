@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import abc
+from abc import abstractmethod
 import uuid
 from typing import Optional
 
@@ -27,7 +27,7 @@ class Gene(EntityBase):
         self.parent_gene = parent_gene
         self.id = uuid.uuid4()
 
-    @abc.abstractmethod
+    @abstractmethod
     def execute(self, organism: 'Organism'):
         pass
 

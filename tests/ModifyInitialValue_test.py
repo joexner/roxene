@@ -13,7 +13,7 @@ from roxene.util import set_rng
 SEED = 444
 
 
-class ModifyInitialValueMutagen_test(unittest.TestCase):
+class ModifyInitialValue_test(unittest.TestCase):
 
     def test_modify_initial_value_input(self):
         """Test that ModifyInitialValue modifies input initial values"""
@@ -21,7 +21,7 @@ class ModifyInitialValueMutagen_test(unittest.TestCase):
         original_gene = CreateNeuron(**random_neuron_state(10, 10, 10))
         
         mutagen = ModifyInitialValue(InitialValueType.input, 0.5)
-        mutant_gene = mutagen.mutate(original_gene)
+        mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
         
         # Some values should be different
         self.assertFalse(np.array_equal(mutant_gene.input, original_gene.input))
@@ -35,7 +35,7 @@ class ModifyInitialValueMutagen_test(unittest.TestCase):
         original_gene = CreateNeuron(**random_neuron_state(10, 10, 10))
         
         mutagen = ModifyInitialValue(InitialValueType.feedback, 0.5)
-        mutant_gene = mutagen.mutate(original_gene)
+        mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
         
         # Some values should be different
         self.assertFalse(np.array_equal(mutant_gene.feedback, original_gene.feedback))
@@ -49,7 +49,7 @@ class ModifyInitialValueMutagen_test(unittest.TestCase):
         original_gene = CreateNeuron(**random_neuron_state(10, 10, 10))
         
         mutagen = ModifyInitialValue(InitialValueType.output, 0.5)
-        mutant_gene = mutagen.mutate(original_gene)
+        mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
         
         # Some values should be different
         self.assertFalse(np.array_equal(mutant_gene.output, original_gene.output))

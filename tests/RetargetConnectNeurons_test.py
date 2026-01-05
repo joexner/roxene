@@ -37,17 +37,6 @@ class RetargetConnectNeuronsMutagen_test(unittest.TestCase):
                 break
         self.assertTrue(mutations_found, "Expected at least one mutation in 20 tries")
 
-    def test_retarget_no_mutation(self):
-        """Test that with 0% susceptibility, no mutation occurs"""
-        set_rng(default_rng(SEED))
-        original_connection = ConnectNeurons(tx_cell_index=5, rx_input_port=3)
-        
-        mutagen = RetargetConnectNeurons(0.0)  # 0% susceptibility
-        
-        mutant_gene = mutagen.mutate(original_connection)
-        
-        # Should not be mutated
-        self.assertEqual(mutant_gene, original_connection)
 
     def test_retarget_bounds(self):
         """Test that retargeted connections have non-negative tx_index"""

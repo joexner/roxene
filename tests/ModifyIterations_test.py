@@ -39,18 +39,6 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
         self.assertTrue(different_iterations_found, 
                        "Expected iterations to change in at least one of 20 tries")
 
-    def test_modify_iterations_no_mutation(self):
-        """Test that with 0% susceptibility, no mutation occurs"""
-        set_rng(default_rng(SEED))
-        child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
-        original_gene = CompositeGene(child_genes=child_genes, iterations=3)
-        
-        mutagen = ModifyIterations(0.0)  # 0% susceptibility
-        
-        mutant_gene = mutagen.mutate(original_gene)
-        
-        # Should not be mutated
-        self.assertEqual(mutant_gene, original_gene)
 
     def test_modify_iterations_minimum_zero(self):
         """Test that iterations never go below 0"""

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, synonym
 from ..constants import NP_PRECISION
 from ..genes.create_neuron import CreateNeuron
 from ..mutagen import Mutagen
-from ..util import wiggle, get_rng
+from ..util import wiggle
 
 
 class WeightLayer(IntEnum):
@@ -28,10 +28,8 @@ class ModifyWeight(Mutagen):
         self.severity = severity
 
     def mutate_CreateNeuron(self, gene: CreateNeuron) -> CreateNeuron:
-        susceptibility = self.get_mutation_susceptibility(gene)
-        
         if self.layer == WeightLayer.input_hidden:
-            modified_weights = self._modify_weights(gene.input_hidden, susceptibility)
+            modified_weights = self._modify_weights(gene.input_hidden)
             return CreateNeuron(
                 input=gene.input,
                 feedback=gene.feedback,
@@ -43,7 +41,7 @@ class ModifyWeight(Mutagen):
                 parent_gene=gene
             )
         elif self.layer == WeightLayer.hidden_feedback:
-            modified_weights = self._modify_weights(gene.hidden_feedback, susceptibility)
+            modified_weights = self._modify_weights(gene.hidden_feedback)
             return CreateNeuron(
                 input=gene.input,
                 feedback=gene.feedback,
@@ -55,7 +53,7 @@ class ModifyWeight(Mutagen):
                 parent_gene=gene
             )
         elif self.layer == WeightLayer.feedback_hidden:
-            modified_weights = self._modify_weights(gene.feedback_hidden, susceptibility)
+            modified_weights = self._modify_weights(gene.feedback_hidden)
             return CreateNeuron(
                 input=gene.input,
                 feedback=gene.feedback,
@@ -67,7 +65,7 @@ class ModifyWeight(Mutagen):
                 parent_gene=gene
             )
         elif self.layer == WeightLayer.hidden_output:
-            modified_weights = self._modify_weights(gene.hidden_output, susceptibility)
+            modified_weights = self._modify_weights(gene.hidden_output)
             return CreateNeuron(
                 input=gene.input,
                 feedback=gene.feedback,
@@ -81,21 +79,10 @@ class ModifyWeight(Mutagen):
         
         return gene
 
-    def _modify_weights(self, weights: np.ndarray, susceptibility: float) -> np.ndarray:
-        """
-        Modify weights surgically based on susceptibility.
-        Each weight has a probability of being modified based on susceptibility.
-        """
-        # Create a mask of which weights to modify
-        modify_mask = get_rng().random(weights.shape) < susceptibility
-        
-        # Wiggle the selected weights
-        # Derive wiggle parameters from severity: log_wiggle = severity * 10, absolute_wiggle = severity * 0.5
+    def _modify_weights(self, weights: np.ndarray) -> np.ndarray:
+        log_wiggle = self.severity * 10.0
+        absolute_wiggle = self.severity * 0.5
         modified = weights.copy()
         for idx in np.ndindex(weights.shape):
-            if modify_mask[idx]:
-                log_wiggle = susceptibility * self.severity * 10.0
-                absolute_wiggle = susceptibility * self.severity * 0.5
-                modified[idx] = wiggle(weights[idx], log_wiggle, absolute_wiggle)
-        
+            modified[idx] = wiggle(weights[idx], log_wiggle, absolute_wiggle)
         return modified.astype(NP_PRECISION)

@@ -1,7 +1,7 @@
 import uuid
 from typing import Optional
 
-from sqlalchemy import ForeignKey, Integer, Float, String
+from sqlalchemy import ForeignKey, Integer, Float
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
 
@@ -68,72 +68,41 @@ class Mutagen(EntityBase):
         self.base_susceptibility = base_susceptibility
 
     def get_mutation_susceptibility(self, gene: Gene) -> float:
-        if gene is None:
-            return self.base_susceptibility
         result = self.susceptibilities.get(gene)
         if result is None:
             parent_gene = getattr(gene, "parent_gene", None)
-            parent_sus = self.get_mutation_susceptibility(parent_gene)
-            result = wiggle(parent_sus, SUSCEPTIBILITY_LOG_WIGGLE)
+            if parent_gene is None:
+                result = self.base_susceptibility
+            else:
+                parent_sus = self.get_mutation_susceptibility(parent_gene)
+                result = wiggle(parent_sus, SUSCEPTIBILITY_LOG_WIGGLE)
             self.susceptibilities[gene] = result
         return result
     
     def should_mutate(self, gene: Gene) -> bool:
-        """Check if mutation should proceed based on susceptibility.
-        
-        Returns True if mutation should proceed, False otherwise.
-        """
         susceptibility = self.get_mutation_susceptibility(gene)
         return get_rng().random() < susceptibility
 
     def mutate(self, gene: Gene) -> Gene:
         if isinstance(gene, CompositeGene):
-            return self.mutate_CompositeGene(gene)
+            any_changed = False
+            new_genes = []
+            for child in gene.child_genes:
+                mutant = self.mutate(child)
+                new_genes.append(mutant)
+                any_changed |= (mutant is not child)
+            if any_changed:
+                gene = CompositeGene(new_genes, gene.iterations, gene)
+            return self.mutate_CompositeGene(gene) if self.should_mutate(gene) else gene
         elif isinstance(gene, CreateNeuron):
-            return self.mutate_CreateNeuron(gene)
+            return self.mutate_CreateNeuron(gene) if self.should_mutate(gene) else gene
         elif isinstance(gene, ConnectNeurons):
-            return self.mutate_ConnectNeurons(gene)
+            return self.mutate_ConnectNeurons(gene) if self.should_mutate(gene) else gene
         else:
             return gene
 
-    def mutate_CompositeGene(self, parent_gene: CompositeGene):
-        # Recurse into children, checking susceptibility for each child before mutating
-        any_changed = False
-        new_genes = []
-        for orig in parent_gene.child_genes:
-            # Check susceptibility for each child gene before mutating it
-            if self.should_mutate(orig):
-                mutant = self.mutate(orig)
-                new_genes.append(mutant)
-                any_changed |= (mutant is not orig)
-            else:
-                new_genes.append(orig)
-        
-        # Create intermediate gene with mutated children if any changed
-        if any_changed:
-            parent_gene = CompositeGene(new_genes, parent_gene.iterations, parent_gene)
-        
-        # Check susceptibility before calling subclass implementation
-        if not self.should_mutate(parent_gene):
-            return parent_gene
-        
-        # Delegate to subclass-specific implementation
-        return self._mutate_CompositeGene_impl(parent_gene)
-    
-    def _mutate_CompositeGene_impl(self, parent_gene: CompositeGene):
-        """Override this method in subclasses to implement CompositeGene-specific mutations.
-        
-        The base class has already:
-        - Recursed into children and mutated them
-        - Checked susceptibility (so you don't need to call should_mutate())
-        
-        Args:
-            parent_gene: The CompositeGene to mutate (with children already mutated)
-        
-        Returns:
-            Mutated CompositeGene or the original gene unchanged
-        """
-        return parent_gene
+    def mutate_CompositeGene(self, gene: CompositeGene):
+        return gene
 
     def mutate_CreateNeuron(self, gene: CreateNeuron):
         return gene

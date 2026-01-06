@@ -7,6 +7,11 @@ from ..util import get_rng
 
 
 class DuplicateGene(AddGene):
+    """
+    Mutagen that duplicates an existing gene within a CompositeGene.
+    That same exact Gene will be in 2 different spots in the CompositeGene, Via AddGene,
+    and each spot in the new Composite can be mutated independently in descendants.
+    """
     __mapper_args__ = {"polymorphic_identity": "duplicate_gene"}
 
 
@@ -20,15 +25,6 @@ class DuplicateGene(AddGene):
         return super().mutate_CompositeGene(parent_gene)
 
     def get_new_gene(self, parent_gene: CompositeGene) -> Gene:
-        """
-        Returns a copy of a randomly selected child gene to duplicate.
-        
-        Args:
-            parent_gene: The original CompositeGene being mutated
-
-        Returns:
-            The duplicated gene
-        """
         # Select a random gene to duplicate
         index_to_duplicate = get_rng().integers(0, len(parent_gene.child_genes))
         return parent_gene.child_genes[index_to_duplicate]

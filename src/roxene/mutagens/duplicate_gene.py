@@ -19,18 +19,17 @@ class DuplicateGene(AddGene):
             return parent_gene
         return super().mutate_CompositeGene(parent_gene)
 
-    def get_new_gene(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> Gene:
+    def get_new_gene(self, parent_gene: CompositeGene) -> Gene:
         """
         Returns a copy of a randomly selected child gene to duplicate.
         
         Args:
             parent_gene: The original CompositeGene being mutated
-            mutated_children: The list of child genes after recursive mutation
-            
+
         Returns:
             The duplicated gene
         """
         # Select a random gene to duplicate
-        index_to_duplicate = get_rng().integers(0, len(mutated_children))
-        return mutated_children[index_to_duplicate]
+        index_to_duplicate = get_rng().integers(0, len(parent_gene.child_genes))
+        return parent_gene.child_genes[index_to_duplicate]
 

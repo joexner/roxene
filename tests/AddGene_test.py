@@ -18,7 +18,7 @@ class TestAddGene(AddGene):
     """Test implementation that adds a RotateCells gene"""
     __mapper_args__ = {"polymorphic_identity": "test_add_gene"}
     
-    def get_new_gene(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> Gene:
+    def get_new_gene(self, parent_gene: CompositeGene) -> Gene:
         return RotateCells(RotateCells.Direction.FORWARD)
 
 

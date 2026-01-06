@@ -16,7 +16,7 @@ class AddGene(Mutagen):
 
     def mutate_CompositeGene(self, parent_gene: CompositeGene) -> CompositeGene:
         # Get the gene to insert - subclasses must implement this
-        gene_to_insert = self.get_new_gene(parent_gene, parent_gene.child_genes)
+        gene_to_insert = self.get_new_gene(parent_gene)
         
         # Insert the gene at a random position
         # Choose a random index between 0 and len(child_genes) inclusive
@@ -27,14 +27,13 @@ class AddGene(Mutagen):
         return CompositeGene(new_genes, parent_gene.iterations, parent_gene)
 
     @abc.abstractmethod
-    def get_new_gene(self, parent_gene: CompositeGene, mutated_children: List[Gene]) -> Gene:
+    def get_new_gene(self, parent_gene: CompositeGene) -> Gene:
         """
         Return the gene to insert into the CompositeGene.
         
         Args:
             parent_gene: The original CompositeGene being mutated
-            mutated_children: The list of child genes after recursive mutation
-            
+
         Returns:
             A gene to insert
         """

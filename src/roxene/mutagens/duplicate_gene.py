@@ -9,7 +9,7 @@ from ..util import get_rng
 class DuplicateGene(AddGene):
     """
     Mutagen that duplicates an existing gene within a CompositeGene.
-    That same exact Gene will be in 2 different spots in the CompositeGene, Via AddGene,
+    That same exact Gene will be in 2 different spots in the CompositeGene, via AddGene,
     and each spot in the new Composite can be mutated independently in descendants.
     """
     __mapper_args__ = {"polymorphic_identity": "duplicate_gene"}

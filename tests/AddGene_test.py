@@ -39,17 +39,18 @@ class AddGene_test(unittest.TestCase):
         self.assertEqual(len(mutant_gene.child_genes), len(child_genes) + 1)
         self.assertEqual(mutant_gene.iterations, 3)
 
-    def test_empty_composite_returns_unchanged(self):
-        """Test that empty CompositeGene is returned unchanged"""
+    def test_empty_composite_gets_gene_added(self):
+        """Test that empty CompositeGene gets a gene added to it"""
         set_rng(default_rng(SEED))
         original_gene = CompositeGene(child_genes=[], iterations=1)
         
         mutagen = TestAddGene(1.0)
         mutant_gene = mutagen.mutate(original_gene)
         
-        # Should return original gene unchanged
-        self.assertEqual(len(mutant_gene.child_genes), 0)
-        self.assertIs(mutant_gene, original_gene)
+        # Should now have 1 gene added
+        self.assertEqual(len(mutant_gene.child_genes), 1)
+        self.assertIsInstance(mutant_gene.child_genes[0], RotateCells)
+        self.assertEqual(mutant_gene.child_genes[0].direction, RotateCells.Direction.FORWARD)
 
     def test_insertion_index_range(self):
         """Test that insertion_index is always valid (0 to len inclusive)"""

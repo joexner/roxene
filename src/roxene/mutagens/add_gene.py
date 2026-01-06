@@ -15,10 +15,6 @@ class AddGene(Mutagen):
         super().__init__(base_susceptibility)
 
     def mutate_CompositeGene(self, parent_gene: CompositeGene) -> CompositeGene:
-        # If there are no children, can't add a gene - return as-is
-        if len(parent_gene.child_genes) == 0:
-            return parent_gene
-
         # Get the gene to insert - subclasses must implement this
         gene_to_insert = self.get_new_gene(parent_gene, parent_gene.child_genes)
         

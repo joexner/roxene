@@ -1,5 +1,5 @@
 import abc
-from typing import List, Optional
+from typing import List
 
 from ..gene import Gene
 from ..genes.composite_gene import CompositeGene
@@ -31,7 +31,7 @@ class AddGene(Mutagen):
         return CompositeGene(new_genes, parent_gene.iterations, parent_gene)
 
     @abc.abstractmethod
-    def get_new_gene(self, parent_gene: CompositeGene) -> Optional[Gene]:
+    def get_new_gene(self, parent_gene: CompositeGene) -> Gene | None:
         """
         Return the gene to insert into the CompositeGene, or None if no gene should be inserted.
         

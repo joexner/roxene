@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, synonym
 from ..constants import NP_PRECISION
 from ..genes.create_neuron import CreateNeuron
 from ..mutagen import Mutagen
-from ..util import wiggle
+from .. import util
 
 
 class CNLayer(IntEnum):
@@ -17,7 +17,6 @@ class CNLayer(IntEnum):
     hidden_feedback = auto()
     feedback_hidden = auto()
     hidden_output = auto()
-
 
 class WiggleCNLayer(Mutagen):
     __mapper_args__ = {"polymorphic_identity": "wiggle_cn_layer"}
@@ -31,26 +30,18 @@ class WiggleCNLayer(Mutagen):
         self.severity = severity
 
     def mutate_CreateNeuron(self, gene: CreateNeuron) -> CreateNeuron:
-        return CreateNeuron(
-            input=gene.input if self.layer != CNLayer.input_initial_value
-            else self._wiggle_array(gene.input).astype(NP_PRECISION),
-            feedback=gene.feedback if self.layer != CNLayer.feedback_initial_value
-            else self._wiggle_array(gene.feedback).astype(NP_PRECISION),
-            output=gene.output if self.layer != CNLayer.output_initial_value
-            else self._wiggle_array(gene.output).astype(NP_PRECISION),
-            input_hidden=gene.input_hidden if self.layer != CNLayer.input_hidden
-            else self._wiggle_array(gene.input_hidden).astype(NP_PRECISION),
-            hidden_feedback=gene.hidden_feedback if self.layer != CNLayer.hidden_feedback
-            else self._wiggle_array(gene.hidden_feedback).astype(NP_PRECISION),
-            feedback_hidden=gene.feedback_hidden if self.layer != CNLayer.feedback_hidden
-            else self._wiggle_array(gene.feedback_hidden).astype(NP_PRECISION),
-            hidden_output=gene.hidden_output if self.layer != CNLayer.hidden_output
-            else self._wiggle_array(gene.hidden_output).astype(NP_PRECISION),
-            parent_gene=gene
-        )
+        args = {
+            "input":           self.wiggle(gene.input)           if self.layer == CNLayer.input_initial_value    else gene.input,
+            "feedback":        self.wiggle(gene.feedback)        if self.layer == CNLayer.feedback_initial_value else gene.feedback,
+            "output":          self.wiggle(gene.output)          if self.layer == CNLayer.output_initial_value   else gene.output,
+            "input_hidden":    self.wiggle(gene.input_hidden)    if self.layer == CNLayer.input_hidden           else gene.input_hidden,
+            "hidden_feedback": self.wiggle(gene.hidden_feedback) if self.layer == CNLayer.hidden_feedback        else gene.hidden_feedback,
+            "feedback_hidden": self.wiggle(gene.feedback_hidden) if self.layer == CNLayer.feedback_hidden        else gene.feedback_hidden,
+            "hidden_output":   self.wiggle(gene.hidden_output)   if self.layer == CNLayer.hidden_output          else gene.hidden_output,
+            "parent_gene":     gene
+        }
+        return CreateNeuron(**args)
 
-    def _wiggle_array(self, x: ndarray) -> ndarray:
-        log_wiggle = self.severity * 25.0
-        absolute_wiggle = self.severity * 1.0
-        return wiggle(x, log_wiggle, absolute_wiggle)
+    def wiggle(self, x: ndarray) -> ndarray:
+        return util.wiggle(x, log_wiggle = self.severity * 25.0, absolute_wiggle = self.severity * 1.0)
 

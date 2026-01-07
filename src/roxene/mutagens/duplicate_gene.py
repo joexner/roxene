@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from ..gene import Gene
 from ..genes.composite_gene import CompositeGene
@@ -18,13 +18,11 @@ class DuplicateGene(AddGene):
     def __init__(self, base_susceptibility: float = 0.01):
         super().__init__(base_susceptibility)
 
-    def mutate_CompositeGene(self, parent_gene: CompositeGene) -> CompositeGene:
+    def get_new_gene(self, parent_gene: CompositeGene) -> Optional[Gene]:
         # Can't duplicate from an empty CompositeGene
         if len(parent_gene.child_genes) == 0:
-            return parent_gene
-        return super().mutate_CompositeGene(parent_gene)
-
-    def get_new_gene(self, parent_gene: CompositeGene) -> Gene:
+            return None
+        
         # Select a random gene to duplicate
         index_to_duplicate = get_rng().integers(0, len(parent_gene.child_genes))
         return parent_gene.child_genes[index_to_duplicate]

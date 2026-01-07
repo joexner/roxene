@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy.orm import Mapped, synonym
 
@@ -19,6 +19,6 @@ class AddConnectNeurons(AddGene):
         self.tx_cell_index = tx_cell_index
         self.rx_port = rx_port
 
-    def get_new_gene(self, parent_gene: CompositeGene) -> Gene:
+    def get_new_gene(self, parent_gene: CompositeGene) -> Optional[Gene]:
         return ConnectNeurons(self.tx_cell_index, self.rx_port)
 

@@ -3,7 +3,7 @@ from numpy.random import default_rng
 
 from roxene import random_neuron_state
 from roxene.genes import CreateNeuron as CreateNeuronGene, CompositeGene, ConnectNeurons, RotateCells
-from roxene.mutagens import WiggleCNLayer, CNLayer, ShuffleGenes, ModifyIterations, RetargetConnectNeurons
+from roxene.mutagens import WiggleCreateNeuron, CNLayer, ShuffleGenes, ModifyIterations, RetargetConnectNeurons
 from roxene.util import set_rng
 
 SEED = 11235
@@ -14,7 +14,7 @@ class Mutagen_test(unittest.TestCase):
     def test_parent_susceptibility_inheritance(self):
         set_rng(default_rng(SEED))
 
-        other_mutagen = WiggleCNLayer(CNLayer.hidden_feedback)
+        other_mutagen = WiggleCreateNeuron(CNLayer.hidden_feedback)
 
         grandparent = CreateNeuronGene(**random_neuron_state())
         parent = other_mutagen.mutate_CreateNeuron(grandparent)
@@ -22,7 +22,7 @@ class Mutagen_test(unittest.TestCase):
 
         # Test susceptibility inheritance and caching across three generations
         # New Mutagen, hasn't decided sus'ty any of these genes yet
-        mutagen = WiggleCNLayer(CNLayer.input_hidden)
+        mutagen = WiggleCreateNeuron(CNLayer.input_hidden)
         self.assertNotIn(grandparent, mutagen.susceptibilities)
         self.assertNotIn(parent, mutagen.susceptibilities)
         self.assertNotIn(child, mutagen.susceptibilities)

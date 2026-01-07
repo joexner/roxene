@@ -18,8 +18,8 @@ class CNLayer(IntEnum):
     feedback_hidden = auto()
     hidden_output = auto()
 
-class WiggleCNLayer(Mutagen):
-    __mapper_args__ = {"polymorphic_identity": "wiggle_cn_layer"}
+class WiggleCreateNeuron(Mutagen):
+    __mapper_args__ = {"polymorphic_identity": "wiggle_create_neuron"}
 
     layer: Mapped[CNLayer] = synonym("_i1")
 

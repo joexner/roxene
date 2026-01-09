@@ -15,6 +15,17 @@ SEED = 11235
 class CompositeGeneSplitMutagen_test(unittest.TestCase):
 
     def test_split_basic(self):
+        """
+        Test that SplitCompositeGene correctly splits a CompositeGene into two children.
+        
+        When a CompositeGene with N iterations is split, the result should be a new
+        CompositeGene with iterations=1 containing two child CompositeGenes. Each child
+        should have the same child_genes as the original, and their iterations should
+        sum to the original's iteration count.
+        
+        Example: A CompositeGene with 10 iterations might split into two CompositeGenes
+        with 4 and 6 iterations respectively (the split point is random).
+        """
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.BACKWARD),
                                    RotateCells(RotateCells.Direction.FORWARD),
                                    RotateCells(RotateCells.Direction.FORWARD)]

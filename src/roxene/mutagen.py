@@ -9,6 +9,7 @@ from .gene import Gene
 from .genes.composite_gene import CompositeGene
 from .genes.connect_neurons import ConnectNeurons
 from .genes.create_neuron import CreateNeuron
+from .genes.create_input_cell import CreateInputCell
 from .genes.rotate_cells import RotateCells
 from .persistence import EntityBase
 from .util import wiggle, get_rng
@@ -101,6 +102,8 @@ class Mutagen(EntityBase):
             return self.mutate_ConnectNeurons(gene) if self.should_mutate(gene) else gene
         elif isinstance(gene, RotateCells):
             return self.mutate_RotateCells(gene) if self.should_mutate(gene) else gene
+        elif isinstance(gene, CreateInputCell):
+            return self.mutate_CreateInputCell(gene) if self.should_mutate(gene) else gene
         else:
             return gene
 
@@ -114,4 +117,7 @@ class Mutagen(EntityBase):
         return gene
 
     def mutate_RotateCells(self, gene: RotateCells):
+        return gene
+
+    def mutate_CreateInputCell(self, gene: CreateInputCell):
         return gene

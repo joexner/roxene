@@ -4,8 +4,10 @@ from .push_down import PushDown
 from .add_gene import AddGene
 from .add_connect_neurons import AddConnectNeurons
 from .add_rotate_cells import AddRotateCells
+from .add_create_input_cell import AddCreateInputCell
 from .retarget_connect_neurons import RetargetConnectNeurons
 from .change_rotate_direction import ChangeRotateDirection
+from .wiggle_input_cell_value import WiggleInputCellValue
 from .remove_gene import RemoveGene
 from .duplicate_gene import DuplicateGene
 from .shuffle_genes import ShuffleGenes
@@ -20,8 +22,10 @@ __all__ = [
     'AddGene',
     'AddConnectNeurons',
     'AddRotateCells',
+    'AddCreateInputCell',
     'RetargetConnectNeurons',
     'ChangeRotateDirection',
+    'WiggleInputCellValue',
     'RemoveGene',
     'DuplicateGene',
     'ShuffleGenes',

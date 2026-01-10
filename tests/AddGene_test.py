@@ -64,6 +64,9 @@ class AddGene_test(unittest.TestCase):
         
         mutagen = TestAddGene(1.0)
         
+        # Track which insertion indices are hit (0, 1, 2, 3 are valid for 3-element list)
+        indices_hit = set()
+        
         # Test many random insertions
         for seed in range(100):
             set_rng(default_rng(seed))
@@ -72,10 +75,14 @@ class AddGene_test(unittest.TestCase):
             # Should always have exactly 4 genes (3 original + 1 inserted)
             self.assertEqual(len(mutant_gene.child_genes), 4)
             
-            # Should have exactly 1 FORWARD gene (the inserted one)
-            forward_count = sum(1 for g in mutant_gene.child_genes 
-                              if isinstance(g, RotateCells) and g.direction == RotateCells.Direction.FORWARD)
-            self.assertEqual(forward_count, 1, "Should have exactly one inserted gene")
+            # Find position of inserted gene and record it
+            for i, g in enumerate(mutant_gene.child_genes):
+                if isinstance(g, RotateCells) and g.direction == RotateCells.Direction.FORWARD:
+                    indices_hit.add(i)
+                    break
+        
+        # Assert all possible indices (0, 1, 2, 3) are covered
+        self.assertEqual(indices_hit, {0, 1, 2, 3}, "All insertion indices should be covered")
 
     def test_preserves_parent_in_constructor(self):
         """Test that parent reference is passed to CompositeGene constructor"""

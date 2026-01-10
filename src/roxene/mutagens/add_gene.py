@@ -8,8 +8,6 @@ from ..util import get_rng
 
 
 class AddGene(Mutagen):
-    __mapper_args__ = {"polymorphic_identity": "add_gene"}
-
 
     def __init__(self, base_susceptibility: float = 0.01):
         super().__init__(base_susceptibility)
@@ -32,14 +30,5 @@ class AddGene(Mutagen):
 
     @abc.abstractmethod
     def get_new_gene(self, parent_gene: CompositeGene) -> Gene | None:
-        """
-        Return the gene to insert into the CompositeGene, or None if no gene should be inserted.
-        
-        Args:
-            parent_gene: The original CompositeGene being mutated
-
-        Returns:
-            A gene to insert, or None if no insertion should occur
-        """
         pass
 

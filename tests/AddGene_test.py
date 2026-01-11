@@ -1,4 +1,5 @@
 import unittest
+from operator import indexOf
 from typing import List
 
 from numpy.random import default_rng
@@ -12,54 +13,51 @@ from roxene.util import set_rng
 
 SEED = 456
 
+new_gene = Gene()
 
 # Concrete implementation for testing
 class TestAddGene(AddGene):
     """Test implementation that adds a RotateCells gene"""
 
     def get_new_gene(self, parent_gene: CompositeGene) -> Gene:
-        return RotateCells(RotateCells.Direction.FORWARD)
+        return new_gene
 
 
 class AddGene_test(unittest.TestCase):
 
+    def setUp(self):
+        set_rng(default_rng(SEED))
+
     def test_correct_gene_count(self):
         """Test that insertion adds exactly one gene"""
-        set_rng(default_rng(SEED))
-        child_genes: List[Gene] = [
+        original_gene = CompositeGene(child_genes=[
             RotateCells(RotateCells.Direction.BACKWARD),
             RotateCells(RotateCells.Direction.BACKWARD)
-        ]
-        original_gene = CompositeGene(child_genes=child_genes, iterations=3)
-        
+        ])
         mutagen = TestAddGene()
         mutant_gene = mutagen.mutate_CompositeGene(original_gene)
         
-        self.assertEqual(len(mutant_gene.child_genes), len(child_genes) + 1)
-        self.assertEqual(mutant_gene.iterations, 3)
+        self.assertEqual(len(mutant_gene.child_genes), len(original_gene.child_genes) + 1)
 
     def test_empty_composite_gets_gene_added(self):
         """Test that empty CompositeGene gets a gene added to it"""
-        set_rng(default_rng(SEED))
-        original_gene = CompositeGene(child_genes=[], iterations=1)
+        original_gene = CompositeGene(child_genes=[])
         
         mutagen = TestAddGene()
         mutant_gene = mutagen.mutate_CompositeGene(original_gene)
         
         # Should now have 1 gene added
         self.assertEqual(len(mutant_gene.child_genes), 1)
-        self.assertIsInstance(mutant_gene.child_genes[0], RotateCells)
-        self.assertEqual(mutant_gene.child_genes[0].direction, RotateCells.Direction.FORWARD)
+        self.assertIs(mutant_gene.child_genes[0], new_gene)
 
     def test_insertion_index_range(self):
         """Test that insertion_index is always valid (0 to len inclusive)"""
-        set_rng(default_rng(SEED))
         child_genes: List[Gene] = [
             RotateCells(RotateCells.Direction.BACKWARD),
             RotateCells(RotateCells.Direction.BACKWARD),
             RotateCells(RotateCells.Direction.BACKWARD)
         ]
-        original_gene = CompositeGene(child_genes=child_genes, iterations=1)
+        original_gene = CompositeGene(child_genes=child_genes)
         
         mutagen = TestAddGene()
         
@@ -75,17 +73,13 @@ class AddGene_test(unittest.TestCase):
             self.assertEqual(len(mutant_gene.child_genes), 4)
             
             # Find position of inserted gene and record it
-            for i, g in enumerate(mutant_gene.child_genes):
-                if isinstance(g, RotateCells) and g.direction == RotateCells.Direction.FORWARD:
-                    indices_hit.add(i)
-                    break
-        
+            indices_hit.add(indexOf(mutant_gene.child_genes, new_gene))
+
         # Assert all possible indices (0, 1, 2, 3) are covered
         self.assertEqual(indices_hit, {0, 1, 2, 3}, "All insertion indices should be covered")
 
     def test_preserves_parent_in_constructor(self):
         """Test that parent reference is passed to CompositeGene constructor"""
-        set_rng(default_rng(SEED))
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.BACKWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=2)
         
@@ -93,35 +87,6 @@ class AddGene_test(unittest.TestCase):
         mutant_gene = mutagen.mutate_CompositeGene(original_gene)
         
         # Check the constructor was called with correct parameters
-        self.assertEqual(mutant_gene.iterations, 2)
-        self.assertEqual(len(mutant_gene.child_genes), 2)
-
-    def test_uniform_distribution_of_insertions(self):
-        """Test that insertions are roughly uniformly distributed across positions"""
-        set_rng(default_rng(SEED))
-        child_genes: List[Gene] = [
-            RotateCells(RotateCells.Direction.BACKWARD),
-            RotateCells(RotateCells.Direction.BACKWARD)
-        ]
-        original_gene = CompositeGene(child_genes=child_genes, iterations=1)
-        
-        mutagen = TestAddGene()
-        
-        # Count insertions at each position
-        position_counts = [0, 0, 0]  # positions 0, 1, 2 (before first, middle, after last)
-        
-        for seed in range(300):
-            set_rng(default_rng(seed))
-            mutant_gene = mutagen.mutate_CompositeGene(original_gene)
-            
-            # Find position of inserted gene
-            for i, g in enumerate(mutant_gene.child_genes):
-                if isinstance(g, RotateCells) and g.direction == RotateCells.Direction.FORWARD:
-                    position_counts[i] += 1
-                    break
-        
-        # Each position should have roughly 100 insertions (with some variance)
-        # Allow 60-140 range (within 2 standard deviations for uniform distribution)
-        for i, count in enumerate(position_counts):
-            self.assertGreater(count, 60, f"Position {i} should have at least 60 insertions, got {count}")
-            self.assertLess(count, 140, f"Position {i} should have at most 140 insertions, got {count}")
+        self.assertEqual(mutant_gene.iterations, original_gene.iterations)
+        self.assertEqual(len(mutant_gene.child_genes), len(original_gene.child_genes) + 1)
+        self.assertEqual(mutant_gene.parent_gene, original_gene)

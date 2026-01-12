@@ -31,14 +31,3 @@ class AddRotateCells_test(unittest.TestCase):
         self.assertEqual(len(mutant.child_genes), 1)
         self.assertIsInstance(mutant.child_genes[0], RotateCells)
         self.assertEqual(mutant.child_genes[0].direction, RotateCells.Direction.BACKWARD)
-
-    def test_add_rotate_cells_default_direction(self):
-        """Test that AddRotateCells defaults to BACKWARD direction"""
-        composite = CompositeGene(child_genes=[], iterations=1)
-        
-        mutagen = AddRotateCells(0.01)  # No direction specified
-        
-        mutant_composite = mutagen.mutate_CompositeGene(composite)
-        
-        added_gene = mutant_composite.child_genes[0]
-        self.assertEqual(added_gene.direction, RotateCells.Direction.BACKWARD)

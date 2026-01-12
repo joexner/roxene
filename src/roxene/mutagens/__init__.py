@@ -5,7 +5,6 @@ from .add_gene import AddGene
 from .add_connect_neurons import AddConnectNeurons
 from .add_rotate_cells import AddRotateCells
 from .retarget_connect_neurons import RetargetConnectNeurons
-from .change_rotate_direction import ChangeRotateDirection
 from .remove_gene import RemoveGene
 from .duplicate_gene import DuplicateGene
 from .shuffle_genes import ShuffleGenes
@@ -21,7 +20,6 @@ __all__ = [
     'AddConnectNeurons',
     'AddRotateCells',
     'RetargetConnectNeurons',
-    'ChangeRotateDirection',
     'RemoveGene',
     'DuplicateGene',
     'ShuffleGenes',

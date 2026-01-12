@@ -14,6 +14,9 @@ SEED = 11235
 
 class CompositeGeneSplitMutagen_test(unittest.TestCase):
 
+    def setUp(self):
+        set_rng(default_rng(SEED))
+
     def test_split_basic(self):
         """
         Test that SplitCompositeGene correctly splits a CompositeGene into two children.
@@ -33,7 +36,6 @@ class CompositeGeneSplitMutagen_test(unittest.TestCase):
 
         mutagen = SplitCompositeGene(1)
 
-        set_rng(default_rng(SEED))
         for _ in range(20):
             mutant_gene = mutagen.mutate(original_gene)
 

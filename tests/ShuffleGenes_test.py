@@ -15,9 +15,11 @@ SEED = 654
 
 class ShuffleGenesMutagen_test(unittest.TestCase):
 
+    def setUp(self):
+        set_rng(default_rng(SEED))
+
     def test_shuffle_swaps_two_genes(self):
         """Test that ShuffleGenes swaps exactly two genes"""
-        set_rng(default_rng(SEED))
         child_genes: List[Gene] = [
             RotateCells(RotateCells.Direction.FORWARD),
             RotateCells(RotateCells.Direction.BACKWARD),
@@ -53,8 +55,6 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
 
     def test_shuffle_severity_affects_distance(self):
         """Test that severity affects how far apart swapped genes can be"""
-        set_rng(default_rng(SEED))
-        # Create a longer list to test distance
         child_genes: List[Gene] = [
             RotateCells(RotateCells.Direction.FORWARD),
             RotateCells(RotateCells.Direction.BACKWARD),
@@ -81,7 +81,6 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
 
     def test_shuffle_genes_preserves_all_genes(self):
         """Test that swapping preserves all genes (no additions or removals)"""
-        set_rng(default_rng(SEED))
         child_genes: List[Gene] = [
             RotateCells(RotateCells.Direction.FORWARD),
             RotateCells(RotateCells.Direction.BACKWARD),
@@ -102,7 +101,6 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
 
     def test_shuffle_single_gene(self):
         """Test that CompositeGenes with only 1 child are not shuffled"""
-        set_rng(default_rng(SEED))
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         

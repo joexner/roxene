@@ -14,9 +14,11 @@ SEED = 890
 
 class ChangeRotateDirection_test(unittest.TestCase):
 
+    def setUp(self):
+        set_rng(default_rng(SEED))
+
     def test_change_forward_to_backward(self):
         """Test that ChangeRotateDirection changes FORWARD to BACKWARD"""
-        set_rng(default_rng(SEED))
         original = RotateCells(RotateCells.Direction.FORWARD)
         
         mutagen = ChangeRotateDirection(1.0)  # 100% susceptibility
@@ -28,7 +30,6 @@ class ChangeRotateDirection_test(unittest.TestCase):
 
     def test_change_backward_to_forward(self):
         """Test that ChangeRotateDirection changes BACKWARD to FORWARD"""
-        set_rng(default_rng(SEED))
         original = RotateCells(RotateCells.Direction.BACKWARD)
         
         mutagen = ChangeRotateDirection(1.0)  # 100% susceptibility
@@ -40,7 +41,6 @@ class ChangeRotateDirection_test(unittest.TestCase):
 
     def test_parent_gene_set(self):
         """Test that the mutated gene has its parent_gene set correctly"""
-        set_rng(default_rng(SEED))
         original = RotateCells(RotateCells.Direction.FORWARD)
         
         mutagen = ChangeRotateDirection(1.0)
@@ -51,7 +51,6 @@ class ChangeRotateDirection_test(unittest.TestCase):
 
     def test_no_mutation_at_zero_susceptibility(self):
         """Test that ChangeRotateDirection doesn't mutate at 0% susceptibility"""
-        set_rng(default_rng(SEED))
         original = RotateCells(RotateCells.Direction.FORWARD)
         
         mutagen = ChangeRotateDirection(0.0)  # 0% susceptibility
@@ -63,7 +62,6 @@ class ChangeRotateDirection_test(unittest.TestCase):
 
     def test_change_in_composite(self):
         """Test that RotateCells within CompositeGenes are mutated"""
-        set_rng(default_rng(SEED))
         rotate1 = RotateCells(RotateCells.Direction.FORWARD)
         rotate2 = RotateCells(RotateCells.Direction.BACKWARD)
         composite = CompositeGene(child_genes=[rotate1, rotate2], iterations=1)

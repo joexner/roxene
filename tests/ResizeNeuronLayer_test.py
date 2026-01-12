@@ -15,9 +15,11 @@ SEED = 111
 
 class ResizeNeuronLayerMutagen_test(unittest.TestCase):
 
+    def setUp(self):
+        set_rng(default_rng(SEED))
+
     def test_widen_layer(self):
         """Test that ResizeNeuronLayer with WIDEN increases hidden layer size"""
-        set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         original_hidden_size = original_gene.input_hidden.shape[1]
         
@@ -32,7 +34,6 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
 
     def test_widen_layer_preserves_shapes(self):
         """Test that all weight matrices have correct shapes after widening"""
-        set_rng(default_rng(SEED))
         input_size = 8
         feedback_size = 6
         hidden_size = 10
@@ -56,7 +57,6 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
 
     def test_widen_layer_preserves_existing_weights(self):
         """Test that existing weights are preserved when widening"""
-        set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         original_hidden_size = original_gene.input_hidden.shape[1]
         
@@ -83,7 +83,6 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
 
     def test_narrow_layer(self):
         """Test that ResizeNeuronLayer with NARROW decreases hidden layer size"""
-        set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         original_hidden_size = original_gene.input_hidden.shape[1]
         
@@ -97,7 +96,6 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
 
     def test_narrow_layer_preserves_shapes(self):
         """Test that all weight matrices have correct shapes after narrowing"""
-        set_rng(default_rng(SEED))
         input_size = 8
         feedback_size = 6
         hidden_size = 10
@@ -121,8 +119,6 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
 
     def test_narrow_layer_minimum_size(self):
         """Test that narrowing preserves at least 1 hidden neuron"""
-        set_rng(default_rng(SEED))
-        # Create a gene with small hidden layer
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 2))
         
         mutagen = ResizeNeuronLayer(ResizeDirection.NARROW, LayerToResize.HIDDEN, 1.0)  # 100% susceptibility
@@ -135,7 +131,6 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
 
     def test_narrow_layer_no_mutation_small_layer(self):
         """Test that minimum size layers are not narrowed"""
-        set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 1))
         
         mutagen = ResizeNeuronLayer(ResizeDirection.NARROW, LayerToResize.HIDDEN, 1.0)  # 100% susceptibility

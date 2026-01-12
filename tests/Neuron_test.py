@@ -21,6 +21,7 @@ class Neuron_test(unittest.TestCase):
 
     def setUp(self) -> None:
         torch.manual_seed(SEED)
+        set_rng(default_rng(SEED))
 
     @parameterized.expand([
         (2, 2, 4),
@@ -168,7 +169,6 @@ class Neuron_test(unittest.TestCase):
 
     def test_save_linked_neurons(self):
         engine = get_engine()
-        set_rng(default_rng(SEED))
 
         n1 = Neuron(**random_neuron_state())
         n2 = Neuron(**random_neuron_state())

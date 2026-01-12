@@ -15,9 +15,11 @@ SEED = 987
 
 class ModifyIterationsMutagen_test(unittest.TestCase):
 
+    def setUp(self):
+        set_rng(default_rng(SEED))
+
     def test_modify_iterations(self):
         """Test that ModifyIterations changes iteration count"""
-        set_rng(default_rng(SEED))
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=5)
         
@@ -42,7 +44,6 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
 
     def test_modify_iterations_minimum_zero(self):
         """Test that iterations never go below 0"""
-        set_rng(default_rng(SEED))
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=0)
         
@@ -56,7 +57,6 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
 
     def test_modify_iterations_range(self):
         """Test that iteration changes are reasonable"""
-        set_rng(default_rng(SEED))
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=10)
         

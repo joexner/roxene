@@ -14,9 +14,11 @@ SEED = 789
 
 class AddRotateCells_test(unittest.TestCase):
 
+    def setUp(self):
+        set_rng(default_rng(SEED))
+
     def test_add_rotate_cells_forward(self):
         """Test that AddRotateCells adds a RotateCells gene with FORWARD direction"""
-        set_rng(default_rng(SEED))
         composite = CompositeGene(child_genes=[], iterations=1)
         
         mutagen = AddRotateCells(1.0, RotateCells.Direction.FORWARD)
@@ -31,7 +33,6 @@ class AddRotateCells_test(unittest.TestCase):
 
     def test_add_rotate_cells_backward(self):
         """Test that AddRotateCells adds a RotateCells gene with BACKWARD direction"""
-        set_rng(default_rng(SEED))
         composite = CompositeGene(child_genes=[], iterations=1)
         
         mutagen = AddRotateCells(1.0, RotateCells.Direction.BACKWARD)
@@ -46,7 +47,6 @@ class AddRotateCells_test(unittest.TestCase):
 
     def test_add_rotate_cells_default_direction(self):
         """Test that AddRotateCells defaults to BACKWARD direction"""
-        set_rng(default_rng(SEED))
         composite = CompositeGene(child_genes=[], iterations=1)
         
         mutagen = AddRotateCells(1.0)  # No direction specified
@@ -58,7 +58,6 @@ class AddRotateCells_test(unittest.TestCase):
 
     def test_add_to_non_empty_composite(self):
         """Test that AddRotateCells adds to a CompositeGene with existing children"""
-        set_rng(default_rng(SEED))
         existing_gene = RotateCells(RotateCells.Direction.FORWARD)
         composite = CompositeGene(child_genes=[existing_gene], iterations=1)
         

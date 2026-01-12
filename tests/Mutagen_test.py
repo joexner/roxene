@@ -11,8 +11,10 @@ SEED = 11235
 
 class Mutagen_test(unittest.TestCase):
 
-    def test_parent_susceptibility_inheritance(self):
+    def setUp(self):
         set_rng(default_rng(SEED))
+
+    def test_parent_susceptibility_inheritance(self):
 
         other_mutagen = WiggleCreateNeuron(CNLayer.hidden_feedback)
 

@@ -15,9 +15,11 @@ SEED = 789
 
 class RemoveGeneMutagen_test(unittest.TestCase):
 
+    def setUp(self):
+        set_rng(default_rng(SEED))
+
     def test_remove_gene_from_composite(self):
         """Test that RemoveGene removes a child gene"""
-        set_rng(default_rng(SEED))
         child_genes: List[Gene] = [
             RotateCells(RotateCells.Direction.FORWARD),
             RotateCells(RotateCells.Direction.BACKWARD),
@@ -38,7 +40,6 @@ class RemoveGeneMutagen_test(unittest.TestCase):
 
     def test_remove_gene_preserves_single_child(self):
         """Test that CompositeGenes with only 1 child are not reduced"""
-        set_rng(default_rng(SEED))
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
@@ -52,7 +53,6 @@ class RemoveGeneMutagen_test(unittest.TestCase):
 
     def test_remove_gene_multiple_times(self):
         """Test removing genes multiple times"""
-        set_rng(default_rng(SEED))
         child_genes: List[Gene] = [
             RotateCells(RotateCells.Direction.FORWARD),
             RotateCells(RotateCells.Direction.BACKWARD),

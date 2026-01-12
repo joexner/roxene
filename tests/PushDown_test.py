@@ -15,9 +15,11 @@ SEED = 42
 
 class PushDownMutagen_test(unittest.TestCase):
 
+    def setUp(self):
+        set_rng(default_rng(SEED))
+
     def test_push_down_basic(self):
         """Test that PushDown wraps a simple gene in a CompositeGene"""
-        set_rng(default_rng(SEED))
         original_gene = RotateCells(RotateCells.Direction.FORWARD)
         
         mutagen = PushDown(1.0)  # 100% susceptibility, no wiggle
@@ -32,7 +34,6 @@ class PushDownMutagen_test(unittest.TestCase):
 
     def test_push_down_no_mutation(self):
         """Test that with 0% susceptibility, no mutation occurs"""
-        set_rng(default_rng(SEED))
         original_gene = RotateCells(RotateCells.Direction.FORWARD)
         
         mutagen = PushDown(0.0)  # 0% susceptibility
@@ -44,7 +45,6 @@ class PushDownMutagen_test(unittest.TestCase):
 
     def test_push_down_composite_gene_iterations_not_1(self):
         """Test that CompositeGenes with iterations != 1 get wrapped"""
-        set_rng(default_rng(SEED))
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=5)
         
@@ -60,7 +60,6 @@ class PushDownMutagen_test(unittest.TestCase):
 
     def test_push_down_composite_gene_iterations_1(self):
         """Test that CompositeGenes with iterations == 1 are not wrapped"""
-        set_rng(default_rng(SEED))
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         

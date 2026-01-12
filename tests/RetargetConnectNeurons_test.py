@@ -14,9 +14,11 @@ SEED = 456
 
 class RetargetConnectNeuronsMutagen_test(unittest.TestCase):
 
+    def setUp(self):
+        set_rng(default_rng(SEED))
+
     def test_retarget_connect_neurons(self):
         """Test that RetargetConnectNeurons changes only tx_index, not rx_port"""
-        set_rng(default_rng(SEED))
         original_connection = ConnectNeurons(tx_cell_index=5, rx_input_port=3)
         
         mutagen = RetargetConnectNeurons(1.0)  # 100% susceptibility
@@ -40,7 +42,6 @@ class RetargetConnectNeuronsMutagen_test(unittest.TestCase):
 
     def test_retarget_bounds(self):
         """Test that retargeted connections have non-negative tx_index"""
-        set_rng(default_rng(SEED))
         original_connection = ConnectNeurons(tx_cell_index=1, rx_input_port=1)
         
         mutagen = RetargetConnectNeurons(1.0)  # 100% susceptibility
@@ -54,7 +55,6 @@ class RetargetConnectNeuronsMutagen_test(unittest.TestCase):
 
     def test_retarget_in_composite(self):
         """Test that connections within CompositeGenes are retargeted"""
-        set_rng(default_rng(SEED))
         connection1 = ConnectNeurons(tx_cell_index=5, rx_input_port=3)
         connection2 = ConnectNeurons(tx_cell_index=2, rx_input_port=7)
         composite = CompositeGene(child_genes=[connection1, connection2], iterations=1)

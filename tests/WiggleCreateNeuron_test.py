@@ -15,6 +15,9 @@ SEED = 333
 
 class WiggleCreateNeuron_test(unittest.TestCase):
 
+    def setUp(self):
+        set_rng(default_rng(SEED))
+
     def test_wiggle_input_hidden_weights(self):
         """
         Test that WiggleCreateNeuron mutates the input_hidden weight matrix.
@@ -22,7 +25,6 @@ class WiggleCreateNeuron_test(unittest.TestCase):
         When configured to target the input_hidden layer, the mutagen should
         modify those weights while leaving all other layers unchanged.
         """
-        set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         
         mutagen = WiggleCreateNeuron(
@@ -57,7 +59,6 @@ class WiggleCreateNeuron_test(unittest.TestCase):
         The hidden_output layer connects the hidden neurons to the output,
         and is critical for how the neuron produces its final output.
         """
-        set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         
         mutagen = WiggleCreateNeuron(
@@ -86,7 +87,6 @@ class WiggleCreateNeuron_test(unittest.TestCase):
         Initial values determine the starting state of neurons before
         any inputs are processed.
         """
-        set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         
         mutagen = WiggleCreateNeuron(
@@ -115,7 +115,6 @@ class WiggleCreateNeuron_test(unittest.TestCase):
         - Low severity should make small adjustments
         - High severity should make larger adjustments
         """
-        set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         
         # Low severity mutagen
@@ -152,7 +151,6 @@ class WiggleCreateNeuron_test(unittest.TestCase):
         
         This maintains the gene lineage for tracking evolutionary history.
         """
-        set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         
         mutagen = WiggleCreateNeuron(CNLayer.input_hidden, 1.0)
@@ -164,7 +162,6 @@ class WiggleCreateNeuron_test(unittest.TestCase):
         """
         Test that WiggleCreateNeuron doesn't mutate at 0% susceptibility.
         """
-        set_rng(default_rng(SEED))
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         
         mutagen = WiggleCreateNeuron(CNLayer.input_hidden, 0.0)  # 0% susceptibility

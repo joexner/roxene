@@ -15,6 +15,9 @@ SEED = 8484856303
 
 class ConnectNeurons_test(unittest.TestCase):
 
+    def setUp(self):
+        set_rng(default_rng(seed=SEED))
+
     @parameterized.expand([
         (2, 2),
         (2, 3),
@@ -22,7 +25,6 @@ class ConnectNeurons_test(unittest.TestCase):
         (50, 9),
     ])
     def test_execute(self, transmitter_idx, listener_port):
-        set_rng(default_rng(seed=SEED))
         organism = build_organism()
         gene = ConnectNeurons(transmitter_idx, listener_port)
         gene.execute(organism)

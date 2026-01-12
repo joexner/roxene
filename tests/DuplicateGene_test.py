@@ -15,9 +15,11 @@ SEED = 321
 
 class DuplicateGeneMutagen_test(unittest.TestCase):
 
+    def setUp(self):
+        set_rng(default_rng(SEED))
+
     def test_duplicate_gene_in_composite(self):
         """Test that DuplicateGene adds a duplicate of a child gene"""
-        set_rng(default_rng(SEED))
         child_genes: List[Gene] = [
             RotateCells(RotateCells.Direction.FORWARD),
             RotateCells(RotateCells.Direction.BACKWARD)
@@ -37,7 +39,6 @@ class DuplicateGeneMutagen_test(unittest.TestCase):
 
     def test_duplicate_gene_placement(self):
         """Test that the duplicated gene is inserted at a random position"""
-        set_rng(default_rng(SEED))
         child_genes: List[Gene] = [
             RotateCells(RotateCells.Direction.FORWARD),
             RotateCells(RotateCells.Direction.BACKWARD),
@@ -59,7 +60,6 @@ class DuplicateGeneMutagen_test(unittest.TestCase):
 
     def test_duplicate_empty_composite(self):
         """Test duplicating in an empty CompositeGene doesn't crash"""
-        set_rng(default_rng(SEED))
         original_gene = CompositeGene(child_genes=[], iterations=1)
         
         mutagen = DuplicateGene(1.0)  # 100% susceptibility

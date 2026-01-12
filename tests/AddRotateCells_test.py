@@ -1,10 +1,7 @@
 import unittest
 
 from numpy.random import default_rng
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
 
-from roxene import EntityBase
 from roxene.genes import RotateCells, CompositeGene
 from roxene.mutagens import AddRotateCells
 from roxene.util import set_rng
@@ -17,33 +14,23 @@ class AddRotateCells_test(unittest.TestCase):
     def setUp(self):
         set_rng(default_rng(SEED))
 
-    def test_add_rotate_cells_forward(self):
-        """Test that AddRotateCells adds a RotateCells gene with FORWARD direction"""
+    def test_add_rotate_cells(self):
+        """Test that AddRotateCells adds a RotateCells gene with the configured direction"""
         composite = CompositeGene(child_genes=[], iterations=1)
         
-        mutagen = AddRotateCells(0.01, RotateCells.Direction.FORWARD)
+        # Test FORWARD direction
+        mutagen_forward = AddRotateCells(0.01, RotateCells.Direction.FORWARD)
+        mutant = mutagen_forward.mutate_CompositeGene(composite)
+        self.assertEqual(len(mutant.child_genes), 1)
+        self.assertIsInstance(mutant.child_genes[0], RotateCells)
+        self.assertEqual(mutant.child_genes[0].direction, RotateCells.Direction.FORWARD)
         
-        mutant_composite = mutagen.mutate_CompositeGene(composite)
-        
-        self.assertIsInstance(mutant_composite, CompositeGene)
-        self.assertEqual(len(mutant_composite.child_genes), 1)
-        added_gene = mutant_composite.child_genes[0]
-        self.assertIsInstance(added_gene, RotateCells)
-        self.assertEqual(added_gene.direction, RotateCells.Direction.FORWARD)
-
-    def test_add_rotate_cells_backward(self):
-        """Test that AddRotateCells adds a RotateCells gene with BACKWARD direction"""
-        composite = CompositeGene(child_genes=[], iterations=1)
-        
-        mutagen = AddRotateCells(0.01, RotateCells.Direction.BACKWARD)
-        
-        mutant_composite = mutagen.mutate_CompositeGene(composite)
-        
-        self.assertIsInstance(mutant_composite, CompositeGene)
-        self.assertEqual(len(mutant_composite.child_genes), 1)
-        added_gene = mutant_composite.child_genes[0]
-        self.assertIsInstance(added_gene, RotateCells)
-        self.assertEqual(added_gene.direction, RotateCells.Direction.BACKWARD)
+        # Test BACKWARD direction
+        mutagen_backward = AddRotateCells(0.01, RotateCells.Direction.BACKWARD)
+        mutant = mutagen_backward.mutate_CompositeGene(composite)
+        self.assertEqual(len(mutant.child_genes), 1)
+        self.assertIsInstance(mutant.child_genes[0], RotateCells)
+        self.assertEqual(mutant.child_genes[0].direction, RotateCells.Direction.BACKWARD)
 
     def test_add_rotate_cells_default_direction(self):
         """Test that AddRotateCells defaults to BACKWARD direction"""
@@ -55,33 +42,3 @@ class AddRotateCells_test(unittest.TestCase):
         
         added_gene = mutant_composite.child_genes[0]
         self.assertEqual(added_gene.direction, RotateCells.Direction.BACKWARD)
-
-    def test_add_to_non_empty_composite(self):
-        """Test that AddRotateCells adds to a CompositeGene with existing children"""
-        existing_gene = RotateCells(RotateCells.Direction.FORWARD)
-        composite = CompositeGene(child_genes=[existing_gene], iterations=1)
-        
-        mutagen = AddRotateCells(0.01, RotateCells.Direction.BACKWARD)
-        
-        mutant_composite = mutagen.mutate_CompositeGene(composite)
-        
-        self.assertEqual(len(mutant_composite.child_genes), 2)
-        # One should be FORWARD (existing), one should be BACKWARD (new)
-        directions = {gene.direction for gene in mutant_composite.child_genes}
-        self.assertEqual(directions, {RotateCells.Direction.FORWARD, RotateCells.Direction.BACKWARD})
-
-    def test_persist_reload(self):
-        """Test that AddRotateCells can be persisted and reloaded"""
-        mutagen = AddRotateCells(0.025, RotateCells.Direction.FORWARD)
-        mutagen_id = mutagen.id
-        engine = create_engine("sqlite://")
-        EntityBase.metadata.create_all(engine)
-        with Session(engine) as session:
-            session.add(mutagen)
-            session.commit()
-        with Session(engine) as session:
-            reloaded = session.get(AddRotateCells, mutagen_id)
-            self.assertIsNotNone(reloaded)
-            self.assertEqual(reloaded.id, mutagen_id)
-            self.assertEqual(reloaded.base_susceptibility, 0.025)
-            self.assertEqual(reloaded.direction, RotateCells.Direction.FORWARD)

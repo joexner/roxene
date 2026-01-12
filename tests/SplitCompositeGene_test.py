@@ -34,10 +34,10 @@ class CompositeGeneSplitMutagen_test(unittest.TestCase):
                                    RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=10)
 
-        mutagen = SplitCompositeGene(1)
+        mutagen = SplitCompositeGene(0.01)
 
         for _ in range(20):
-            mutant_gene = mutagen.mutate(original_gene)
+            mutant_gene = mutagen.mutate_CompositeGene(original_gene)
 
             self.assertIsInstance(mutant_gene, CompositeGene)
             self.assertEqual(mutant_gene.iterations, 1)

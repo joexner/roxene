@@ -23,12 +23,12 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=5)
         
-        mutagen = ModifyIterations(1.0)  # 100% susceptibility
+        mutagen = ModifyIterations(0.01)
         
         # Try multiple times to see variation in iteration changes
         different_iterations_found = False
         for _ in range(20):
-            mutant_gene = mutagen.mutate(original_gene)
+            mutant_gene = mutagen.mutate_CompositeGene(original_gene)
             
             # Should still be a CompositeGene
             self.assertIsInstance(mutant_gene, CompositeGene)
@@ -47,11 +47,11 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=0)
         
-        mutagen = ModifyIterations(1.0)  # 100% susceptibility
+        mutagen = ModifyIterations(0.01)
         
         # Try many times to ensure we never get negative iterations
         for _ in range(50):
-            mutant_gene = mutagen.mutate(original_gene)
+            mutant_gene = mutagen.mutate_CompositeGene(original_gene)
             self.assertGreaterEqual(mutant_gene.iterations, 0, 
                                   "Iterations should never be less than 0")
 
@@ -60,12 +60,12 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=10)
         
-        mutagen = ModifyIterations(1.0)  # 100% susceptibility
+        mutagen = ModifyIterations(0.01)
         
         increases = 0
         decreases = 0
         for _ in range(100):
-            mutant_gene = mutagen.mutate(original_gene)
+            mutant_gene = mutagen.mutate_CompositeGene(original_gene)
             if mutant_gene.iterations > original_gene.iterations:
                 increases += 1
             elif mutant_gene.iterations < original_gene.iterations:

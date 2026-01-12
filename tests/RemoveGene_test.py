@@ -27,9 +27,9 @@ class RemoveGeneMutagen_test(unittest.TestCase):
         ]
         original_gene = CompositeGene(child_genes=child_genes, iterations=2)
         
-        mutagen = RemoveGene(1.0)  # 100% susceptibility
+        mutagen = RemoveGene(0.01)
         
-        mutant_gene = mutagen.mutate(original_gene)
+        mutant_gene = mutagen.mutate_CompositeGene(original_gene)
         
         # Should still be a CompositeGene
         self.assertIsInstance(mutant_gene, CompositeGene)
@@ -43,9 +43,9 @@ class RemoveGeneMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = RemoveGene(1.0)  # 100% susceptibility
+        mutagen = RemoveGene(0.01)
         
-        mutant_gene = mutagen.mutate(original_gene)
+        mutant_gene = mutagen.mutate_CompositeGene(original_gene)
         
         # Should still have 1 child (can't remove the last one)
         self.assertIsInstance(mutant_gene, CompositeGene)
@@ -62,11 +62,11 @@ class RemoveGeneMutagen_test(unittest.TestCase):
         ]
         gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = RemoveGene(1.0)  # 100% susceptibility
+        mutagen = RemoveGene(0.01)
         
         # Remove genes multiple times
         for expected_count in [4, 3, 2, 1, 1]:  # Can't go below 1
-            gene = mutagen.mutate(gene)
+            gene = mutagen.mutate_CompositeGene(gene)
             self.assertEqual(len(gene.child_genes), expected_count)
 
     def test_persist_reload(self):

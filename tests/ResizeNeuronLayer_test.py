@@ -23,9 +23,9 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         original_hidden_size = original_gene.input_hidden.shape[1]
         
-        mutagen = ResizeNeuronLayer(ResizeDirection.WIDEN, LayerToResize.HIDDEN, 1.0)  # 100% susceptibility
+        mutagen = ResizeNeuronLayer(ResizeDirection.WIDEN, LayerToResize.HIDDEN, 0.01)
         
-        mutant_gene = mutagen.mutate(original_gene)
+        mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
         new_hidden_size = mutant_gene.input_hidden.shape[1]
         
         # Hidden size should increase by 1-3
@@ -39,8 +39,8 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
         hidden_size = 10
         original_gene = CreateNeuron(**random_neuron_state(input_size, feedback_size, hidden_size))
         
-        mutagen = ResizeNeuronLayer(ResizeDirection.WIDEN, LayerToResize.HIDDEN, 1.0)  # 100% susceptibility
-        mutant_gene = mutagen.mutate(original_gene)
+        mutagen = ResizeNeuronLayer(ResizeDirection.WIDEN, LayerToResize.HIDDEN, 0.01)
+        mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
         
         new_hidden_size = mutant_gene.input_hidden.shape[1]
         
@@ -60,8 +60,8 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         original_hidden_size = original_gene.input_hidden.shape[1]
         
-        mutagen = ResizeNeuronLayer(ResizeDirection.WIDEN, LayerToResize.HIDDEN, 1.0)  # 100% susceptibility
-        mutant_gene = mutagen.mutate(original_gene)
+        mutagen = ResizeNeuronLayer(ResizeDirection.WIDEN, LayerToResize.HIDDEN, 0.01)
+        mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
         
         # Check that original weights are preserved in the first columns/rows
         np.testing.assert_array_equal(
@@ -86,8 +86,8 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         original_hidden_size = original_gene.input_hidden.shape[1]
         
-        mutagen = ResizeNeuronLayer(ResizeDirection.NARROW, LayerToResize.HIDDEN, 1.0)  # 100% susceptibility
-        mutant_gene = mutagen.mutate(original_gene)
+        mutagen = ResizeNeuronLayer(ResizeDirection.NARROW, LayerToResize.HIDDEN, 0.01)
+        mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
         new_hidden_size = mutant_gene.input_hidden.shape[1]
         
         # Hidden size should decrease by 1-2
@@ -101,8 +101,8 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
         hidden_size = 10
         original_gene = CreateNeuron(**random_neuron_state(input_size, feedback_size, hidden_size))
         
-        mutagen = ResizeNeuronLayer(ResizeDirection.NARROW, LayerToResize.HIDDEN, 1.0)  # 100% susceptibility
-        mutant_gene = mutagen.mutate(original_gene)
+        mutagen = ResizeNeuronLayer(ResizeDirection.NARROW, LayerToResize.HIDDEN, 0.01)
+        mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
         
         new_hidden_size = mutant_gene.input_hidden.shape[1]
         
@@ -121,11 +121,11 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
         """Test that narrowing preserves at least 1 hidden neuron"""
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 2))
         
-        mutagen = ResizeNeuronLayer(ResizeDirection.NARROW, LayerToResize.HIDDEN, 1.0)  # 100% susceptibility
+        mutagen = ResizeNeuronLayer(ResizeDirection.NARROW, LayerToResize.HIDDEN, 0.01)
         
         # Try narrowing multiple times
         for _ in range(10):
-            mutant_gene = mutagen.mutate(original_gene)
+            mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
             # Layers with size <= 1 won't be narrowed, ensuring at least 1 neuron remains
             self.assertGreaterEqual(mutant_gene.input_hidden.shape[1], 1)
 
@@ -133,8 +133,8 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
         """Test that minimum size layers are not narrowed"""
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 1))
         
-        mutagen = ResizeNeuronLayer(ResizeDirection.NARROW, LayerToResize.HIDDEN, 1.0)  # 100% susceptibility
-        mutant_gene = mutagen.mutate(original_gene)
+        mutagen = ResizeNeuronLayer(ResizeDirection.NARROW, LayerToResize.HIDDEN, 0.01)
+        mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
         
         # Should not narrow a layer of size 1 (minimum size)
         self.assertEqual(mutant_gene.input_hidden.shape[1], 1)

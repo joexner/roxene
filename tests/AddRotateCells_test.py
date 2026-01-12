@@ -21,9 +21,9 @@ class AddRotateCells_test(unittest.TestCase):
         """Test that AddRotateCells adds a RotateCells gene with FORWARD direction"""
         composite = CompositeGene(child_genes=[], iterations=1)
         
-        mutagen = AddRotateCells(1.0, RotateCells.Direction.FORWARD)
+        mutagen = AddRotateCells(0.01, RotateCells.Direction.FORWARD)
         
-        mutant_composite = mutagen.mutate(composite)
+        mutant_composite = mutagen.mutate_CompositeGene(composite)
         
         self.assertIsInstance(mutant_composite, CompositeGene)
         self.assertEqual(len(mutant_composite.child_genes), 1)
@@ -35,9 +35,9 @@ class AddRotateCells_test(unittest.TestCase):
         """Test that AddRotateCells adds a RotateCells gene with BACKWARD direction"""
         composite = CompositeGene(child_genes=[], iterations=1)
         
-        mutagen = AddRotateCells(1.0, RotateCells.Direction.BACKWARD)
+        mutagen = AddRotateCells(0.01, RotateCells.Direction.BACKWARD)
         
-        mutant_composite = mutagen.mutate(composite)
+        mutant_composite = mutagen.mutate_CompositeGene(composite)
         
         self.assertIsInstance(mutant_composite, CompositeGene)
         self.assertEqual(len(mutant_composite.child_genes), 1)
@@ -49,9 +49,9 @@ class AddRotateCells_test(unittest.TestCase):
         """Test that AddRotateCells defaults to BACKWARD direction"""
         composite = CompositeGene(child_genes=[], iterations=1)
         
-        mutagen = AddRotateCells(1.0)  # No direction specified
+        mutagen = AddRotateCells(0.01)  # No direction specified
         
-        mutant_composite = mutagen.mutate(composite)
+        mutant_composite = mutagen.mutate_CompositeGene(composite)
         
         added_gene = mutant_composite.child_genes[0]
         self.assertEqual(added_gene.direction, RotateCells.Direction.BACKWARD)
@@ -61,9 +61,9 @@ class AddRotateCells_test(unittest.TestCase):
         existing_gene = RotateCells(RotateCells.Direction.FORWARD)
         composite = CompositeGene(child_genes=[existing_gene], iterations=1)
         
-        mutagen = AddRotateCells(1.0, RotateCells.Direction.BACKWARD)
+        mutagen = AddRotateCells(0.01, RotateCells.Direction.BACKWARD)
         
-        mutant_composite = mutagen.mutate(composite)
+        mutant_composite = mutagen.mutate_CompositeGene(composite)
         
         self.assertEqual(len(mutant_composite.child_genes), 2)
         # One should be FORWARD (existing), one should be BACKWARD (new)

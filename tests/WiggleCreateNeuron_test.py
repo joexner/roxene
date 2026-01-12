@@ -29,11 +29,11 @@ class WiggleCreateNeuron_test(unittest.TestCase):
         
         mutagen = WiggleCreateNeuron(
             layer_to_mutate=CNLayer.input_hidden,
-            base_susceptibility=1.0,  # 100% susceptibility
+            base_susceptibility=0.01,
             severity=1.0
         )
         
-        mutant_gene = mutagen.mutate(original_gene)
+        mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
         
         # The mutated gene should be a CreateNeuron with modified input_hidden weights
         self.assertIsInstance(mutant_gene, CreateNeuron)
@@ -63,11 +63,11 @@ class WiggleCreateNeuron_test(unittest.TestCase):
         
         mutagen = WiggleCreateNeuron(
             layer_to_mutate=CNLayer.hidden_output,
-            base_susceptibility=1.0,
+            base_susceptibility=0.01,
             severity=1.0
         )
         
-        mutant_gene = mutagen.mutate(original_gene)
+        mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
         
         # hidden_output should be different
         self.assertFalse(
@@ -91,11 +91,11 @@ class WiggleCreateNeuron_test(unittest.TestCase):
         
         mutagen = WiggleCreateNeuron(
             layer_to_mutate=CNLayer.input_initial_value,
-            base_susceptibility=1.0,
+            base_susceptibility=0.01,
             severity=1.0
         )
         
-        mutant_gene = mutagen.mutate(original_gene)
+        mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
         
         # input initial values should be different
         self.assertFalse(
@@ -120,22 +120,22 @@ class WiggleCreateNeuron_test(unittest.TestCase):
         # Low severity mutagen
         mutagen_low = WiggleCreateNeuron(
             layer_to_mutate=CNLayer.input_hidden,
-            base_susceptibility=1.0,
+            base_susceptibility=0.01,
             severity=0.1  # Low severity
         )
         
         # High severity mutagen
         mutagen_high = WiggleCreateNeuron(
             layer_to_mutate=CNLayer.input_hidden,
-            base_susceptibility=1.0,
+            base_susceptibility=0.01,
             severity=2.0  # High severity
         )
         
         set_rng(default_rng(SEED))
-        mutant_low = mutagen_low.mutate(original_gene)
+        mutant_low = mutagen_low.mutate_CreateNeuron(original_gene)
         
         set_rng(default_rng(SEED))
-        mutant_high = mutagen_high.mutate(original_gene)
+        mutant_high = mutagen_high.mutate_CreateNeuron(original_gene)
         
         # Calculate the change magnitude for each
         diff_low = np.abs(mutant_low.input_hidden - original_gene.input_hidden).mean()
@@ -153,8 +153,8 @@ class WiggleCreateNeuron_test(unittest.TestCase):
         """
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         
-        mutagen = WiggleCreateNeuron(CNLayer.input_hidden, 1.0)
-        mutant_gene = mutagen.mutate(original_gene)
+        mutagen = WiggleCreateNeuron(CNLayer.input_hidden, 0.01)
+        mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
         
         self.assertEqual(mutant_gene.parent_gene, original_gene)
 

@@ -28,12 +28,12 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
         ]
         original_gene = CompositeGene(child_genes=child_genes, iterations=2)
         
-        mutagen = ShuffleGenes(1.0)  # 100% susceptibility
+        mutagen = ShuffleGenes(0.01)
         
         # Try multiple times to ensure swap happens
         swapped_found = False
         for _ in range(20):
-            mutant_gene = mutagen.mutate(original_gene)
+            mutant_gene = mutagen.mutate_CompositeGene(original_gene)
             
             # Should still be a CompositeGene with same number of genes
             self.assertIsInstance(mutant_gene, CompositeGene)
@@ -66,14 +66,14 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
         # Low severity should only allow nearby swaps
-        mutagen_low = ShuffleGenes(base_susceptibility=1.0, severity=0.1)
+        mutagen_low = ShuffleGenes(base_susceptibility=0.01, severity=0.1)
         
         # High severity should allow distant swaps
-        mutagen_high = ShuffleGenes(base_susceptibility=1.0, severity=1.0)
+        mutagen_high = ShuffleGenes(base_susceptibility=0.01, severity=1.0)
         
         # Just verify they both work without errors
-        mutant_low = mutagen_low.mutate(original_gene)
-        mutant_high = mutagen_high.mutate(original_gene)
+        mutant_low = mutagen_low.mutate_CompositeGene(original_gene)
+        mutant_high = mutagen_high.mutate_CompositeGene(original_gene)
         
         self.assertEqual(len(mutant_low.child_genes), len(child_genes))
         self.assertEqual(len(mutant_high.child_genes), len(child_genes))
@@ -88,10 +88,10 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
         ]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = ShuffleGenes(1.0)  # 100% susceptibility
+        mutagen = ShuffleGenes(0.01)
         
         for _ in range(10):
-            mutant_gene = mutagen.mutate(original_gene)
+            mutant_gene = mutagen.mutate_CompositeGene(original_gene)
             
             # Should have same genes (possibly in different order)
             self.assertEqual(len(mutant_gene.child_genes), len(child_genes))
@@ -104,9 +104,9 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = ShuffleGenes(1.0)  # 100% susceptibility
+        mutagen = ShuffleGenes(0.01)
         
-        mutant_gene = mutagen.mutate(original_gene)
+        mutant_gene = mutagen.mutate_CompositeGene(original_gene)
         
         # Can't swap a single gene, should remain the same
         self.assertEqual(len(mutant_gene.child_genes), 1)

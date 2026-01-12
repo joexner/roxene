@@ -26,9 +26,9 @@ class DuplicateGeneMutagen_test(unittest.TestCase):
         ]
         original_gene = CompositeGene(child_genes=child_genes, iterations=3)
         
-        mutagen = DuplicateGene(1.0)  # 100% susceptibility
+        mutagen = DuplicateGene(0.01)
         
-        mutant_gene = mutagen.mutate(original_gene)
+        mutant_gene = mutagen.mutate_CompositeGene(original_gene)
         
         # Should still be a CompositeGene
         self.assertIsInstance(mutant_gene, CompositeGene)
@@ -46,10 +46,10 @@ class DuplicateGeneMutagen_test(unittest.TestCase):
         ]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = DuplicateGene(1.0)  # 100% susceptibility
+        mutagen = DuplicateGene(0.01)
         
         for _ in range(10):
-            mutant_gene = mutagen.mutate(original_gene)
+            mutant_gene = mutagen.mutate_CompositeGene(original_gene)
             # Should have 4 child genes now
             self.assertEqual(len(mutant_gene.child_genes), 4)
             # Check that one of the genes appears twice (duplicated)
@@ -62,9 +62,9 @@ class DuplicateGeneMutagen_test(unittest.TestCase):
         """Test duplicating in an empty CompositeGene doesn't crash"""
         original_gene = CompositeGene(child_genes=[], iterations=1)
         
-        mutagen = DuplicateGene(1.0)  # 100% susceptibility
+        mutagen = DuplicateGene(0.01)
         
-        mutant_gene = mutagen.mutate(original_gene)
+        mutant_gene = mutagen.mutate_CompositeGene(original_gene)
         
         # Should still be empty
         self.assertEqual(len(mutant_gene.child_genes), 0)

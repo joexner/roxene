@@ -1,9 +1,10 @@
 import unittest
+
 from numpy.random import default_rng
 
 from roxene import random_neuron_state
-from roxene.genes import CreateNeuron as CreateNeuronGene, CompositeGene, ConnectNeurons, RotateCells
-from roxene.mutagens import WiggleCreateNeuron, CNLayer, ShuffleGenes, ModifyIterations, RetargetConnectNeurons
+from roxene.genes import CreateNeuron as CreateNeuronGene
+from roxene.mutagens import WiggleCreateNeuron, CNLayer
 from roxene.util import set_rng
 
 SEED = 11235

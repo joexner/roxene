@@ -8,7 +8,7 @@ from .retarget_connect_neurons import RetargetConnectNeurons
 from .remove_gene import RemoveGene
 from .duplicate_gene import DuplicateGene
 from .shuffle_genes import ShuffleGenes
-from .modify_iterations import ModifyIterations
+from .modify_cg_iterations import ModifyCGIterations
 from .resize_neuron_layer import ResizeNeuronLayer, ResizeDirection, LayerToResize
 
 __all__ = [
@@ -23,7 +23,7 @@ __all__ = [
     'RemoveGene',
     'DuplicateGene',
     'ShuffleGenes',
-    'ModifyIterations',
+    'ModifyCGIterations',
     'ResizeNeuronLayer',
     'ResizeDirection',
     'LayerToResize',

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from roxene import EntityBase, Gene
 from roxene.genes import CompositeGene, RotateCells
-from roxene.mutagens import ModifyIterations
+from roxene.mutagens import ModifyCGIterations
 from roxene.util import set_rng
 
 SEED = 987
@@ -23,7 +23,7 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=5)
         
-        mutagen = ModifyIterations(0.01)
+        mutagen = ModifyCGIterations(0.01)
         
         # Try multiple times to see variation in iteration changes
         different_iterations_found = False
@@ -47,7 +47,7 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=0)
         
-        mutagen = ModifyIterations(0.01)
+        mutagen = ModifyCGIterations(0.01)
         
         # Try many times to ensure we never get negative iterations
         for _ in range(50):
@@ -60,7 +60,7 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=10)
         
-        mutagen = ModifyIterations(0.01)
+        mutagen = ModifyCGIterations(0.01)
         
         increases = 0
         decreases = 0
@@ -77,7 +77,7 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
 
     def test_persist_reload(self):
         """Test that ModifyIterations can be persisted and reloaded"""
-        mutagen = ModifyIterations(0.012)
+        mutagen = ModifyCGIterations(0.012)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -85,7 +85,7 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
             session.add(mutagen)
             session.commit()
         with Session(engine) as session:
-            reloaded = session.get(ModifyIterations, mutagen_id)
+            reloaded = session.get(ModifyCGIterations, mutagen_id)
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.base_susceptibility, 0.012)

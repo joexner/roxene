@@ -13,12 +13,7 @@ class PushDown(Mutagen):
     def mutate(self, gene: Gene) -> Gene:
         #TODO: Do this check in the Environment or something later
         # Check susceptibility before mutating
-        if not self.should_mutate(gene):
-            return super().mutate(gene)
-            
-        # Wrap the gene in a CompositeGene with a single iteration
-        return CompositeGene(
-            child_genes=[gene],
-            iterations=1,
-            parent_gene=gene
-        )
+        if self.should_mutate(gene):
+            # Wrap the gene in a CompositeGene with a single iteration
+            gene = CompositeGene(child_genes=[gene], iterations=1, parent_gene=gene)
+        return super().mutate(gene)

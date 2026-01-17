@@ -1,4 +1,5 @@
 from enum import IntEnum, auto
+from typing import Tuple
 
 import numpy as np
 from sqlalchemy.orm import Mapped, synonym
@@ -15,6 +16,35 @@ class LayerToResize(IntEnum):
     FEEDBACK = auto()
 
 
+def _expand_array(arr: np.ndarray, axis: int) -> np.ndarray:
+    """Expand array by 1 along given axis, filling with random values in [-1, 1]."""
+    shape = list(arr.shape)
+    shape[axis] += 1
+    new_arr = np.zeros(shape, dtype=NP_PRECISION)
+    slices = [slice(None)] * len(shape)
+    slices[axis] = slice(arr.shape[axis])
+    new_arr[tuple(slices)] = arr
+    # Fill the new slice with random values
+    slices[axis] = slice(arr.shape[axis], None)
+    new_shape = list(shape)
+    new_shape[axis] = 1
+    new_arr[tuple(slices)] = (2 * get_rng().random(new_shape) - 1).astype(NP_PRECISION)
+    return new_arr
+
+
+def _expand_vector(vec: np.ndarray) -> np.ndarray:
+    """Expand 1D vector by 1, filling with random value in [-1, 1]."""
+    new_vec = np.zeros(len(vec) + 1, dtype=NP_PRECISION)
+    new_vec[:len(vec)] = vec
+    new_vec[len(vec):] = (2 * get_rng().random(1) - 1).astype(NP_PRECISION)
+    return new_vec
+
+
+def _narrow_array(arr: np.ndarray, axis: int, indices: np.ndarray) -> np.ndarray:
+    """Narrow array along given axis, keeping only specified indices."""
+    return np.take(arr, indices, axis=axis)
+
+
 class ResizeNeuronLayer(Mutagen):
     __mapper_args__ = {"polymorphic_identity": "resize_neuron_layer"}
 
@@ -26,237 +56,101 @@ class ResizeNeuronLayer(Mutagen):
         self.layer = layer_to_resize
 
     def mutate_CreateNeuron(self, gene: CreateNeuron) -> CreateNeuron:
-        # Randomly pick direction at runtime
         widen = get_rng().random() < 0.5
         
         if self.layer == LayerToResize.INPUT:
-            if widen:
-                return self._widen_input_layer(gene)
-            else:
-                return self._narrow_input_layer(gene)
+            return self._resize_input(gene, widen)
         elif self.layer == LayerToResize.HIDDEN:
-            if widen:
-                return self._widen_hidden_layer(gene)
-            else:
-                return self._narrow_hidden_layer(gene)
+            return self._resize_hidden(gene, widen)
         else:  # FEEDBACK
-            if widen:
-                return self._widen_feedback_layer(gene)
-            else:
-                return self._narrow_feedback_layer(gene)
+            return self._resize_feedback(gene, widen)
 
-    def _widen_hidden_layer(self, gene: CreateNeuron) -> CreateNeuron:
-        """Increases the size of the hidden layer by adding one neuron."""
-        # Get current hidden layer size from the shape of input_hidden
-        current_hidden_size = gene.input_hidden.shape[1]
-        
-        # Increase hidden size by 1 neuron
-        additional_neurons = 1
-        new_hidden_size = current_hidden_size + additional_neurons
-
-        # Expand input_hidden: from [input_size, hidden_size] to [input_size, new_hidden_size]
-        input_size = gene.input_hidden.shape[0]
-        new_input_hidden = np.zeros([input_size, new_hidden_size], dtype=NP_PRECISION)
-        new_input_hidden[:, :current_hidden_size] = gene.input_hidden
-        new_input_hidden[:, current_hidden_size:] = (2 * get_rng().random([input_size, additional_neurons]) - 1).astype(NP_PRECISION)
-
-        # Expand feedback_hidden: from [feedback_size, hidden_size] to [feedback_size, new_hidden_size]
-        feedback_size = gene.feedback_hidden.shape[0]
-        new_feedback_hidden = np.zeros([feedback_size, new_hidden_size], dtype=NP_PRECISION)
-        new_feedback_hidden[:, :current_hidden_size] = gene.feedback_hidden
-        new_feedback_hidden[:, current_hidden_size:] = (2 * get_rng().random([feedback_size, additional_neurons]) - 1).astype(NP_PRECISION)
-
-        # Expand hidden_feedback: from [hidden_size, feedback_size] to [new_hidden_size, feedback_size]
-        new_hidden_feedback = np.zeros([new_hidden_size, feedback_size], dtype=NP_PRECISION)
-        new_hidden_feedback[:current_hidden_size, :] = gene.hidden_feedback
-        new_hidden_feedback[current_hidden_size:, :] = (2 * get_rng().random([additional_neurons, feedback_size]) - 1).astype(NP_PRECISION)
-
-        # Expand hidden_output: from [hidden_size, 1] to [new_hidden_size, 1]
-        new_hidden_output = np.zeros([new_hidden_size, 1], dtype=NP_PRECISION)
-        new_hidden_output[:current_hidden_size, :] = gene.hidden_output
-        new_hidden_output[current_hidden_size:, :] = (2 * get_rng().random([additional_neurons, 1]) - 1).astype(NP_PRECISION)
-
-        return CreateNeuron(
-            input=gene.input,
-            feedback=gene.feedback,
-            output=gene.output,
-            input_hidden=new_input_hidden,
-            hidden_feedback=new_hidden_feedback,
-            feedback_hidden=new_feedback_hidden,
-            hidden_output=new_hidden_output,
-            parent_gene=gene
-        )
-
-    def _narrow_hidden_layer(self, gene: CreateNeuron) -> CreateNeuron:
-        """Decreases the size of the hidden layer by removing one neuron."""
-        # Get current hidden layer size from the shape of input_hidden
-        current_hidden_size = gene.input_hidden.shape[1]
-        
-        # Don't narrow if already at minimum size
-        if current_hidden_size <= 1:
+    def _resize_input(self, gene: CreateNeuron, widen: bool) -> CreateNeuron:
+        """Resize the input layer by 1 neuron."""
+        current_size = gene.input_hidden.shape[0]
+        if not widen and current_size <= 1:
             return gene
-
-        # Decrease hidden size by 1 neuron
-        neurons_to_remove = 1
-        new_hidden_size = current_hidden_size - neurons_to_remove
-
-        # Select random indices to keep
-        indices_to_keep = get_rng().choice(current_hidden_size, new_hidden_size, replace=False)
-        indices_to_keep = np.sort(indices_to_keep)
-
-        # Narrow input_hidden: from [input_size, hidden_size] to [input_size, new_hidden_size]
-        new_input_hidden = gene.input_hidden[:, indices_to_keep]
-
-        # Narrow feedback_hidden: from [feedback_size, hidden_size] to [feedback_size, new_hidden_size]
-        new_feedback_hidden = gene.feedback_hidden[:, indices_to_keep]
-
-        # Narrow hidden_feedback: from [hidden_size, feedback_size] to [new_hidden_size, feedback_size]
-        new_hidden_feedback = gene.hidden_feedback[indices_to_keep, :]
-
-        # Narrow hidden_output: from [hidden_size, 1] to [new_hidden_size, 1]
-        new_hidden_output = gene.hidden_output[indices_to_keep, :]
-
-        return CreateNeuron(
-            input=gene.input,
-            feedback=gene.feedback,
-            output=gene.output,
-            input_hidden=new_input_hidden,
-            hidden_feedback=new_hidden_feedback,
-            feedback_hidden=new_feedback_hidden,
-            hidden_output=new_hidden_output,
-            parent_gene=gene
-        )
-
-    def _widen_input_layer(self, gene: CreateNeuron) -> CreateNeuron:
-        """Increases the size of the input layer by adding one neuron."""
-        # Get current input layer size
-        current_input_size = gene.input_hidden.shape[0]
         
-        # Increase input size by 1 neuron
-        new_input_size = current_input_size + 1
-        hidden_size = gene.input_hidden.shape[1]
+        if widen:
+            return CreateNeuron(
+                input=_expand_vector(gene.input),
+                feedback=gene.feedback,
+                output=gene.output,
+                input_hidden=_expand_array(gene.input_hidden, axis=0),
+                hidden_feedback=gene.hidden_feedback,
+                feedback_hidden=gene.feedback_hidden,
+                hidden_output=gene.hidden_output,
+                parent_gene=gene
+            )
+        else:
+            indices = np.sort(get_rng().choice(current_size, current_size - 1, replace=False))
+            return CreateNeuron(
+                input=gene.input[indices],
+                feedback=gene.feedback,
+                output=gene.output,
+                input_hidden=_narrow_array(gene.input_hidden, 0, indices),
+                hidden_feedback=gene.hidden_feedback,
+                feedback_hidden=gene.feedback_hidden,
+                hidden_output=gene.hidden_output,
+                parent_gene=gene
+            )
 
-        # Expand input initial value
-        new_input = np.zeros(new_input_size, dtype=NP_PRECISION)
-        new_input[:current_input_size] = gene.input
-        new_input[current_input_size:] = (2 * get_rng().random(1) - 1).astype(NP_PRECISION)
-
-        # Expand input_hidden: from [input_size, hidden_size] to [new_input_size, hidden_size]
-        new_input_hidden = np.zeros([new_input_size, hidden_size], dtype=NP_PRECISION)
-        new_input_hidden[:current_input_size, :] = gene.input_hidden
-        new_input_hidden[current_input_size:, :] = (2 * get_rng().random([1, hidden_size]) - 1).astype(NP_PRECISION)
-
-        return CreateNeuron(
-            input=new_input,
-            feedback=gene.feedback,
-            output=gene.output,
-            input_hidden=new_input_hidden,
-            hidden_feedback=gene.hidden_feedback,
-            feedback_hidden=gene.feedback_hidden,
-            hidden_output=gene.hidden_output,
-            parent_gene=gene
-        )
-
-    def _narrow_input_layer(self, gene: CreateNeuron) -> CreateNeuron:
-        """Decreases the size of the input layer by removing one neuron."""
-        # Get current input layer size
-        current_input_size = gene.input_hidden.shape[0]
-        
-        # Don't narrow if already at minimum size
-        if current_input_size <= 1:
+    def _resize_hidden(self, gene: CreateNeuron, widen: bool) -> CreateNeuron:
+        """Resize the hidden layer by 1 neuron."""
+        current_size = gene.input_hidden.shape[1]
+        if not widen and current_size <= 1:
             return gene
-
-        # Decrease input size by 1 neuron
-        new_input_size = current_input_size - 1
-
-        # Select random indices to keep
-        indices_to_keep = get_rng().choice(current_input_size, new_input_size, replace=False)
-        indices_to_keep = np.sort(indices_to_keep)
-
-        # Narrow input initial value
-        new_input = gene.input[indices_to_keep]
-
-        # Narrow input_hidden: from [input_size, hidden_size] to [new_input_size, hidden_size]
-        new_input_hidden = gene.input_hidden[indices_to_keep, :]
-
-        return CreateNeuron(
-            input=new_input,
-            feedback=gene.feedback,
-            output=gene.output,
-            input_hidden=new_input_hidden,
-            hidden_feedback=gene.hidden_feedback,
-            feedback_hidden=gene.feedback_hidden,
-            hidden_output=gene.hidden_output,
-            parent_gene=gene
-        )
-
-    def _widen_feedback_layer(self, gene: CreateNeuron) -> CreateNeuron:
-        """Increases the size of the feedback layer by adding one neuron."""
-        # Get current feedback layer size
-        current_feedback_size = gene.feedback_hidden.shape[0]
         
-        # Increase feedback size by 1 neuron
-        new_feedback_size = current_feedback_size + 1
-        hidden_size = gene.feedback_hidden.shape[1]
+        if widen:
+            return CreateNeuron(
+                input=gene.input,
+                feedback=gene.feedback,
+                output=gene.output,
+                input_hidden=_expand_array(gene.input_hidden, axis=1),
+                hidden_feedback=_expand_array(gene.hidden_feedback, axis=0),
+                feedback_hidden=_expand_array(gene.feedback_hidden, axis=1),
+                hidden_output=_expand_array(gene.hidden_output, axis=0),
+                parent_gene=gene
+            )
+        else:
+            indices = np.sort(get_rng().choice(current_size, current_size - 1, replace=False))
+            return CreateNeuron(
+                input=gene.input,
+                feedback=gene.feedback,
+                output=gene.output,
+                input_hidden=_narrow_array(gene.input_hidden, 1, indices),
+                hidden_feedback=_narrow_array(gene.hidden_feedback, 0, indices),
+                feedback_hidden=_narrow_array(gene.feedback_hidden, 1, indices),
+                hidden_output=_narrow_array(gene.hidden_output, 0, indices),
+                parent_gene=gene
+            )
 
-        # Expand feedback initial value
-        new_feedback = np.zeros(new_feedback_size, dtype=NP_PRECISION)
-        new_feedback[:current_feedback_size] = gene.feedback
-        new_feedback[current_feedback_size:] = (2 * get_rng().random(1) - 1).astype(NP_PRECISION)
-
-        # Expand feedback_hidden: from [feedback_size, hidden_size] to [new_feedback_size, hidden_size]
-        new_feedback_hidden = np.zeros([new_feedback_size, hidden_size], dtype=NP_PRECISION)
-        new_feedback_hidden[:current_feedback_size, :] = gene.feedback_hidden
-        new_feedback_hidden[current_feedback_size:, :] = (2 * get_rng().random([1, hidden_size]) - 1).astype(NP_PRECISION)
-
-        # Expand hidden_feedback: from [hidden_size, feedback_size] to [hidden_size, new_feedback_size]
-        new_hidden_feedback = np.zeros([hidden_size, new_feedback_size], dtype=NP_PRECISION)
-        new_hidden_feedback[:, :current_feedback_size] = gene.hidden_feedback
-        new_hidden_feedback[:, current_feedback_size:] = (2 * get_rng().random([hidden_size, 1]) - 1).astype(NP_PRECISION)
-
-        return CreateNeuron(
-            input=gene.input,
-            feedback=new_feedback,
-            output=gene.output,
-            input_hidden=gene.input_hidden,
-            hidden_feedback=new_hidden_feedback,
-            feedback_hidden=new_feedback_hidden,
-            hidden_output=gene.hidden_output,
-            parent_gene=gene
-        )
-
-    def _narrow_feedback_layer(self, gene: CreateNeuron) -> CreateNeuron:
-        """Decreases the size of the feedback layer by removing one neuron."""
-        # Get current feedback layer size
-        current_feedback_size = gene.feedback_hidden.shape[0]
-        
-        # Don't narrow if already at minimum size
-        if current_feedback_size <= 1:
+    def _resize_feedback(self, gene: CreateNeuron, widen: bool) -> CreateNeuron:
+        """Resize the feedback layer by 1 neuron."""
+        current_size = gene.feedback_hidden.shape[0]
+        if not widen and current_size <= 1:
             return gene
-
-        # Decrease feedback size by 1 neuron
-        new_feedback_size = current_feedback_size - 1
-
-        # Select random indices to keep
-        indices_to_keep = get_rng().choice(current_feedback_size, new_feedback_size, replace=False)
-        indices_to_keep = np.sort(indices_to_keep)
-
-        # Narrow feedback initial value
-        new_feedback = gene.feedback[indices_to_keep]
-
-        # Narrow feedback_hidden: from [feedback_size, hidden_size] to [new_feedback_size, hidden_size]
-        new_feedback_hidden = gene.feedback_hidden[indices_to_keep, :]
-
-        # Narrow hidden_feedback: from [hidden_size, feedback_size] to [hidden_size, new_feedback_size]
-        new_hidden_feedback = gene.hidden_feedback[:, indices_to_keep]
-
-        return CreateNeuron(
-            input=gene.input,
-            feedback=new_feedback,
-            output=gene.output,
-            input_hidden=gene.input_hidden,
-            hidden_feedback=new_hidden_feedback,
-            feedback_hidden=new_feedback_hidden,
-            hidden_output=gene.hidden_output,
-            parent_gene=gene
-        )
+        
+        if widen:
+            return CreateNeuron(
+                input=gene.input,
+                feedback=_expand_vector(gene.feedback),
+                output=gene.output,
+                input_hidden=gene.input_hidden,
+                hidden_feedback=_expand_array(gene.hidden_feedback, axis=1),
+                feedback_hidden=_expand_array(gene.feedback_hidden, axis=0),
+                hidden_output=gene.hidden_output,
+                parent_gene=gene
+            )
+        else:
+            indices = np.sort(get_rng().choice(current_size, current_size - 1, replace=False))
+            return CreateNeuron(
+                input=gene.input,
+                feedback=gene.feedback[indices],
+                output=gene.output,
+                input_hidden=gene.input_hidden,
+                hidden_feedback=_narrow_array(gene.hidden_feedback, 1, indices),
+                feedback_hidden=_narrow_array(gene.feedback_hidden, 0, indices),
+                hidden_output=gene.hidden_output,
+                parent_gene=gene
+            )

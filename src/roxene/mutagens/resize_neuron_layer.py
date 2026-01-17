@@ -9,11 +9,6 @@ from ..mutagen import Mutagen
 from ..util import get_rng
 
 
-class ResizeDirection(IntEnum):
-    WIDEN = auto()
-    NARROW = auto()
-
-
 class LayerToResize(IntEnum):
     INPUT = auto()
     HIDDEN = auto()
@@ -23,28 +18,29 @@ class LayerToResize(IntEnum):
 class ResizeNeuronLayer(Mutagen):
     __mapper_args__ = {"polymorphic_identity": "resize_neuron_layer"}
 
-    direction: Mapped[ResizeDirection] = synonym("_i1")
-    layer: Mapped[LayerToResize] = synonym("_i2")
+    layer: Mapped[LayerToResize] = synonym("_i1")
 
-    def __init__(self, direction: ResizeDirection, layer_to_resize: LayerToResize,
+    def __init__(self, layer_to_resize: LayerToResize,
                  base_susceptibility: float = 0.01):
         super().__init__(base_susceptibility)
-        self.direction = direction
         self.layer = layer_to_resize
 
     def mutate_CreateNeuron(self, gene: CreateNeuron) -> CreateNeuron:
+        # Randomly pick direction at runtime
+        widen = get_rng().random() < 0.5
+        
         if self.layer == LayerToResize.INPUT:
-            if self.direction == ResizeDirection.WIDEN:
+            if widen:
                 return self._widen_input_layer(gene)
             else:
                 return self._narrow_input_layer(gene)
         elif self.layer == LayerToResize.HIDDEN:
-            if self.direction == ResizeDirection.WIDEN:
+            if widen:
                 return self._widen_hidden_layer(gene)
             else:
                 return self._narrow_hidden_layer(gene)
         else:  # FEEDBACK
-            if self.direction == ResizeDirection.WIDEN:
+            if widen:
                 return self._widen_feedback_layer(gene)
             else:
                 return self._narrow_feedback_layer(gene)

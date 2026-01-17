@@ -1,7 +1,6 @@
 from ..gene import Gene
 from ..genes.composite_gene import CompositeGene
 from ..mutagen import Mutagen
-from ..util import get_rng
 
 
 class PushDown(Mutagen):
@@ -17,10 +16,6 @@ class PushDown(Mutagen):
         if not self.should_mutate(gene):
             return super().mutate(gene)
             
-        # Don't wrap CompositeGenes with iterations == 1, as that would be redundant
-        if isinstance(gene, CompositeGene) and gene.iterations == 1:
-            return super().mutate(gene)
-
         # Wrap the gene in a CompositeGene with a single iteration
         return CompositeGene(
             child_genes=[gene],

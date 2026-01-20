@@ -1,5 +1,5 @@
 from enum import IntEnum, auto
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 from sqlalchemy.orm import Mapped, synonym
@@ -26,11 +26,11 @@ _LAYER_RESIZE_SPEC: Dict[LayerToResize, List[Tuple[str, Optional[int]]]] = {
                              ("feedback_hidden", 0)],
 }
 
-# Which attribute/axis to check for current size
-_SIZE_CHECK: Dict[LayerToResize, Tuple[str, int]] = {
-    LayerToResize.INPUT: ("input_hidden", 0),
-    LayerToResize.HIDDEN: ("input_hidden", 1),
-    LayerToResize.FEEDBACK: ("feedback_hidden", 0),
+# Which attribute to check for current size (use layer vectors directly where possible)
+_SIZE_ATTR: Dict[LayerToResize, str] = {
+    LayerToResize.INPUT: "input",
+    LayerToResize.HIDDEN: "hidden_output",  # hidden size from hidden_output rows
+    LayerToResize.FEEDBACK: "feedback",
 }
 
 
@@ -46,8 +46,8 @@ class ResizeNeuronLayer(Mutagen):
 
     def mutate_CreateNeuron(self, gene: CreateNeuron) -> CreateNeuron:
         widen = get_rng().random() < 0.5
-        attr, axis = _SIZE_CHECK[self.layer]
-        current_size = getattr(gene, attr).shape[axis]
+        layer_vec = getattr(gene, _SIZE_ATTR[self.layer])
+        current_size = len(layer_vec) if layer_vec.ndim == 1 else layer_vec.shape[0]
         
         if not widen and current_size <= 1:
             return gene

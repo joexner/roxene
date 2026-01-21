@@ -52,8 +52,13 @@ class ResizeNeuronLayer(Mutagen):
         if not widen and current_size <= 1:
             return gene
         
-        indices = None if widen else np.sort(
-            get_rng().choice(current_size, current_size - 1, replace=False))
+        # For narrowing: pick indices to keep; for widening: pick insertion position
+        if widen:
+            indices = None
+            insert_idx = get_rng().integers(0, current_size + 1)
+        else:
+            indices = np.sort(get_rng().choice(current_size, current_size - 1, replace=False))
+            insert_idx = 0
         
         # Build kwargs for CreateNeuron, copying all attributes
         kwargs = {
@@ -67,33 +72,26 @@ class ResizeNeuronLayer(Mutagen):
         for attr_name, ax in _LAYER_RESIZE_SPEC[self.layer]:
             arr = getattr(gene, attr_name)
             if ax is None:  # 1D vector
-                kwargs[attr_name] = self._resize_vector(arr, widen, indices)
+                kwargs[attr_name] = self._resize_vector(arr, widen, indices, insert_idx)
             else:
-                kwargs[attr_name] = self._resize_array(arr, ax, widen, indices)
+                kwargs[attr_name] = self._resize_array(arr, ax, widen, indices, insert_idx)
         
         return CreateNeuron(**kwargs)
 
     def _resize_vector(self, vec: np.ndarray, widen: bool, 
-                       indices: Optional[np.ndarray]) -> np.ndarray:
+                       indices: Optional[np.ndarray], insert_idx: int = 0) -> np.ndarray:
         if widen:
-            new_vec = np.zeros(len(vec) + 1, dtype=NP_PRECISION)
-            new_vec[:len(vec)] = vec
-            new_vec[len(vec):] = (2 * get_rng().random(1) - 1).astype(NP_PRECISION)
-            return new_vec
+            # Insert a new random value at insert_idx, preserving all existing values
+            new_val = (2 * get_rng().random(1) - 1).astype(NP_PRECISION)
+            return np.insert(vec, insert_idx, new_val)
         return vec[indices]
 
     def _resize_array(self, arr: np.ndarray, axis: int, widen: bool,
-                      indices: Optional[np.ndarray]) -> np.ndarray:
+                      indices: Optional[np.ndarray], insert_idx: int = 0) -> np.ndarray:
         if widen:
-            shape = list(arr.shape)
-            shape[axis] += 1
-            new_arr = np.zeros(shape, dtype=NP_PRECISION)
-            slices = [slice(None)] * len(shape)
-            slices[axis] = slice(arr.shape[axis])
-            new_arr[tuple(slices)] = arr
-            slices[axis] = slice(arr.shape[axis], None)
-            new_shape = list(shape)
+            # Insert a new random slice at insert_idx along axis, preserving all existing values
+            new_shape = list(arr.shape)
             new_shape[axis] = 1
-            new_arr[tuple(slices)] = (2 * get_rng().random(new_shape) - 1).astype(NP_PRECISION)
-            return new_arr
+            new_slice = (2 * get_rng().random(new_shape) - 1).astype(NP_PRECISION)
+            return np.insert(arr, insert_idx, new_slice, axis=axis)
         return np.take(arr, indices, axis=axis)

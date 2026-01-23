@@ -34,23 +34,24 @@ _SIZE_ATTR: Dict[LayerToResize, str] = {
 }
 
 
-def widen_layer(arr: np.ndarray, insert_idx: int, axis: Optional[int] = None) -> np.ndarray:
-    """Insert a new random value/slice at insert_idx, preserving all existing values."""
-    if axis is None:  # 1D vector
-        new_val = (2 * get_rng().random(1) - 1).astype(NP_PRECISION)
-        return np.insert(arr, insert_idx, new_val)
-    else:
-        new_shape = list(arr.shape)
-        new_shape[axis] = 1
-        new_slice = (2 * get_rng().random(new_shape) - 1).astype(NP_PRECISION)
-        return np.insert(arr, insert_idx, new_slice, axis=axis)
+def widen_layer(arr: np.ndarray, axis: Optional[int] = None, insert_idx: Optional[int] = None) -> Tuple[np.ndarray, int]:
+    """Insert a new random value/slice, preserving all existing values.
+    Returns (new_array, insert_idx_used) so the same index can be reused for related arrays."""
+    current_size = len(arr) if axis is None else arr.shape[axis]
+    if insert_idx is None:
+        insert_idx = get_rng().integers(0, current_size + 1)
+    new_shape = [1] if axis is None else [arr.shape[i] if i != axis else 1 for i in range(arr.ndim)]
+    new_slice = (2 * get_rng().random(new_shape) - 1).astype(NP_PRECISION)
+    return np.insert(arr, insert_idx, new_slice.squeeze() if axis is None else new_slice, axis=axis), insert_idx
 
 
-def narrow_layer(arr: np.ndarray, indices: np.ndarray, axis: Optional[int] = None) -> np.ndarray:
-    """Remove a value/slice by keeping only the specified indices."""
-    if axis is None:  # 1D vector
-        return arr[indices]
-    return np.take(arr, indices, axis=axis)
+def narrow_layer(arr: np.ndarray, axis: Optional[int] = None, indices: Optional[np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray]:
+    """Remove a value/slice by keeping only the specified indices.
+    Returns (new_array, indices_used) so the same indices can be reused for related arrays."""
+    current_size = len(arr) if axis is None else arr.shape[axis]
+    if indices is None:
+        indices = np.sort(get_rng().choice(current_size, current_size - 1, replace=False))
+    return (arr[indices] if axis is None else np.take(arr, indices, axis=axis)), indices
 
 
 class ResizeNeuronLayer(Mutagen):
@@ -71,10 +72,6 @@ class ResizeNeuronLayer(Mutagen):
         if not widen and current_size <= 1:
             return gene
         
-        # For widening: pick insertion position; for narrowing: pick indices to keep
-        insert_idx = get_rng().integers(0, current_size + 1) if widen else 0
-        indices = None if widen else np.sort(get_rng().choice(current_size, current_size - 1, replace=False))
-        
         # Build kwargs for CreateNeuron, copying all attributes
         kwargs = {
             "input": gene.input, "feedback": gene.feedback, "output": gene.output,
@@ -83,12 +80,13 @@ class ResizeNeuronLayer(Mutagen):
             "parent_gene": gene
         }
         
-        # Apply resize to specified arrays
+        # Apply resize to specified arrays (first call calculates idx, subsequent reuse it)
+        idx = None
         for attr_name, axis in _LAYER_RESIZE_SPEC[self.layer]:
             arr = getattr(gene, attr_name)
             if widen:
-                kwargs[attr_name] = widen_layer(arr, insert_idx, axis)
+                kwargs[attr_name], idx = widen_layer(arr, axis, idx)
             else:
-                kwargs[attr_name] = narrow_layer(arr, indices, axis)
+                kwargs[attr_name], idx = narrow_layer(arr, axis, idx)
         
         return CreateNeuron(**kwargs)

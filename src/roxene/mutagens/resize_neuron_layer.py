@@ -41,9 +41,9 @@ def widen_layer(arr: np.ndarray, axis: Optional[int], insert_idx: int) -> np.nda
     return np.insert(arr, insert_idx, new_slice.squeeze() if axis is None else new_slice, axis=axis)
 
 
-def narrow_layer(arr: np.ndarray, axis: Optional[int], keep_indices: np.ndarray) -> np.ndarray:
-    """Remove a value/slice by keeping only the specified indices."""
-    return arr[keep_indices] if axis is None else np.take(arr, keep_indices, axis=axis)
+def narrow_layer(arr: np.ndarray, axis: Optional[int], remove_idx: int) -> np.ndarray:
+    """Remove a value/slice at the specified index."""
+    return np.delete(arr, remove_idx, axis=axis)
 
 
 def widen_layers(gene: "CreateNeuron", layer: "LayerToResize") -> Dict[str, np.ndarray]:
@@ -59,14 +59,14 @@ def widen_layers(gene: "CreateNeuron", layer: "LayerToResize") -> Dict[str, np.n
 
 
 def narrow_layers(gene: "CreateNeuron", layer: "LayerToResize") -> Dict[str, np.ndarray]:
-    """Narrow all arrays for the specified layer. Calculates keep_indices once and reuses them."""
+    """Narrow all arrays for the specified layer. Calculates remove_idx once and reuses it."""
     layer_vec = getattr(gene, _SIZE_ATTR[layer])
     current_size = len(layer_vec) if layer_vec.ndim == 1 else layer_vec.shape[0]
-    keep_indices = np.sort(get_rng().choice(current_size, current_size - 1, replace=False))
+    remove_idx = get_rng().integers(0, current_size)
     
     result = {}
     for attr_name, axis in _LAYER_RESIZE_SPEC[layer]:
-        result[attr_name] = narrow_layer(getattr(gene, attr_name), axis, keep_indices)
+        result[attr_name] = narrow_layer(getattr(gene, attr_name), axis, remove_idx)
     return result
 
 

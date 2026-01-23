@@ -34,6 +34,25 @@ _SIZE_ATTR: Dict[LayerToResize, str] = {
 }
 
 
+def widen_layer(arr: np.ndarray, insert_idx: int, axis: Optional[int] = None) -> np.ndarray:
+    """Insert a new random value/slice at insert_idx, preserving all existing values."""
+    if axis is None:  # 1D vector
+        new_val = (2 * get_rng().random(1) - 1).astype(NP_PRECISION)
+        return np.insert(arr, insert_idx, new_val)
+    else:
+        new_shape = list(arr.shape)
+        new_shape[axis] = 1
+        new_slice = (2 * get_rng().random(new_shape) - 1).astype(NP_PRECISION)
+        return np.insert(arr, insert_idx, new_slice, axis=axis)
+
+
+def narrow_layer(arr: np.ndarray, indices: np.ndarray, axis: Optional[int] = None) -> np.ndarray:
+    """Remove a value/slice by keeping only the specified indices."""
+    if axis is None:  # 1D vector
+        return arr[indices]
+    return np.take(arr, indices, axis=axis)
+
+
 class ResizeNeuronLayer(Mutagen):
     __mapper_args__ = {"polymorphic_identity": "resize_neuron_layer"}
 
@@ -52,13 +71,9 @@ class ResizeNeuronLayer(Mutagen):
         if not widen and current_size <= 1:
             return gene
         
-        # For narrowing: pick indices to keep; for widening: pick insertion position
-        if widen:
-            indices = None
-            insert_idx = get_rng().integers(0, current_size + 1)
-        else:
-            indices = np.sort(get_rng().choice(current_size, current_size - 1, replace=False))
-            insert_idx = 0
+        # For widening: pick insertion position; for narrowing: pick indices to keep
+        insert_idx = get_rng().integers(0, current_size + 1) if widen else 0
+        indices = None if widen else np.sort(get_rng().choice(current_size, current_size - 1, replace=False))
         
         # Build kwargs for CreateNeuron, copying all attributes
         kwargs = {
@@ -69,29 +84,11 @@ class ResizeNeuronLayer(Mutagen):
         }
         
         # Apply resize to specified arrays
-        for attr_name, ax in _LAYER_RESIZE_SPEC[self.layer]:
+        for attr_name, axis in _LAYER_RESIZE_SPEC[self.layer]:
             arr = getattr(gene, attr_name)
-            if ax is None:  # 1D vector
-                kwargs[attr_name] = self._resize_vector(arr, widen, indices, insert_idx)
+            if widen:
+                kwargs[attr_name] = widen_layer(arr, insert_idx, axis)
             else:
-                kwargs[attr_name] = self._resize_array(arr, ax, widen, indices, insert_idx)
+                kwargs[attr_name] = narrow_layer(arr, indices, axis)
         
         return CreateNeuron(**kwargs)
-
-    def _resize_vector(self, vec: np.ndarray, widen: bool, 
-                       indices: Optional[np.ndarray], insert_idx: int = 0) -> np.ndarray:
-        if widen:
-            # Insert a new random value at insert_idx, preserving all existing values
-            new_val = (2 * get_rng().random(1) - 1).astype(NP_PRECISION)
-            return np.insert(vec, insert_idx, new_val)
-        return vec[indices]
-
-    def _resize_array(self, arr: np.ndarray, axis: int, widen: bool,
-                      indices: Optional[np.ndarray], insert_idx: int = 0) -> np.ndarray:
-        if widen:
-            # Insert a new random slice at insert_idx along axis, preserving all existing values
-            new_shape = list(arr.shape)
-            new_shape[axis] = 1
-            new_slice = (2 * get_rng().random(new_shape) - 1).astype(NP_PRECISION)
-            return np.insert(arr, insert_idx, new_slice, axis=axis)
-        return np.take(arr, indices, axis=axis)

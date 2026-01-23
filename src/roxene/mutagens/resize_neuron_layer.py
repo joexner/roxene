@@ -34,24 +34,40 @@ _SIZE_ATTR: Dict[LayerToResize, str] = {
 }
 
 
-def widen_layer(arr: np.ndarray, axis: Optional[int] = None, insert_idx: Optional[int] = None) -> Tuple[np.ndarray, int]:
-    """Insert a new random value/slice, preserving all existing values.
-    Returns (new_array, insert_idx_used) so the same index can be reused for related arrays."""
-    current_size = len(arr) if axis is None else arr.shape[axis]
-    if insert_idx is None:
-        insert_idx = get_rng().integers(0, current_size + 1)
+def widen_layer(arr: np.ndarray, axis: Optional[int], insert_idx: int) -> np.ndarray:
+    """Insert a new random value/slice at insert_idx, preserving all existing values."""
     new_shape = [1] if axis is None else [arr.shape[i] if i != axis else 1 for i in range(arr.ndim)]
     new_slice = (2 * get_rng().random(new_shape) - 1).astype(NP_PRECISION)
-    return np.insert(arr, insert_idx, new_slice.squeeze() if axis is None else new_slice, axis=axis), insert_idx
+    return np.insert(arr, insert_idx, new_slice.squeeze() if axis is None else new_slice, axis=axis)
 
 
-def narrow_layer(arr: np.ndarray, axis: Optional[int] = None, indices: Optional[np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray]:
-    """Remove a value/slice by keeping only the specified indices.
-    Returns (new_array, indices_used) so the same indices can be reused for related arrays."""
-    current_size = len(arr) if axis is None else arr.shape[axis]
-    if indices is None:
-        indices = np.sort(get_rng().choice(current_size, current_size - 1, replace=False))
-    return (arr[indices] if axis is None else np.take(arr, indices, axis=axis)), indices
+def narrow_layer(arr: np.ndarray, axis: Optional[int], keep_indices: np.ndarray) -> np.ndarray:
+    """Remove a value/slice by keeping only the specified indices."""
+    return arr[keep_indices] if axis is None else np.take(arr, keep_indices, axis=axis)
+
+
+def widen_layers(gene: "CreateNeuron", layer: "LayerToResize") -> Dict[str, np.ndarray]:
+    """Widen all arrays for the specified layer. Calculates insert_idx once and reuses it."""
+    layer_vec = getattr(gene, _SIZE_ATTR[layer])
+    current_size = len(layer_vec) if layer_vec.ndim == 1 else layer_vec.shape[0]
+    insert_idx = get_rng().integers(0, current_size + 1)
+    
+    result = {}
+    for attr_name, axis in _LAYER_RESIZE_SPEC[layer]:
+        result[attr_name] = widen_layer(getattr(gene, attr_name), axis, insert_idx)
+    return result
+
+
+def narrow_layers(gene: "CreateNeuron", layer: "LayerToResize") -> Dict[str, np.ndarray]:
+    """Narrow all arrays for the specified layer. Calculates keep_indices once and reuses them."""
+    layer_vec = getattr(gene, _SIZE_ATTR[layer])
+    current_size = len(layer_vec) if layer_vec.ndim == 1 else layer_vec.shape[0]
+    keep_indices = np.sort(get_rng().choice(current_size, current_size - 1, replace=False))
+    
+    result = {}
+    for attr_name, axis in _LAYER_RESIZE_SPEC[layer]:
+        result[attr_name] = narrow_layer(getattr(gene, attr_name), axis, keep_indices)
+    return result
 
 
 class ResizeNeuronLayer(Mutagen):
@@ -72,21 +88,16 @@ class ResizeNeuronLayer(Mutagen):
         if not widen and current_size <= 1:
             return gene
         
-        # Build kwargs for CreateNeuron, copying all attributes
+        # Get resized arrays using helpers that calculate indices once
+        resized = widen_layers(gene, self.layer) if widen else narrow_layers(gene, self.layer)
+        
+        # Build kwargs for CreateNeuron, copying unchanged attributes and applying resized ones
         kwargs = {
             "input": gene.input, "feedback": gene.feedback, "output": gene.output,
             "input_hidden": gene.input_hidden, "hidden_feedback": gene.hidden_feedback,
             "feedback_hidden": gene.feedback_hidden, "hidden_output": gene.hidden_output,
             "parent_gene": gene
         }
-        
-        # Apply resize to specified arrays (first call calculates idx, subsequent reuse it)
-        idx = None
-        for attr_name, axis in _LAYER_RESIZE_SPEC[self.layer]:
-            arr = getattr(gene, attr_name)
-            if widen:
-                kwargs[attr_name], idx = widen_layer(arr, axis, idx)
-            else:
-                kwargs[attr_name], idx = narrow_layer(arr, axis, idx)
+        kwargs.update(resized)
         
         return CreateNeuron(**kwargs)

@@ -4,10 +4,9 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 from sqlalchemy.orm import Mapped, synonym
 
-from ..constants import NP_PRECISION
 from ..genes.create_neuron import CreateNeuron
 from ..mutagen import Mutagen
-from ..util import get_rng
+from ..util import get_rng, random_slice
 
 
 class LayerToResize(IntEnum):
@@ -31,8 +30,8 @@ LAYER_CONFIG: Dict[LayerToResize, Tuple[str, List[Tuple[str, Optional[int]]]]] =
 def widen_layer(arr: np.ndarray, axis: Optional[int], insert_idx: int) -> np.ndarray:
     """Insert a new random value/slice at insert_idx, preserving all existing values."""
     new_shape = [1] if axis is None else [arr.shape[i] if i != axis else 1 for i in range(arr.ndim)]
-    new_slice = (2 * get_rng().random(new_shape) - 1).astype(NP_PRECISION)
-    return np.insert(arr, insert_idx, new_slice.squeeze() if axis is None else new_slice, axis=axis)
+    new_val = random_slice(new_shape)
+    return np.insert(arr, insert_idx, new_val.squeeze() if axis is None else new_val, axis=axis)
 
 
 def narrow_layer(arr: np.ndarray, axis: Optional[int], remove_idx: int) -> np.ndarray:

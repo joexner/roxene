@@ -16,21 +16,15 @@ class LayerToResize(IntEnum):
     FEEDBACK = auto()
 
 
-# Define which arrays to resize for each layer type: (attr_name, axis)
-# For vectors (input, feedback), axis is None
-_LAYER_RESIZE_SPEC: Dict[LayerToResize, List[Tuple[str, Optional[int]]]] = {
-    LayerToResize.INPUT: [("input", None), ("input_hidden", 0)],
-    LayerToResize.HIDDEN: [("input_hidden", 1), ("hidden_feedback", 0), 
-                           ("feedback_hidden", 1), ("hidden_output", 0)],
-    LayerToResize.FEEDBACK: [("feedback", None), ("hidden_feedback", 1), 
-                             ("feedback_hidden", 0)],
-}
-
-# Which attribute to check for current size (use layer vectors directly where possible)
-_SIZE_ATTR: Dict[LayerToResize, str] = {
-    LayerToResize.INPUT: "input",
-    LayerToResize.HIDDEN: "hidden_output",  # hidden size from hidden_output rows
-    LayerToResize.FEEDBACK: "feedback",
+# Combined config: maps layer -> (size_attr, [(array_attr, axis), ...])
+# size_attr: which vector to check for current layer size
+# array specs: (attribute_name, axis) where axis=None means 1D vector
+LAYER_CONFIG: Dict[LayerToResize, Tuple[str, List[Tuple[str, Optional[int]]]]] = {
+    LayerToResize.INPUT: ("input", [("input", None), ("input_hidden", 0)]),
+    LayerToResize.HIDDEN: ("hidden_output", [("input_hidden", 1), ("hidden_feedback", 0), 
+                                              ("feedback_hidden", 1), ("hidden_output", 0)]),
+    LayerToResize.FEEDBACK: ("feedback", [("feedback", None), ("hidden_feedback", 1), 
+                                           ("feedback_hidden", 0)]),
 }
 
 
@@ -48,24 +42,26 @@ def narrow_layer(arr: np.ndarray, axis: Optional[int], remove_idx: int) -> np.nd
 
 def widen_layers(gene: "CreateNeuron", layer: "LayerToResize") -> Dict[str, np.ndarray]:
     """Widen all arrays for the specified layer. Calculates insert_idx once and reuses it."""
-    layer_vec = getattr(gene, _SIZE_ATTR[layer])
+    size_attr, array_specs = LAYER_CONFIG[layer]
+    layer_vec = getattr(gene, size_attr)
     current_size = len(layer_vec) if layer_vec.ndim == 1 else layer_vec.shape[0]
     insert_idx = get_rng().integers(0, current_size + 1)
     
     result = {}
-    for attr_name, axis in _LAYER_RESIZE_SPEC[layer]:
+    for attr_name, axis in array_specs:
         result[attr_name] = widen_layer(getattr(gene, attr_name), axis, insert_idx)
     return result
 
 
 def narrow_layers(gene: "CreateNeuron", layer: "LayerToResize") -> Dict[str, np.ndarray]:
     """Narrow all arrays for the specified layer. Calculates remove_idx once and reuses it."""
-    layer_vec = getattr(gene, _SIZE_ATTR[layer])
+    size_attr, array_specs = LAYER_CONFIG[layer]
+    layer_vec = getattr(gene, size_attr)
     current_size = len(layer_vec) if layer_vec.ndim == 1 else layer_vec.shape[0]
     remove_idx = get_rng().integers(0, current_size)
     
     result = {}
-    for attr_name, axis in _LAYER_RESIZE_SPEC[layer]:
+    for attr_name, axis in array_specs:
         result[attr_name] = narrow_layer(getattr(gene, attr_name), axis, remove_idx)
     return result
 
@@ -82,7 +78,8 @@ class ResizeNeuronLayer(Mutagen):
 
     def mutate_CreateNeuron(self, gene: CreateNeuron) -> CreateNeuron:
         widen = get_rng().random() < 0.5
-        layer_vec = getattr(gene, _SIZE_ATTR[self.layer])
+        size_attr, _ = LAYER_CONFIG[self.layer]
+        layer_vec = getattr(gene, size_attr)
         current_size = len(layer_vec) if layer_vec.ndim == 1 else layer_vec.shape[0]
         
         if not widen and current_size <= 1:

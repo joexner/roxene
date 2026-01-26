@@ -20,10 +20,8 @@ class LayerToResize(IntEnum):
 # array specs: (attribute_name, axis) where axis=None means 1D vector
 LAYER_CONFIG: Dict[LayerToResize, Tuple[str, List[Tuple[str, Optional[int]]]]] = {
     LayerToResize.INPUT: ("input", [("input", None), ("input_hidden", 0)]),
-    LayerToResize.HIDDEN: ("hidden_output", [("input_hidden", 1), ("hidden_feedback", 0), 
-                                              ("feedback_hidden", 1), ("hidden_output", 0)]),
-    LayerToResize.FEEDBACK: ("feedback", [("feedback", None), ("hidden_feedback", 1), 
-                                           ("feedback_hidden", 0)]),
+    LayerToResize.HIDDEN: ("hidden_output", [("input_hidden", 1), ("hidden_feedback", 0), ("feedback_hidden", 1), ("hidden_output", 0)]),
+    LayerToResize.FEEDBACK: ("feedback", [("feedback", None), ("hidden_feedback", 1), ("feedback_hidden", 0)]),
 }
 
 

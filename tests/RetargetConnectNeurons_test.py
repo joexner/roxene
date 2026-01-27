@@ -75,3 +75,35 @@ class RetargetConnectNeuronsMutagen_test(unittest.TestCase):
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.base_susceptibility, 0.025)
+
+    def test_large_target_index_delta_bounds(self):
+        """Test with a large target index that:
+        1. The delta (change in tx_index) is never zero - mutation always changes something
+        2. The delta maxes out at severity * current target index
+        """
+        large_target = 1000
+        severity = 0.1
+        original_connection = ConnectNeurons(tx_cell_index=large_target, rx_input_port=5)
+        
+        mutagen = RetargetConnectNeurons(base_susceptibility=0.01, severity=severity)
+        
+        # Calculate expected max delta based on severity and current target index
+        expected_max_delta = int(severity * large_target)  # 0.1 * 1000 = 100
+        
+        all_deltas = []
+        for _ in range(100):
+            set_rng(default_rng())  # Use different random seeds
+            mutant = mutagen.mutate_ConnectNeurons(original_connection)
+            
+            # Calculate the actual delta
+            delta = mutant.tx_cell_index - original_connection.tx_cell_index
+            all_deltas.append(delta)
+            
+            # Delta should never be zero - mutation should always do something
+            self.assertNotEqual(delta, 0, "Delta should never be zero")
+            
+            # Delta should be bounded by severity * current target index
+            self.assertLessEqual(
+                abs(delta), expected_max_delta,
+                f"Delta {delta} exceeds max {expected_max_delta}"
+            )

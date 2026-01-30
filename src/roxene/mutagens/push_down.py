@@ -18,3 +18,6 @@ class PushDown(Mutagen):
             # Wrap the gene in a CompositeGene with a single iteration
             mutant = CompositeGene(child_genes=[mutant], iterations=1, parent_gene=gene)
         return mutant
+
+    def should_mutate(self, gene: Gene) -> bool:
+        return isinstance(gene, CompositeGene) and gene.iterations == 1 and super().should_mutate(gene)

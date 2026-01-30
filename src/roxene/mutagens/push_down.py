@@ -20,4 +20,7 @@ class PushDown(Mutagen):
         return mutant
 
     def should_mutate(self, gene: Gene) -> bool:
-        return isinstance(gene, CompositeGene) and gene.iterations == 1 and super().should_mutate(gene)
+        # Don't wrap CompositeGenes that already have iterations == 1 (avoid infinite nesting)
+        if isinstance(gene, CompositeGene) and gene.iterations == 1:
+            return False
+        return super().should_mutate(gene)

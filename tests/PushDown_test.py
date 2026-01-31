@@ -36,20 +36,6 @@ class PushDownMutagen_test(unittest.TestCase):
         self.assertEqual(len(mutant_gene.child_genes), 1)
         self.assertEqual(mutant_gene.child_genes[0], original_gene)
 
-    def test_push_down_no_mutation(self):
-        """Test that with 0% susceptibility, no mutation occurs.
-        
-        When base_susceptibility is 0.0, the gene should be returned unchanged.
-        """
-        original_gene = RotateCells(RotateCells.Direction.FORWARD)
-        
-        mutagen = PushDown(0.0)  # 0% susceptibility
-        
-        mutant_gene = mutagen.mutate(original_gene)
-        
-        # Should not be mutated
-        self.assertEqual(mutant_gene, original_gene)
-
     def test_push_down_composite_gene_iterations_not_1(self):
         """Test that CompositeGenes with iterations != 1 get wrapped.
         

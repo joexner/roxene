@@ -18,66 +18,44 @@ class PushDownMutagen_test(unittest.TestCase):
     def setUp(self):
         set_rng(default_rng(SEED))
 
-    def test_push_down_basic(self):
-        """Test that PushDown wraps a simple (non-composite) gene in a CompositeGene.
-        
-        A RotateCells gene should be wrapped in a CompositeGene with iterations=1.
-        The original gene becomes the only child of the new composite.
-        """
-        original_gene = RotateCells(RotateCells.Direction.FORWARD)
-        
-        mutagen = PushDown(1.0)  # 100% susceptibility
-        
-        mutant_gene = mutagen.mutate(original_gene)
-        
-        # Should be wrapped in a CompositeGene
-        self.assertIsInstance(mutant_gene, CompositeGene)
-        self.assertEqual(mutant_gene.iterations, 1)
-        self.assertEqual(len(mutant_gene.child_genes), 1)
-        self.assertEqual(mutant_gene.child_genes[0], original_gene)
+    def test_basic(self):
+        original_gene = RotateCells()
+        mutagen = PushDown(1.0)
+        mutant = mutagen.mutate(original_gene)
+        self.assertIsInstance(mutant, CompositeGene)
+        self.assertEqual(mutant.iterations, 1)
+        self.assertEqual(len(mutant.child_genes), 1)
+        self.assertEqual(mutant.child_genes[0], original_gene)
 
-    def test_push_down_composite_gene_iterations_not_1(self):
-        """Test that CompositeGenes with iterations != 1 get wrapped.
-        
-        A CompositeGene with iterations > 1 should be wrapped in a new 
-        CompositeGene with iterations=1. The inner gene retains its original
-        iterations count (5 in this test).
-        """
-        child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
-        original_gene = CompositeGene(child_genes=child_genes, iterations=5)
-        
-        mutagen = PushDown(1.0)  # 100% susceptibility
-        
-        mutant_gene = mutagen.mutate(original_gene)
-        
-        # Should be wrapped in another CompositeGene with iterations=1
-        self.assertIsInstance(mutant_gene, CompositeGene)
-        self.assertEqual(mutant_gene.iterations, 1)
-        self.assertEqual(len(mutant_gene.child_genes), 1)
-        # The wrapped child should be a CompositeGene with the original iterations
-        wrapped_child = mutant_gene.child_genes[0]
-        self.assertIsInstance(wrapped_child, CompositeGene)
-        self.assertEqual(wrapped_child.iterations, 5)
+    def test_mutate_composite_gene(self):
+        original_child_gene = RotateCells()
+        original_gene = CompositeGene(child_genes=[original_child_gene], iterations=5)
+        mutagen = PushDown(1.0)
+        mutant = mutagen.mutate(original_gene)
+        self.assertIsInstance(mutant, CompositeGene)
+        self.assertEqual(mutant.iterations, 1)
+        self.assertEqual(len(mutant.child_genes), 1)
+        # The original gene, kinda
+        mutant_child = mutant.child_genes[0]
+        self.assertIsInstance(mutant_child, CompositeGene)
+        self.assertEqual(mutant_child.iterations, 5)
+        # New wrapper for the original child gene
+        mutant_grandchild = mutant_child.child_genes[0]
+        self.assertIsInstance(mutant_grandchild, CompositeGene)
+        # Original child gene is 3 levels deep now
+        self.assertIs(mutant_grandchild.child_genes[0], original_child_gene)
 
-    def test_push_down_composite_gene_iterations_1(self):
-        """Test that CompositeGenes with iterations == 1 are NOT wrapped.
-        
-        A CompositeGene that already has iterations=1 should not be wrapped again 
-        to avoid infinite nesting. Instead, the mutagen recursively applies to children.
-        """
-        child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
-        original_gene = CompositeGene(child_genes=child_genes, iterations=1)
-        
+    def test_dont_mutate_single_iter_coposite(self):
+        child_gene = RotateCells(RotateCells.Direction.FORWARD)
+        original_gene = CompositeGene(child_genes=[child_gene], iterations=1)
         mutagen = PushDown(1.0)  # 100% susceptibility
-        
-        mutant_gene = mutagen.mutate(original_gene)
-        
+        mutant = mutagen.mutate(original_gene)
         # Should not be wrapped - still has iterations=1
-        self.assertIsInstance(mutant_gene, CompositeGene)
-        self.assertEqual(mutant_gene.iterations, 1)
+        self.assertIsInstance(mutant, CompositeGene)
+        self.assertEqual(mutant.iterations, 1)
         # The child should be wrapped (since it's a RotateCells, not a composite with iterations=1)
-        self.assertEqual(len(mutant_gene.child_genes), 1)
-        child = mutant_gene.child_genes[0]
+        self.assertEqual(len(mutant.child_genes), 1)
+        child = mutant.child_genes[0]
         self.assertIsInstance(child, CompositeGene)  # Child was wrapped
 
     def test_persist_reload(self):

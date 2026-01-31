@@ -4,6 +4,10 @@ from ..mutagen import Mutagen
 
 
 class PushDown(Mutagen):
+    """
+    Mutagen that wraps any Gene in a 1-iteration CompositeGene, effectively a no-op
+    that adds more spots for later additions.
+    """
     __mapper_args__ = {"polymorphic_identity": "push_down"}
 
 
@@ -20,7 +24,7 @@ class PushDown(Mutagen):
         return mutant
 
     def should_mutate(self, gene: Gene) -> bool:
-        # Don't wrap CompositeGenes that already have iterations == 1 (avoid infinite nesting)
+        # Don't wrap CompositeGenes that already have iterations == 1, because it seems pointless
         if isinstance(gene, CompositeGene) and gene.iterations == 1:
             return False
         return super().should_mutate(gene)

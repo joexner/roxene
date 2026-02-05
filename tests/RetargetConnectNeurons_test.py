@@ -77,11 +77,12 @@ class RetargetConnectNeuronsMutagen_test(unittest.TestCase):
             self.assertEqual(reloaded.base_susceptibility, 0.025)
 
     def test_large_target_index_delta_bounds(self):
-        """Test with a large target index that:
-        1. The delta (change in tx_index) is never zero - mutation always changes something
-        2. The delta maxes out at severity * current target index
+        """Test with a big initial value that:
+        1. Both positive and negative deltas are used (roughly even distribution)
+        2. The delta is never zero - mutation always changes something
+        3. The delta is bounded by severity * current target index
         """
-        large_target = 1000
+        large_target = 1000  # Big initial value
         severity = 0.1
         original_connection = ConnectNeurons(tx_cell_index=large_target, rx_input_port=5)
         
@@ -90,14 +91,21 @@ class RetargetConnectNeuronsMutagen_test(unittest.TestCase):
         # Calculate expected max delta based on severity and current target index
         expected_max_delta = int(severity * large_target)  # 0.1 * 1000 = 100
         
-        all_deltas = []
+        positive_deltas = []
+        negative_deltas = []
+        
         for _ in range(100):
             set_rng(default_rng())  # Use different random seeds
             mutant = mutagen.mutate_ConnectNeurons(original_connection)
             
             # Calculate the actual delta
             delta = mutant.tx_cell_index - original_connection.tx_cell_index
-            all_deltas.append(delta)
+            
+            # Track positive vs negative deltas
+            if delta > 0:
+                positive_deltas.append(delta)
+            elif delta < 0:
+                negative_deltas.append(delta)
             
             # Delta should never be zero - mutation should always do something
             self.assertNotEqual(delta, 0, "Delta should never be zero")
@@ -107,3 +115,7 @@ class RetargetConnectNeuronsMutagen_test(unittest.TestCase):
                 abs(delta), expected_max_delta,
                 f"Delta {delta} exceeds max {expected_max_delta}"
             )
+        
+        # Both positive and negative deltas should be used
+        self.assertGreater(len(positive_deltas), 0, "Should have some positive deltas")
+        self.assertGreater(len(negative_deltas), 0, "Should have some negative deltas")

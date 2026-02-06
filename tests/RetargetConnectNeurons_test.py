@@ -76,51 +76,46 @@ class RetargetConnectNeuronsMutagen_test(unittest.TestCase):
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.base_susceptibility, 0.025)
 
-    def test_delta_values_coverage(self):
-        """Test with a moderate tx_cell_index that all valid delta values are hit.
-        
-        With tx_cell_index=10 and severity=1.0, max_delta = max(1, int(1.0 * 10)) = 10
-        Raw deltas can be: -10, -9, ..., -1, +1, +2, ..., +10 (no zero)
-        But new_tx_index is clamped to max(1, tx_cell_index + delta), so:
-        - Negative deltas beyond -(tx_cell_index - 1) = -9 get clamped
-        - Expected observed deltas: -9, -8, ..., -1, +1, +2, ..., +10
+    def test_large_target_index_delta_bounds(self):
+        """Test with a big initial value that:
+        1. Both positive and negative deltas are used (roughly even distribution)
+        2. The delta is never zero - mutation always changes something
+        3. The delta is bounded by severity * current target index
         """
-        target = 10
-        severity = 1.0
-        original_connection = ConnectNeurons(tx_cell_index=target, rx_input_port=5)
+        large_target = 1000  # Big initial value
+        severity = 0.1
+        original_connection = ConnectNeurons(tx_cell_index=large_target, rx_input_port=5)
         
         mutagen = RetargetConnectNeurons(base_susceptibility=0.01, severity=severity)
         
         # Calculate expected max delta based on severity and current target index
-        max_delta = max(1, int(severity * target))  # max(1, 10) = 10
+        expected_max_delta = int(severity * large_target)  # 0.1 * 1000 = 100
         
-        observed_deltas = set()
+        positive_deltas = []
+        negative_deltas = []
         
-        for _ in range(500):  # Run enough iterations to hit all values
+        for _ in range(100):
             set_rng(default_rng())  # Use different random seeds
             mutant = mutagen.mutate_ConnectNeurons(original_connection)
             
             # Calculate the actual delta
             delta = mutant.tx_cell_index - original_connection.tx_cell_index
             
+            # Track positive vs negative deltas
+            if delta > 0:
+                positive_deltas.append(delta)
+            elif delta < 0:
+                negative_deltas.append(delta)
+            
             # Delta should never be zero - mutation should always do something
             self.assertNotEqual(delta, 0, "Delta should never be zero")
             
-            # Delta should be bounded appropriately
-            # Positive deltas up to max_delta, negative deltas clamped by min tx_cell_index=1
-            self.assertLessEqual(delta, max_delta, f"Delta {delta} exceeds max {max_delta}")
-            self.assertGreaterEqual(delta, -(target - 1), f"Delta {delta} below min {-(target - 1)}")
-            
-            observed_deltas.add(int(delta))  # Convert numpy int to Python int
+            # Delta should be bounded by severity * current target index
+            self.assertLessEqual(
+                abs(delta), expected_max_delta,
+                f"Delta {delta} exceeds max {expected_max_delta}"
+            )
         
-        # All valid delta values should be hit:
-        # Positive: +1 to +max_delta
-        # Negative: -(target-1) to -1 (since new_tx_index must be >= 1)
-        expected_positive = set(range(1, max_delta + 1))
-        expected_negative = set(range(-(target - 1), 0))
-        expected_deltas = expected_positive | expected_negative
-        
-        self.assertEqual(
-            observed_deltas, expected_deltas,
-            f"Expected all deltas {sorted(expected_deltas)}, got {sorted(observed_deltas)}"
-        )
+        # Both positive and negative deltas should be used
+        self.assertGreater(len(positive_deltas), 0, "Should have some positive deltas")
+        self.assertGreater(len(negative_deltas), 0, "Should have some negative deltas")

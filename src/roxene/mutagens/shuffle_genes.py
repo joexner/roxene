@@ -22,12 +22,19 @@ class ShuffleGenes(Mutagen):
         
         max_distance = max(1, int(self.severity * num_genes))
 
+        # Calculate valid range for second index
         min_second = max(0, first_index - max_distance)
         max_second = min(num_genes - 1, first_index + max_distance)
-        possible_indices = [i for i in range(min_second, max_second + 1) if i != first_index]
         
-        if possible_indices:
-            second_index = get_rng().choice(possible_indices)
+        # Number of valid positions excluding first_index
+        num_valid = max_second - min_second  # range size minus 1 (for first_index)
+        
+        if num_valid > 0:
+            # Pick a random offset in [0, num_valid), then map to actual index
+            offset = get_rng().integers(0, num_valid)
+            second_index = min_second + offset
+            if second_index >= first_index:
+                second_index += 1  # Skip over first_index
             new_genes[first_index], new_genes[second_index] = new_genes[second_index], new_genes[first_index]
 
         return CompositeGene(new_genes, parent_gene.iterations, parent_gene)

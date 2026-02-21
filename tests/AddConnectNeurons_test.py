@@ -10,7 +10,7 @@ class AddConnectNeurons_test(unittest.TestCase):
         gene = CompositeGene(child_genes=[], iterations=1)
         tx_cell_index = 3
         rx_port = 5
-        mutagen = AddConnectNeurons(0.01, tx_cell_index=tx_cell_index, rx_port=rx_port)
+        mutagen = AddConnectNeurons(tx_cell_index=tx_cell_index, rx_port=rx_port)
         mutant = mutagen.get_new_gene(gene)
         self.assertIsInstance(mutant, ConnectNeurons)
         self.assertEqual(mutant.tx_cell_index, tx_cell_index)

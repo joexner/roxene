@@ -19,14 +19,14 @@ class AddRotateCells_test(unittest.TestCase):
         composite = CompositeGene(child_genes=[], iterations=1)
         
         # Test FORWARD direction
-        mutagen_forward = AddRotateCells(0.01, RotateCells.Direction.FORWARD)
+        mutagen_forward = AddRotateCells(RotateCells.Direction.FORWARD)
         mutant = mutagen_forward.mutate_CompositeGene(composite)
         self.assertEqual(len(mutant.child_genes), 1)
         self.assertIsInstance(mutant.child_genes[0], RotateCells)
         self.assertEqual(mutant.child_genes[0].direction, RotateCells.Direction.FORWARD)
         
         # Test BACKWARD direction
-        mutagen_backward = AddRotateCells(0.01, RotateCells.Direction.BACKWARD)
+        mutagen_backward = AddRotateCells(RotateCells.Direction.BACKWARD)
         mutant = mutagen_backward.mutate_CompositeGene(composite)
         self.assertEqual(len(mutant.child_genes), 1)
         self.assertIsInstance(mutant.child_genes[0], RotateCells)

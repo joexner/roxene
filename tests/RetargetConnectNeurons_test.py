@@ -28,7 +28,7 @@ class RetargetConnectNeuronsMutagen_test(unittest.TestCase):
             self.assertEqual(mutant.rx_port, gene.rx_port)
 
     def test_retarget_bounds(self):
-        mutagen = RetargetConnectNeurons(severity = 0.25)
+        mutagen = RetargetConnectNeurons(0.25)
         original_gene = ConnectNeurons(tx_cell_index = 100, rx_input_port=5)
         for _ in range(100):
             mutant = mutagen.mutate_ConnectNeurons(original_gene)

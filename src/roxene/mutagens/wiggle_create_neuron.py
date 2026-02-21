@@ -23,8 +23,8 @@ class WiggleCreateNeuron(Mutagen):
 
     layer: Mapped[CNLayer] = synonym("_i1")
 
-    def __init__(self, layer_to_mutate: CNLayer, base_susceptibility: float = 0.001,
-                 severity: float = 1.0):
+    def __init__(self, layer_to_mutate: CNLayer, severity: float = 1.0,
+                 base_susceptibility: float = 0.001):
         super().__init__(base_susceptibility)
         self.layer = layer_to_mutate
         self.severity = severity

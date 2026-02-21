@@ -34,7 +34,7 @@ class CompositeGeneSplitMutagen_test(unittest.TestCase):
                                    RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=10)
 
-        mutagen = SplitCompositeGene(0.01)
+        mutagen = SplitCompositeGene()
 
         for _ in range(20):
             mutant_gene = mutagen.mutate_CompositeGene(original_gene)

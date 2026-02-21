@@ -23,7 +23,7 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         original_hidden_size = original_gene.input_hidden.shape[1]
         
-        mutagen = ResizeNeuronLayer(LayerToResize.HIDDEN, 0.01)
+        mutagen = ResizeNeuronLayer(LayerToResize.HIDDEN)
         
         # Run multiple times to see both widen and narrow
         widened = False
@@ -51,7 +51,7 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
         hidden_size = 10
         original_gene = CreateNeuron(**random_neuron_state(input_size, feedback_size, hidden_size))
         
-        mutagen = ResizeNeuronLayer(LayerToResize.HIDDEN, 0.01)
+        mutagen = ResizeNeuronLayer(LayerToResize.HIDDEN)
         mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
         
         new_hidden_size = mutant_gene.input_hidden.shape[1]
@@ -71,7 +71,7 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
         """Test that narrowing preserves at least 1 hidden neuron"""
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 1))
         
-        mutagen = ResizeNeuronLayer(LayerToResize.HIDDEN, 0.01)
+        mutagen = ResizeNeuronLayer(LayerToResize.HIDDEN)
         
         # Try narrowing multiple times - layer of size 1 should never go below 1
         for seed in range(20):

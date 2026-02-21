@@ -28,7 +28,7 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
         ]
         original_gene = CompositeGene(child_genes=child_genes, iterations=2)
         
-        mutagen = ShuffleGenes(0.01)
+        mutagen = ShuffleGenes()
         
         # Try multiple times to ensure swap happens
         swapped_found = False
@@ -66,10 +66,10 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
         # Low severity should only allow nearby swaps
-        mutagen_low = ShuffleGenes(base_susceptibility=0.01, severity=0.1)
+        mutagen_low = ShuffleGenes(0.1)
         
         # High severity should allow distant swaps
-        mutagen_high = ShuffleGenes(base_susceptibility=0.01, severity=1.0)
+        mutagen_high = ShuffleGenes(1.0)
         
         # Just verify they both work without errors
         mutant_low = mutagen_low.mutate_CompositeGene(original_gene)
@@ -88,7 +88,7 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
         ]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = ShuffleGenes(0.01)
+        mutagen = ShuffleGenes()
         
         for _ in range(10):
             mutant_gene = mutagen.mutate_CompositeGene(original_gene)
@@ -104,7 +104,7 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
         child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = ShuffleGenes(0.01)
+        mutagen = ShuffleGenes()
         
         mutant_gene = mutagen.mutate_CompositeGene(original_gene)
         
@@ -113,7 +113,7 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
 
     def test_persist_reload(self):
         """Test that ShuffleGenes can be persisted and reloaded"""
-        mutagen = ShuffleGenes(base_susceptibility=0.022, severity=0.5)
+        mutagen = ShuffleGenes(0.5, 0.022)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)

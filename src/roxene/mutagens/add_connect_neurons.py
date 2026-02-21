@@ -14,7 +14,7 @@ class AddConnectNeurons(AddGene):
     tx_cell_index: Mapped[int] = synonym("_i1")
     rx_port: Mapped[int] = synonym("_i2")
 
-    def __init__(self, base_susceptibility: float = 0.01, tx_cell_index: int = 0, rx_port: int = 0):
+    def __init__(self, tx_cell_index: int = 0, rx_port: int = 0, base_susceptibility: float = 0.01):
         super().__init__(base_susceptibility)
         self.tx_cell_index = tx_cell_index
         self.rx_port = rx_port

@@ -77,7 +77,9 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
 
     def test_persist_reload(self):
         """Test that ModifyIterations can be persisted and reloaded"""
-        mutagen = ModifyCGIterations(0.012)
+        severity = 0.26
+        base_susceptibility = 0.012
+        mutagen = ModifyCGIterations(severity, base_susceptibility)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -88,4 +90,5 @@ class ModifyIterationsMutagen_test(unittest.TestCase):
             reloaded = session.get(ModifyCGIterations, mutagen_id)
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
-            self.assertEqual(reloaded.base_susceptibility, 0.012)
+            self.assertEqual(reloaded.severity, severity)
+            self.assertEqual(reloaded.base_susceptibility, base_susceptibility)

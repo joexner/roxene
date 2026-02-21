@@ -26,7 +26,7 @@ class DuplicateGeneMutagen_test(unittest.TestCase):
         ]
         original_gene = CompositeGene(child_genes=child_genes, iterations=3)
         
-        mutagen = DuplicateGene(0.01)
+        mutagen = DuplicateGene()
         
         mutant_gene = mutagen.mutate_CompositeGene(original_gene)
         
@@ -46,7 +46,7 @@ class DuplicateGeneMutagen_test(unittest.TestCase):
         ]
         original_gene = CompositeGene(child_genes=child_genes, iterations=1)
         
-        mutagen = DuplicateGene(0.01)
+        mutagen = DuplicateGene()
         
         for _ in range(10):
             mutant_gene = mutagen.mutate_CompositeGene(original_gene)
@@ -62,7 +62,7 @@ class DuplicateGeneMutagen_test(unittest.TestCase):
         """Test duplicating in an empty CompositeGene doesn't crash"""
         original_gene = CompositeGene(child_genes=[], iterations=1)
         
-        mutagen = DuplicateGene(0.01)
+        mutagen = DuplicateGene()
         
         mutant_gene = mutagen.mutate_CompositeGene(original_gene)
         

@@ -68,8 +68,7 @@ class ResizeNeuronLayer(Mutagen):
 
     layer: Mapped[LayerToResize] = synonym("_i1")
 
-    def __init__(self, layer_to_resize: LayerToResize,
-                 base_susceptibility: float = 0.01):
+    def __init__(self, layer_to_resize: LayerToResize, base_susceptibility: float = 0.01):
         super().__init__(base_susceptibility)
         self.layer = layer_to_resize
 

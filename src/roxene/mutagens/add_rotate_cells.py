@@ -11,7 +11,7 @@ class AddRotateCells(AddGene):
 
     direction: Mapped[int] = synonym("_i1")
 
-    def __init__(self, base_susceptibility: float = 0.01, direction: RotateCells.Direction = RotateCells.Direction.BACKWARD):
+    def __init__(self, direction: RotateCells.Direction = RotateCells.Direction.BACKWARD, base_susceptibility: float = 0.01):
         super().__init__(base_susceptibility)
         self.direction = direction
 

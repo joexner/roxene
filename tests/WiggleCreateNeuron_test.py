@@ -27,11 +27,7 @@ class WiggleCreateNeuron_test(unittest.TestCase):
         """
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         
-        mutagen = WiggleCreateNeuron(
-            layer_to_mutate=CNLayer.input_hidden,
-            base_susceptibility=0.01,
-            severity=1.0
-        )
+        mutagen = WiggleCreateNeuron(CNLayer.input_hidden)
         
         mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
         
@@ -61,11 +57,7 @@ class WiggleCreateNeuron_test(unittest.TestCase):
         """
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         
-        mutagen = WiggleCreateNeuron(
-            layer_to_mutate=CNLayer.hidden_output,
-            base_susceptibility=0.01,
-            severity=1.0
-        )
+        mutagen = WiggleCreateNeuron(CNLayer.hidden_output)
         
         mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
         
@@ -89,11 +81,7 @@ class WiggleCreateNeuron_test(unittest.TestCase):
         """
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         
-        mutagen = WiggleCreateNeuron(
-            layer_to_mutate=CNLayer.input_initial_value,
-            base_susceptibility=0.01,
-            severity=1.0
-        )
+        mutagen = WiggleCreateNeuron(CNLayer.input_initial_value)
         
         mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
         
@@ -118,18 +106,10 @@ class WiggleCreateNeuron_test(unittest.TestCase):
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         
         # Low severity mutagen
-        mutagen_low = WiggleCreateNeuron(
-            layer_to_mutate=CNLayer.input_hidden,
-            base_susceptibility=0.01,
-            severity=0.1  # Low severity
-        )
+        mutagen_low = WiggleCreateNeuron(CNLayer.input_hidden, 0.1)
         
         # High severity mutagen
-        mutagen_high = WiggleCreateNeuron(
-            layer_to_mutate=CNLayer.input_hidden,
-            base_susceptibility=0.01,
-            severity=2.0  # High severity
-        )
+        mutagen_high = WiggleCreateNeuron(CNLayer.input_hidden, 2.0)
         
         set_rng(default_rng(SEED))
         mutant_low = mutagen_low.mutate_CreateNeuron(original_gene)
@@ -153,7 +133,7 @@ class WiggleCreateNeuron_test(unittest.TestCase):
         """
         original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         
-        mutagen = WiggleCreateNeuron(CNLayer.input_hidden, 0.01)
+        mutagen = WiggleCreateNeuron(CNLayer.input_hidden)
         mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
         
         self.assertEqual(mutant_gene.parent_gene, original_gene)
@@ -175,7 +155,7 @@ class WiggleCreateNeuron_test(unittest.TestCase):
         Test that WiggleCreateNeuron can be persisted and reloaded with all
         configuration preserved.
         """
-        mutagen = WiggleCreateNeuron(CNLayer.hidden_feedback, 0.02, severity=0.5)
+        mutagen = WiggleCreateNeuron(CNLayer.hidden_feedback, base_susceptibility=0.02)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -190,4 +170,4 @@ class WiggleCreateNeuron_test(unittest.TestCase):
             self.assertEqual(reloaded.id, mutagen_id)
             self.assertEqual(reloaded.base_susceptibility, 0.02)
             self.assertEqual(reloaded.layer, CNLayer.hidden_feedback)
-            self.assertEqual(reloaded.severity, 0.5)
+            self.assertEqual(reloaded.severity, 1.0)

@@ -3,7 +3,7 @@ from typing import Optional
 
 from sqlalchemy import ForeignKey, Integer, Float
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
-from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
+from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict, validates
 
 from .gene import Gene
 from .genes.composite_gene import CompositeGene
@@ -67,6 +67,12 @@ class Mutagen(EntityBase):
     def __init__(self, base_susceptibility: float):
         self.id = uuid.uuid4()
         self.base_susceptibility = base_susceptibility
+
+    @validates("severity", "base_susceptibility")
+    def validate_range(self, key, value):
+        if value is not None and (value < 0.0 or value > 1.0):
+            raise ValueError(f"{key} must be between 0.0 and 1.0, got {value}")
+        return value
 
     def get_mutation_susceptibility(self, gene: Gene) -> float:
         result = self.susceptibilities.get(gene)

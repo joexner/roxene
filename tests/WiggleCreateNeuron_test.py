@@ -108,8 +108,8 @@ class WiggleCreateNeuron_test(unittest.TestCase):
         # Low severity mutagen
         mutagen_low = WiggleCreateNeuron(CNLayer.input_hidden, 0.1)
         
-        # High severity mutagen
-        mutagen_high = WiggleCreateNeuron(CNLayer.input_hidden, 2.0)
+        # High severity mutagen (max value is 1.0)
+        mutagen_high = WiggleCreateNeuron(CNLayer.input_hidden, 1.0)
         
         set_rng(default_rng(SEED))
         mutant_low = mutagen_low.mutate_CreateNeuron(original_gene)

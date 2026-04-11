@@ -10,64 +10,54 @@ from roxene.genes import CompositeGene, RotateCells
 from roxene.mutagens import RemoveGene
 from roxene.util import set_rng
 
-SEED = 789
+SEED = 11235
 
 
-class RemoveGeneMutagen_test(unittest.TestCase):
+class TestRemoveGeneMutagen(unittest.TestCase):
 
     def setUp(self):
         set_rng(default_rng(SEED))
 
-    def test_remove_gene_from_composite(self):
-        """Test that RemoveGene removes a child gene"""
-        child_genes: List[Gene] = [
-            RotateCells(RotateCells.Direction.FORWARD),
-            RotateCells(RotateCells.Direction.BACKWARD),
-            RotateCells(RotateCells.Direction.FORWARD)
-        ]
-        original_gene = CompositeGene(child_genes=child_genes, iterations=2)
-        
-        mutagen = RemoveGene(0.01)
-        
+    def test_basic(self):
+        mutagen = RemoveGene()
+        original_gene = CompositeGene(child_genes=[RotateCells(), RotateCells(), RotateCells()], iterations=2)
         mutant_gene = mutagen.mutate_CompositeGene(original_gene)
-        
-        # Should still be a CompositeGene
         self.assertIsInstance(mutant_gene, CompositeGene)
-        self.assertEqual(mutant_gene.iterations, 2)
-        # Should have one fewer child gene
-        self.assertEqual(len(mutant_gene.child_genes), len(child_genes) - 1)
+        self.assertEqual(mutant_gene.iterations, original_gene.iterations)
+        self.assertEqual(len(mutant_gene.child_genes), len(original_gene.child_genes) - 1)
 
-
-    def test_remove_gene_preserves_single_child(self):
-        """Test that CompositeGenes with only 1 child are not reduced"""
-        child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
-        original_gene = CompositeGene(child_genes=child_genes, iterations=1)
-        
-        mutagen = RemoveGene(0.01)
-        
-        mutant_gene = mutagen.mutate_CompositeGene(original_gene)
-        
-        # Should still have 1 child (can't remove the last one)
-        self.assertIsInstance(mutant_gene, CompositeGene)
-        self.assertEqual(len(mutant_gene.child_genes), 1)
 
     def test_remove_gene_multiple_times(self):
-        """Test removing genes multiple times"""
-        child_genes: List[Gene] = [
-            RotateCells(RotateCells.Direction.FORWARD),
-            RotateCells(RotateCells.Direction.BACKWARD),
-            RotateCells(RotateCells.Direction.FORWARD),
-            RotateCells(RotateCells.Direction.BACKWARD),
-            RotateCells(RotateCells.Direction.FORWARD)
-        ]
-        gene = CompositeGene(child_genes=child_genes, iterations=1)
-        
-        mutagen = RemoveGene(0.01)
-        
-        # Remove genes multiple times
-        for expected_count in [4, 3, 2, 1, 1]:  # Can't go below 1
+        mutagen = RemoveGene()
+        gene = CompositeGene([RotateCells() for _ in range(5)])
+
+        # Keep mutating until it gets and stays empty
+        for expected_count in [4, 3, 2, 1, 0, 0]:
             gene = mutagen.mutate_CompositeGene(gene)
             self.assertEqual(len(gene.child_genes), expected_count)
+
+
+    def test_removes_random_gene(self):
+        mutagen = RemoveGene()
+        original_gene = CompositeGene([RotateCells() for _ in range(10)])
+        original_child_ids = {g.id for g in original_gene.child_genes}
+        removed_child_gene_ids = set()
+
+        for attempt in range(1000):
+            result = mutagen.mutate_CompositeGene(original_gene)
+            remaining_ids = {g.id for g in result.child_genes}
+            self.assertEqual(len(remaining_ids), 9)
+            self.assertTrue(remaining_ids.issubset(original_child_ids))
+            removed_ids = (original_child_ids - remaining_ids)
+            self.assertEqual(len(removed_ids), 1)
+            # Remember which one was removed
+            removed_child_gene_ids.update(removed_ids)
+            if removed_child_gene_ids == original_child_ids:
+                break
+
+        # All original child genes should have been removed at some point
+        self.assertTrue(removed_child_gene_ids == original_child_ids)
+
 
     def test_persist_reload(self):
         """Test that RemoveGene can be persisted and reloaded"""

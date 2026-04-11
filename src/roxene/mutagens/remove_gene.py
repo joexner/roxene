@@ -11,7 +11,7 @@ class RemoveGene(Mutagen):
         super().__init__(base_susceptibility)
 
     def mutate_CompositeGene(self, parent_gene: CompositeGene) -> CompositeGene:
-        if len(parent_gene.child_genes) < 2:
+        if len(parent_gene.child_genes) == 0:
             return parent_gene
 
         new_genes = list(parent_gene.child_genes)

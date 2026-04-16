@@ -8,6 +8,7 @@ from ..util import get_rng
 
 
 class AddGene(Mutagen):
+    __abstract__ = True
 
     def __init__(self, base_susceptibility: float = 0.01):
         super().__init__(base_susceptibility)

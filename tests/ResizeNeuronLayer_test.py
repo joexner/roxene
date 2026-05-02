@@ -1,6 +1,9 @@
 import unittest
+from parameterized import parameterized
 
 import numpy as np
+from numpy import array_equal
+from numpy.testing import assert_array_equal
 from numpy.random import default_rng
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -8,9 +11,24 @@ from sqlalchemy.orm import Session
 from roxene import EntityBase, random_neuron_state
 from roxene.genes import CreateNeuron
 from roxene.mutagens import ResizeNeuronLayer, LayerToResize
+from roxene.mutagens.resize_neuron_layer import ResizeDirection
 from roxene.util import set_rng
 
-SEED = 111
+SEED = 11235
+
+ALL_ATTRS = {"input", "feedback", "output", "input_hidden", "hidden_feedback", "feedback_hidden", "hidden_output"}
+
+SIZE_ATTR = {
+    LayerToResize.INPUT: "input",
+    LayerToResize.HIDDEN: "hidden_output",
+    LayerToResize.FEEDBACK: "feedback",
+}
+
+RESIZED_ATTRS = {
+    LayerToResize.INPUT: {"input", "input_hidden"},
+    LayerToResize.HIDDEN: {"input_hidden", "hidden_feedback", "feedback_hidden", "hidden_output"},
+    LayerToResize.FEEDBACK: {"feedback", "hidden_feedback", "feedback_hidden"},
+}
 
 
 class ResizeNeuronLayerMutagen_test(unittest.TestCase):
@@ -18,70 +36,91 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
     def setUp(self):
         set_rng(default_rng(SEED))
 
-    def test_resize_hidden_layer(self):
-        """Test that ResizeNeuronLayer randomly widens or narrows the hidden layer"""
-        original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
-        original_hidden_size = original_gene.input_hidden.shape[1]
-        
-        mutagen = ResizeNeuronLayer(LayerToResize.HIDDEN)
-        
-        # Run multiple times to see both widen and narrow
-        widened = False
-        narrowed = False
-        for seed in range(100):
-            set_rng(default_rng(seed))
-            mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
-            new_hidden_size = mutant_gene.input_hidden.shape[1]
-            
-            if new_hidden_size > original_hidden_size:
-                widened = True
-            elif new_hidden_size < original_hidden_size:
-                narrowed = True
-            
-            if widened and narrowed:
-                break
-        
-        self.assertTrue(widened, "Should see widening in 100 trials")
-        self.assertTrue(narrowed, "Should see narrowing in 100 trials")
-
-    def test_resize_preserves_shapes(self):
-        """Test that all weight matrices have consistent shapes after resizing"""
-        input_size = 8
-        feedback_size = 6
-        hidden_size = 10
-        original_gene = CreateNeuron(**random_neuron_state(input_size, feedback_size, hidden_size))
-        
-        mutagen = ResizeNeuronLayer(LayerToResize.HIDDEN)
+    @parameterized.expand([
+        (LayerToResize.INPUT, ResizeDirection.WIDEN,),
+        (LayerToResize.INPUT, ResizeDirection.NARROW,),
+        (LayerToResize.HIDDEN, ResizeDirection.WIDEN,),
+        (LayerToResize.HIDDEN, ResizeDirection.NARROW,),
+        (LayerToResize.FEEDBACK, ResizeDirection.WIDEN,),
+        (LayerToResize.FEEDBACK, ResizeDirection.NARROW,),
+    ])
+    def test_changes_layer_sizes(self, layer_to_resize, direction):
+        """Test that ResizeNeuronLayer can widen and narrow layers"""
+        mutagen = ResizeNeuronLayer(layer_to_resize, direction)
+        original_gene = CreateNeuron(**random_neuron_state())
         mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
-        
-        new_hidden_size = mutant_gene.input_hidden.shape[1]
-        
-        # Check all shapes are consistent
-        self.assertEqual(mutant_gene.input_hidden.shape, (input_size, new_hidden_size))
-        self.assertEqual(mutant_gene.feedback_hidden.shape, (feedback_size, new_hidden_size))
-        self.assertEqual(mutant_gene.hidden_feedback.shape, (new_hidden_size, feedback_size))
-        self.assertEqual(mutant_gene.hidden_output.shape, (new_hidden_size, 1))
-        
-        # Initial values should be unchanged in size
-        self.assertEqual(mutant_gene.input.shape, (input_size,))
-        self.assertEqual(mutant_gene.feedback.shape, (feedback_size,))
-        self.assertEqual(mutant_gene.output.shape, (1,))
+        original_size = len(getattr(original_gene, SIZE_ATTR[layer_to_resize]))
+        mutant_size = len(getattr(mutant_gene, SIZE_ATTR[layer_to_resize]))
+        if direction == ResizeDirection.WIDEN:
+            self.assertEqual(mutant_size, original_size + 1, f"{layer_to_resize.name} layer should widen by 1")
+        else:
+            self.assertEqual(mutant_size, original_size - 1, f"{layer_to_resize.name} layer should narrow  by 1")
 
-    def test_narrow_layer_minimum_size(self):
-        """Test that narrowing preserves at least 1 hidden neuron"""
-        original_gene = CreateNeuron(**random_neuron_state(5, 5, 1))
-        
-        mutagen = ResizeNeuronLayer(LayerToResize.HIDDEN)
-        
-        # Try narrowing multiple times - layer of size 1 should never go below 1
-        for seed in range(20):
-            set_rng(default_rng(seed))
-            mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
-            self.assertGreaterEqual(mutant_gene.input_hidden.shape[1], 1)
 
-    def test_persist_reload(self):
-        """Test that ResizeNeuronLayer can be persisted and reloaded"""
-        mutagen = ResizeNeuronLayer(LayerToResize.HIDDEN, 0.03)
+    @parameterized.expand([
+        (LayerToResize.INPUT,),
+        (LayerToResize.HIDDEN,),
+        (LayerToResize.FEEDBACK,),
+    ])
+    def test_narrow_minimum_size(self, layer_to_resize):
+        """Test that each layer type preserves minimum size of 1"""
+        mutagen = ResizeNeuronLayer(layer_to_resize, ResizeDirection.NARROW)
+        original_gene = CreateNeuron(**random_neuron_state(
+            input_size=1 if layer_to_resize == LayerToResize.INPUT else 5,
+            feedback_size=1 if layer_to_resize == LayerToResize.FEEDBACK else 5,
+            hidden_size=1 if layer_to_resize == LayerToResize.HIDDEN else 5 ))
+        
+        set_rng(default_rng(42))
+        mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
+        size_attr = SIZE_ATTR[layer_to_resize]
+        new_size = len(getattr(mutant_gene, size_attr))
+        self.assertGreaterEqual(new_size, 1, f"{layer_to_resize.name} layer should never go below 1")
+
+
+    @parameterized.expand([
+        (LayerToResize.INPUT, ResizeDirection.WIDEN,),
+        (LayerToResize.INPUT, ResizeDirection.NARROW,),
+        (LayerToResize.HIDDEN, ResizeDirection.WIDEN,),
+        (LayerToResize.HIDDEN, ResizeDirection.NARROW,),
+        (LayerToResize.FEEDBACK, ResizeDirection.WIDEN,),
+        (LayerToResize.FEEDBACK, ResizeDirection.NARROW,),
+    ])
+    def test_value_preservation(self, layer_to_resize, direction):
+        """Test that non-resized arrays maintain original values and resized arrays have new values"""
+        mutagen = ResizeNeuronLayer(layer_to_resize, direction)
+        original_gene = CreateNeuron(**random_neuron_state())
+        mutant_gene = mutagen.mutate_CreateNeuron(original_gene)
+        for attr in ALL_ATTRS:
+            orig_val = getattr(original_gene, attr)
+            mut_val = getattr(mutant_gene, attr)
+            if attr not in RESIZED_ATTRS[layer_to_resize]:
+                assert_array_equal(mut_val, orig_val, f"{attr} should be unchanged when resizing {layer_to_resize.name}")
+            else:
+                self.assertFalse(array_equal(mut_val, orig_val), f"{attr} should be changed when resizing")
+                larger, smaller = (mut_val, orig_val) if direction == ResizeDirection.WIDEN else (orig_val, mut_val)
+                for ax in range(larger.ndim):
+                    if larger.shape[ax] == smaller.shape[ax] + 1:
+                        resized_ax = ax
+                        break
+                self.assertIsNotNone(resized_ax, f"{attr}: should have a resized dimension")
+                found = False
+                for removed_idx in range(larger.shape[resized_ax]):
+                    if array_equal(np.delete(larger, removed_idx, axis=resized_ax), smaller):
+                        found = True
+                        break
+                self.assertTrue(found, f"{attr}: should recover original by removing one slice along dimension {resized_ax}")
+
+    @parameterized.expand([
+        (LayerToResize.INPUT, ResizeDirection.WIDEN,),
+        (LayerToResize.HIDDEN, ResizeDirection.WIDEN,),
+        (LayerToResize.FEEDBACK, ResizeDirection.WIDEN,),
+        (LayerToResize.INPUT, ResizeDirection.NARROW,),
+        (LayerToResize.HIDDEN, ResizeDirection.NARROW,),
+        (LayerToResize.FEEDBACK, ResizeDirection.NARROW,),
+    ])
+    def test_persist_reload_all_layer_types(self, layer_type, direction):
+        """Test that ResizeNeuronLayer can be persisted and reloaded for all layer types"""
+        mutagen = ResizeNeuronLayer(layer_type, direction, 0.03)
         mutagen_id = mutagen.id
         engine = create_engine("sqlite://")
         EntityBase.metadata.create_all(engine)
@@ -92,5 +131,6 @@ class ResizeNeuronLayerMutagen_test(unittest.TestCase):
             reloaded = session.get(ResizeNeuronLayer, mutagen_id)
             self.assertIsNotNone(reloaded)
             self.assertEqual(reloaded.id, mutagen_id)
-            self.assertEqual(reloaded.layer, LayerToResize.HIDDEN)
+            self.assertEqual(reloaded.layer, layer_type)
+            self.assertEqual(reloaded.direction, direction)
             self.assertEqual(reloaded.base_susceptibility, 0.03)

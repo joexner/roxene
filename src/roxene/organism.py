@@ -19,7 +19,7 @@ from .persistence import EntityBase
 class _Organism_Input(EntityBase):
     __tablename__ = "organism_input"
 
-    organism_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organism.id"), primary_key=True)
+    organism_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organism.id", ondelete="CASCADE"), primary_key=True)
     name: Mapped[str] = mapped_column(primary_key=True)
     inputcell_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("input_cell.id"))
 
@@ -34,7 +34,7 @@ class _Organism_Input(EntityBase):
 class _Organism_Output(EntityBase):
     __tablename__ = "organism_output"
 
-    organism_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organism.id"), primary_key=True)
+    organism_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organism.id", ondelete="CASCADE"), primary_key=True)
     name: Mapped[str] = mapped_column(primary_key=True)
     neuron_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("neuron.id"))
 
@@ -49,7 +49,7 @@ class _Organism_Output(EntityBase):
 class _Organism_Cell(EntityBase):
     __tablename__ = "organism_cell"
 
-    organism_id = mapped_column(ForeignKey("organism.id"), primary_key=True)
+    organism_id = mapped_column(ForeignKey("organism.id", ondelete="CASCADE"), primary_key=True)
     ordinal = mapped_column("ordinal", Integer, primary_key=True)
     cell_id = mapped_column(ForeignKey("cell.id"), primary_key=True)
 
@@ -63,7 +63,7 @@ class _Organism_Cell(EntityBase):
 class _Organism_Unused_Output_Name(EntityBase):
     __tablename__ = "organism_unused_output_name"
 
-    organism_id = mapped_column(ForeignKey("organism.id"), primary_key=True)
+    organism_id = mapped_column(ForeignKey("organism.id", ondelete="CASCADE"), primary_key=True)
     ordinal = mapped_column("ordinal", Integer, primary_key=True)
 
     name = mapped_column(String())

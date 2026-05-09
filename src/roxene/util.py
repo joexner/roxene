@@ -41,4 +41,4 @@ def wiggle(x, log_wiggle, absolute_wiggle=0, rng: Generator = None):
     """
     rng = rng or get_rng()
     log_wiggled = sign(x) * exp(rng.normal(log(abs(x)), log_wiggle))
-    return rng.normal(log_wiggled, absolute_wiggle)
+    return rng.normal(log_wiggled, absolute_wiggle) if absolute_wiggle else log_wiggled

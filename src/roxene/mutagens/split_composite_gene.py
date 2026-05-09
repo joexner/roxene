@@ -1,31 +1,18 @@
-import uuid
-
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
-
 from ..genes.composite_gene import CompositeGene
 from ..mutagen import Mutagen
 from ..util import get_rng
 
 
-class CompositeGeneSplitMutagen(Mutagen):
-    __tablename__ = "composite_gene_split_mutagen"
-    __mapper_args__ = {"polymorphic_identity": "composite_gene_split_mutagen"}
+class SplitCompositeGene(Mutagen):
+    __mapper_args__ = {"polymorphic_identity": "split_composite_gene"}
 
-    id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
 
-    def __init__(self, base_susceptibility: float = 0.01, susceptibility_log_wiggle: float = 0.01):
-        super().__init__(base_susceptibility, susceptibility_log_wiggle)
+    def __init__(self, base_susceptibility: float = 0.01):
+        super().__init__(base_susceptibility)
 
     def mutate_CompositeGene(self, parent_gene: CompositeGene) -> CompositeGene:
         if parent_gene.iterations < 2:
-            return super().mutate_CompositeGene(parent_gene)
-
-        # Check if this gene should be mutated based on susceptibility
-        susceptibility = self.get_mutation_susceptibility(parent_gene)
-        if get_rng().random() >= susceptibility:
-            # No mutation, just recursively mutate child genes
-            return super().mutate_CompositeGene(parent_gene)
+            return parent_gene
 
         # Split the iterations randomly, ensuring both parts get at least 1 iteration
         # For iterations=N, we want first_iterations in range [1, N-1] so second_iterations is also ≥ 1

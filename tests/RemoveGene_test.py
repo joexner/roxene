@@ -27,7 +27,7 @@ class TestRemoveGeneMutagen(unittest.TestCase):
         self.assertEqual(len(mutant_gene.child_genes), len(original_gene.child_genes) - 1)
 
 
-    def test_remove_gene_multiple_times(self):
+    def test_multiple_times(self):
         mutagen = RemoveGene()
         gene = CompositeGene([RotateCells() for _ in range(5)])
 

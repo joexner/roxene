@@ -26,7 +26,7 @@ class CompositeGene(Gene):
         lazy="select",
     )
 
-    def __init__(self, child_genes: List[Gene], iterations: int = 1, parent_gene=None):
+    def __init__(self, child_genes: List[Gene] = [], iterations: int = 1, parent_gene=None):
         super().__init__(parent_gene)
         self.child_genes = child_genes
         self.iterations = iterations

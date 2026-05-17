@@ -13,10 +13,11 @@ from roxene.util import set_rng
 SEED = 11235
 
 
-class TestRemoveGeneMutagen(unittest.TestCase):
+class RemoveGene_test(unittest.TestCase):
 
     def setUp(self):
         set_rng(default_rng(SEED))
+
 
     def test_basic(self):
         mutagen = RemoveGene()
@@ -40,23 +41,21 @@ class TestRemoveGeneMutagen(unittest.TestCase):
     def test_removes_random_gene(self):
         mutagen = RemoveGene()
         original_gene = CompositeGene([RotateCells() for _ in range(10)])
-        original_child_ids = {g.id for g in original_gene.child_genes}
-        removed_child_gene_ids = set()
+        ever_removed = set()
 
         for attempt in range(1000):
             result = mutagen.mutate_CompositeGene(original_gene)
-            remaining_ids = {g.id for g in result.child_genes}
-            self.assertEqual(len(remaining_ids), 9)
-            self.assertTrue(remaining_ids.issubset(original_child_ids))
-            removed_ids = (original_child_ids - remaining_ids)
-            self.assertEqual(len(removed_ids), 1)
-            # Remember which one was removed
-            removed_child_gene_ids.update(removed_ids)
-            if removed_child_gene_ids == original_child_ids:
+            remaining = set(result.child_genes)
+            self.assertTrue(remaining.issubset(original_gene.child_genes))
+            removed = set(original_gene.child_genes) - remaining
+            self.assertEqual(len(removed), 1)
+            ever_removed.update(removed)
+            if len(ever_removed) == len(original_gene.child_genes):
+                print(f"All found in {attempt} attempts")
                 break
 
         # All original child genes should have been removed at some point
-        self.assertTrue(removed_child_gene_ids == original_child_ids)
+        self.assertEqual(ever_removed, set(original_gene.child_genes))
 
 
     def test_persist_reload(self):

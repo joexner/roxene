@@ -31,17 +31,13 @@ class AddGene_test(unittest.TestCase):
 
     def test_correct_gene_count(self):
         """Test that insertion adds exactly one gene"""
-        original_gene = CompositeGene(child_genes=[
-            RotateCells(RotateCells.Direction.BACKWARD),
-            RotateCells(RotateCells.Direction.BACKWARD)
-        ])
         mutagen = TestAddGene()
+        original_gene = CompositeGene([CompositeGene() for _ in range(4)])
         mutant_gene = mutagen.mutate_CompositeGene(original_gene)
-        
         self.assertEqual(len(mutant_gene.child_genes), len(original_gene.child_genes) + 1)
 
     def test_empty_composite_gets_gene_added(self):
-        """Test that empty CompositeGene gets a gene added to it"""
+        """Test that a CompositeGene gets the right gene added to it"""
         original_gene = CompositeGene(child_genes=[])
         
         mutagen = TestAddGene()

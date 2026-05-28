@@ -4,6 +4,10 @@ from ..util import get_rng
 
 
 class ShuffleGenes(Mutagen):
+    """
+    Moves one child gene of a CompositeGene around in the execution order
+    """
+
     __mapper_args__ = {"polymorphic_identity": "shuffle_genes"}
 
 
@@ -11,30 +15,26 @@ class ShuffleGenes(Mutagen):
         super().__init__(base_susceptibility)
         self.severity = severity
 
+
     def mutate_CompositeGene(self, parent_gene: CompositeGene) -> CompositeGene:
         if len(parent_gene.child_genes) < 2:
             return parent_gene
         
-        new_genes = list(parent_gene.child_genes)
-        num_genes = len(new_genes)
+        num_genes = len(parent_gene.child_genes)
         
-        first_index = get_rng().integers(0, num_genes)
-        
+        # Pick a random gene to move
+        source_index = get_rng().integers(num_genes)
+
+        # Calculate valid destination range excluding source_index
         max_distance = max(1, int(self.severity * num_genes))
+        min_dest = max(0, source_index - max_distance)
+        max_dest = min(num_genes - 1, source_index + max_distance)
+        valid_dests = [i for i in range(min_dest, max_dest + 1) if i != source_index]
 
-        # Calculate valid range for second index
-        min_second = max(0, first_index - max_distance)
-        max_second = min(num_genes - 1, first_index + max_distance)
-        
-        # Number of valid positions excluding first_index
-        num_valid = max_second - min_second  # range size minus 1 (for first_index)
-        
-        if num_valid > 0:
-            # Pick a random offset in [0, num_valid), then map to actual index
-            offset = get_rng().integers(0, num_valid)
-            second_index = min_second + offset
-            if second_index >= first_index:
-                second_index += 1  # Skip over first_index
-            new_genes[first_index], new_genes[second_index] = new_genes[second_index], new_genes[first_index]
+        dest_index = valid_dests[get_rng().integers(0, len(valid_dests))]
 
+        # Make a copy and move the gene from source to destination
+        new_genes = list(parent_gene.child_genes)
+        gene = new_genes.pop(source_index)
+        new_genes.insert(dest_index, gene)
         return CompositeGene(new_genes, parent_gene.iterations, parent_gene)

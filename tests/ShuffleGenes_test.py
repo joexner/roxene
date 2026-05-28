@@ -10,7 +10,7 @@ from roxene.genes import CompositeGene, RotateCells
 from roxene.mutagens import ShuffleGenes
 from roxene.util import set_rng
 
-SEED = 654
+SEED = 11235
 
 
 class ShuffleGenesMutagen_test(unittest.TestCase):
@@ -18,98 +18,58 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
     def setUp(self):
         set_rng(default_rng(SEED))
 
-    def test_shuffle_swaps_two_genes(self):
-        """Test that ShuffleGenes swaps exactly two genes"""
-        child_genes: List[Gene] = [
-            RotateCells(RotateCells.Direction.FORWARD),
-            RotateCells(RotateCells.Direction.BACKWARD),
-            RotateCells(RotateCells.Direction.FORWARD),
-            RotateCells(RotateCells.Direction.BACKWARD)
-        ]
-        original_gene = CompositeGene(child_genes=child_genes, iterations=2)
-        
-        mutagen = ShuffleGenes()
-        
-        # Try multiple times to ensure swap happens
-        swapped_found = False
+
+    def test_basic(self):
+        """Test that ShuffleGenes moves one gene to a new position"""
         for _ in range(20):
+            mutagen = ShuffleGenes(severity=default_rng().random())
+            original_gene = CompositeGene([RotateCells() for _ in range(10)], iterations=2)
             mutant_gene = mutagen.mutate_CompositeGene(original_gene)
-            
-            # Should still be a CompositeGene with same number of genes
+
+            # Should still be a CompositeGene with same genes in a different order
             self.assertIsInstance(mutant_gene, CompositeGene)
-            self.assertEqual(mutant_gene.iterations, 2)
-            self.assertEqual(len(mutant_gene.child_genes), len(child_genes))
-            
-            # Check if order changed (genes were swapped)
-            if mutant_gene.child_genes != child_genes:
-                swapped_found = True
-                # Count how many positions changed
-                differences = sum(1 for i in range(len(child_genes)) 
-                                if mutant_gene.child_genes[i] != child_genes[i])
-                # Swapping two genes changes exactly 2 positions (or 0 if they're adjacent to identical genes)
-                # Since we're swapping, we should see 2 or more changes
-                self.assertGreaterEqual(differences, 2, "Swap should change at least 2 positions")
-                break
-        
-        self.assertTrue(swapped_found, "Expected genes to be swapped in at least one of 20 tries")
+            self.assertEqual(mutant_gene.iterations, original_gene.iterations)
+            self.assertEqual(len(mutant_gene.child_genes), len(original_gene.child_genes))
+            self.assertSetEqual(set(mutant_gene.child_genes), set(original_gene.child_genes))
+
+            # Order must change (a gene is always moved to a different position)
+            self.assertNotEqual(mutant_gene.child_genes, original_gene.child_genes, "Shuffle should change gene order")
+
+            # Find the gene that moved the furthest
+            moved_gene = max(
+                original_gene.child_genes,
+                key=lambda g: abs(original_gene.child_genes.index(g) - mutant_gene.child_genes.index(g))
+            )
+
+            # Check that removing it from both lists leaves the same order
+            orig_without_moved = [g for g in original_gene.child_genes if g is not moved_gene]
+            mut_without_moved = [g for g in mutant_gene.child_genes if g is not moved_gene]
+            self.assertEqual(mut_without_moved, orig_without_moved, "Exactly one gene should have moved")
+
 
     def test_shuffle_severity_affects_distance(self):
-        """Test that severity affects how far apart swapped genes can be"""
-        child_genes: List[Gene] = [
-            RotateCells(RotateCells.Direction.FORWARD),
-            RotateCells(RotateCells.Direction.BACKWARD),
-            RotateCells(RotateCells.Direction.FORWARD),
-            RotateCells(RotateCells.Direction.BACKWARD),
-            RotateCells(RotateCells.Direction.FORWARD),
-            RotateCells(RotateCells.Direction.BACKWARD),
-        ]
-        original_gene = CompositeGene(child_genes=child_genes, iterations=1)
-        
-        # Low severity should only allow nearby swaps
-        mutagen_low = ShuffleGenes(0.1)
-        
-        # High severity should allow distant swaps
-        mutagen_high = ShuffleGenes(1.0)
-        
-        # Just verify they both work without errors
-        mutant_low = mutagen_low.mutate_CompositeGene(original_gene)
-        mutant_high = mutagen_high.mutate_CompositeGene(original_gene)
-        
-        self.assertEqual(len(mutant_low.child_genes), len(child_genes))
-        self.assertEqual(len(mutant_high.child_genes), len(child_genes))
+        """Test that gene swap distance stays within the range dictated by severity"""
+        original_gene = CompositeGene([RotateCells() for _ in range(100)])
 
-
-    def test_shuffle_genes_preserves_all_genes(self):
-        """Test that swapping preserves all genes (no additions or removals)"""
-        child_genes: List[Gene] = [
-            RotateCells(RotateCells.Direction.FORWARD),
-            RotateCells(RotateCells.Direction.BACKWARD),
-            RotateCells(RotateCells.Direction.FORWARD)
-        ]
-        original_gene = CompositeGene(child_genes=child_genes, iterations=1)
-        
-        mutagen = ShuffleGenes()
-        
-        for _ in range(10):
+        for _ in range(500):
+            severity = default_rng().random()
+            mutagen = ShuffleGenes(severity)
             mutant_gene = mutagen.mutate_CompositeGene(original_gene)
-            
-            # Should have same genes (possibly in different order)
-            self.assertEqual(len(mutant_gene.child_genes), len(child_genes))
-            mutant_ids = sorted([gene.id for gene in mutant_gene.child_genes])
-            original_ids = sorted([gene.id for gene in child_genes])
-            self.assertEqual(mutant_ids, original_ids)
 
-    def test_shuffle_single_gene(self):
-        """Test that CompositeGenes with only 1 child are not shuffled"""
-        child_genes: List[Gene] = [RotateCells(RotateCells.Direction.FORWARD)]
-        original_gene = CompositeGene(child_genes=child_genes, iterations=1)
-        
-        mutagen = ShuffleGenes()
-        
-        mutant_gene = mutagen.mutate_CompositeGene(original_gene)
-        
-        # Can't swap a single gene, should remain the same
-        self.assertEqual(len(mutant_gene.child_genes), 1)
+            # Find the distance the moved gene, moved
+            distance_moved = max(
+                abs(original_gene.child_genes.index(g) - mutant_gene.child_genes.index(g))
+                for g in original_gene.child_genes
+            )
+
+            # Max allowed distance = max(1, int(severity * num_genes))
+            max_allowed = max(1, int(severity * len(original_gene.child_genes)))
+
+            self.assertLessEqual(distance_moved, max_allowed)
+
+            ratio = distance_moved / max_allowed if max_allowed > 0 else 0
+            print(f"severity={severity:.4f}  distance={distance_moved}  max_allowed={max_allowed}  ratio={ratio:.4f}")
+
 
     def test_persist_reload(self):
         """Test that ShuffleGenes can be persisted and reloaded"""

@@ -1,14 +1,13 @@
 import unittest
-from typing import List
 
 from numpy.random import default_rng
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from roxene import EntityBase, Gene
+from roxene import EntityBase
 from roxene.genes import CompositeGene, RotateCells
 from roxene.mutagens import ShuffleGenes
-from roxene.util import set_rng
+from roxene.util import get_rng, set_rng
 
 SEED = 11235
 
@@ -22,7 +21,7 @@ class ShuffleGenesMutagen_test(unittest.TestCase):
     def test_basic(self):
         """Test that ShuffleGenes moves one gene to a new position"""
         for _ in range(20):
-            mutagen = ShuffleGenes(severity=default_rng().random())
+            mutagen = ShuffleGenes(severity=get_rng().random())
             original_gene = CompositeGene([RotateCells() for _ in range(10)], iterations=2)
             mutant_gene = mutagen.mutate_CompositeGene(original_gene)
 

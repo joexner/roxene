@@ -4,8 +4,9 @@ from ..util import get_rng
 
 
 class SplitCompositeGene(Mutagen):
-    __mapper_args__ = {"polymorphic_identity": "split_composite_gene"}
+    """Split up a CompositeGene's iterations up over 2 child copies"""
 
+    __mapper_args__ = {"polymorphic_identity": "split_composite_gene"}
 
     def __init__(self, base_susceptibility: float = 0.01):
         super().__init__(base_susceptibility)
@@ -15,8 +16,7 @@ class SplitCompositeGene(Mutagen):
             return parent_gene
 
         # Split the iterations randomly, ensuring both parts get at least 1 iteration
-        # For iterations=N, we want first_iterations in range [1, N-1] so second_iterations is also ≥ 1
-        first_iterations = get_rng().integers(1, parent_gene.iterations).astype(int)  # 1 to iterations-1 (exclusive upper bound)
+        first_iterations = get_rng().integers(1, parent_gene.iterations).astype(int)
         second_iterations = parent_gene.iterations - first_iterations
 
         # Create two new CompositeGenes with the same child genes but split iterations

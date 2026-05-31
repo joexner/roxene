@@ -4,25 +4,18 @@ from ..util import get_rng
 
 
 class ShuffleGenes(Mutagen):
-    """
-    Moves one child gene of a CompositeGene around in the execution order
-    """
+    """Moves one child gene of a CompositeGene around in the execution order"""
 
     __mapper_args__ = {"polymorphic_identity": "shuffle_genes"}
-
 
     def __init__(self, severity: float = 1.0, base_susceptibility: float = 0.01):
         super().__init__(base_susceptibility)
         self.severity = severity
 
-
     def mutate_CompositeGene(self, parent_gene: CompositeGene) -> CompositeGene:
-        if len(parent_gene.child_genes) < 2:
-            return parent_gene
-        
         num_genes = len(parent_gene.child_genes)
-        
-        # Pick a random gene to move
+        if num_genes < 2:
+            return parent_gene
         source_index = get_rng().integers(num_genes)
 
         # Calculate valid destination range excluding source_index

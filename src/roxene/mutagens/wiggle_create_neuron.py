@@ -30,18 +30,16 @@ class WiggleCreateNeuron(Mutagen):
         self.severity = severity
 
     def mutate_CreateNeuron(self, gene: CreateNeuron) -> CreateNeuron:
-        args = {
-            "input":           self.wiggle(gene.input)           if self.layer == CNLayer.input_initial_value    else gene.input,
-            "feedback":        self.wiggle(gene.feedback)        if self.layer == CNLayer.feedback_initial_value else gene.feedback,
-            "output":          self.wiggle(gene.output)          if self.layer == CNLayer.output_initial_value   else gene.output,
-            "input_hidden":    self.wiggle(gene.input_hidden)    if self.layer == CNLayer.input_hidden           else gene.input_hidden,
-            "hidden_feedback": self.wiggle(gene.hidden_feedback) if self.layer == CNLayer.hidden_feedback        else gene.hidden_feedback,
-            "feedback_hidden": self.wiggle(gene.feedback_hidden) if self.layer == CNLayer.feedback_hidden        else gene.feedback_hidden,
-            "hidden_output":   self.wiggle(gene.hidden_output)   if self.layer == CNLayer.hidden_output          else gene.hidden_output,
-            "parent_gene":     gene
-        }
-        return CreateNeuron(**args)
+        return CreateNeuron(
+            input =           self.wiggle(gene.input)           if self.layer == CNLayer.input_initial_value    else gene.input,
+            feedback =        self.wiggle(gene.feedback)        if self.layer == CNLayer.feedback_initial_value else gene.feedback,
+            output =          self.wiggle(gene.output)          if self.layer == CNLayer.output_initial_value   else gene.output,
+            input_hidden =    self.wiggle(gene.input_hidden)    if self.layer == CNLayer.input_hidden           else gene.input_hidden,
+            hidden_feedback = self.wiggle(gene.hidden_feedback) if self.layer == CNLayer.hidden_feedback        else gene.hidden_feedback,
+            feedback_hidden = self.wiggle(gene.feedback_hidden) if self.layer == CNLayer.feedback_hidden        else gene.feedback_hidden,
+            hidden_output =   self.wiggle(gene.hidden_output)   if self.layer == CNLayer.hidden_output          else gene.hidden_output,
+            parent_gene =     gene)
 
     def wiggle(self, x: ndarray) -> ndarray:
-        return util.wiggle(x, log_wiggle = self.severity * 25.0, absolute_wiggle = self.severity * 1.0)
+        return util.wiggle(x, log_wiggle = self.severity * 5.0, absolute_wiggle = self.severity * 1.0)
 

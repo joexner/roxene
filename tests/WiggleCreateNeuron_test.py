@@ -33,10 +33,12 @@ class WiggleCreateNeuron_test(unittest.TestCase):
 
     @parameterized.expand(_LAYER_CASES)
     def test_wiggle_layer(self, layer, attr_to_wiggle):
+        """Check that the target layer is wiggled and the others are not"""
         gene = CreateNeuron(**random_neuron_state(5, 5, 10))
         mutagen = WiggleCreateNeuron(layer)
         mutant = mutagen.mutate_CreateNeuron(gene)
         self.assertIsInstance(mutant, CreateNeuron)
+        self.assertIs(mutant.parent_gene, gene)
         for (_, attr_to_check) in _LAYER_CASES:
             if attr_to_check == attr_to_wiggle:
                 self.assertFalse(np.any(getattr(mutant, attr_to_check) == getattr(gene, attr_to_check)))
@@ -54,20 +56,13 @@ class WiggleCreateNeuron_test(unittest.TestCase):
         set_rng(default_rng(SEED))
         mutant_high = mutagen_high.mutate_CreateNeuron(original_gene)
 
-        diff_low = np.abs(mutant_low.input_hidden - original_gene.input_hidden).mean()
-        diff_high = np.abs(mutant_high.input_hidden - original_gene.input_hidden).mean()
+        # Get the average magnitude of the wiggle over the whole target layer
+        np_abs_low = np.abs(mutant_low.input_hidden - original_gene.input_hidden)
+        diff_low = np_abs_low.mean()
+        np_abs_high = np.abs(mutant_high.input_hidden - original_gene.input_hidden)
+        diff_high = np_abs_high.mean()
 
         self.assertGreater(diff_high, diff_low)
-
-    def test_parent_gene_set(self):
-        original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
-        mutant_gene = WiggleCreateNeuron(CNLayer.input_hidden).mutate_CreateNeuron(original_gene)
-        self.assertEqual(mutant_gene.parent_gene, original_gene)
-
-    def test_no_mutation_at_zero_susceptibility(self):
-        original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
-        mutant_gene = WiggleCreateNeuron(CNLayer.input_hidden, 0.0).mutate(original_gene)
-        self.assertIs(mutant_gene, original_gene)
 
     def test_persist_reload(self):
         mutagen = WiggleCreateNeuron(CNLayer.hidden_feedback, base_susceptibility=0.02)

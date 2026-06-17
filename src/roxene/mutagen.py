@@ -37,10 +37,8 @@ class Mutagen(EntityBase):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
     type: Mapped[str]
-
-    severity: Mapped[Optional[float]] = mapped_column("f1", Float, nullable=True)
-
     base_susceptibility: Mapped[float]
+    severity: Mapped[Optional[float]] = mapped_column(nullable=True)
 
     # Columns for subclass use - not used in base Mutagen
     _i1: Mapped[Optional[int]] = mapped_column("i1", Integer, nullable=True)

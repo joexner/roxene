@@ -2,17 +2,16 @@ import unittest
 
 import numpy as np
 from numpy.random import default_rng
+from parameterized import parameterized
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-
-from parameterized import parameterized
 
 from roxene import EntityBase, random_neuron_state
 from roxene.genes import CreateNeuron
 from roxene.mutagens import WiggleCreateNeuron, CNLayer
 from roxene.util import set_rng
 
-SEED = 333
+SEED = 11235
 
 # (layer_to_mutate, mutated_attr_name)
 _LAYER_CASES = [
@@ -45,24 +44,21 @@ class WiggleCreateNeuron_test(unittest.TestCase):
             else:
                 np.testing.assert_array_equal(getattr(mutant, attr_to_check), getattr(gene, attr_to_check))
 
-    def test_severity_affects_wiggle_magnitude(self):
-        original_gene = CreateNeuron(**random_neuron_state(5, 5, 10))
+    def test_severity_affects_wiggle_magnitude(self, severity):
+        """Check that severity affects wiggle magnitude"""
+        original = CreateNeuron(**random_neuron_state(5, 5, 10))
+        severities = [0.001, 0.01, 0.1, 0.5, 1.0]
+        diffs = []
 
-        mutagen_low = WiggleCreateNeuron(CNLayer.input_hidden, 0.1)
-        mutagen_high = WiggleCreateNeuron(CNLayer.input_hidden, 1.0)
+        for s in severities:
+            set_rng(default_rng(SEED))
+            mutagen = WiggleCreateNeuron(CNLayer.input_hidden, s)
+            mutant = mutagen.mutate_CreateNeuron(original)
+            diffs.append(np.abs(mutant.input_hidden - original.input_hidden).mean())
 
-        set_rng(default_rng(SEED))
-        mutant_low = mutagen_low.mutate_CreateNeuron(original_gene)
-        set_rng(default_rng(SEED))
-        mutant_high = mutagen_high.mutate_CreateNeuron(original_gene)
-
-        # Get the average magnitude of the wiggle over the whole target layer
-        np_abs_low = np.abs(mutant_low.input_hidden - original_gene.input_hidden)
-        diff_low = np_abs_low.mean()
-        np_abs_high = np.abs(mutant_high.input_hidden - original_gene.input_hidden)
-        diff_high = np_abs_high.mean()
-
-        self.assertGreater(diff_high, diff_low)
+        for i in range(1, len(diffs)):
+            msg = f"Expected wiggle magnitude to increase with severity, got {dict(zip(severities, diffs))}"
+            self.assertGreater(diffs[i], diffs[i - 1], msg)
 
     def test_persist_reload(self):
         mutagen = WiggleCreateNeuron(CNLayer.hidden_feedback, base_susceptibility=0.02)

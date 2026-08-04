@@ -44,7 +44,7 @@ class WiggleCreateNeuron_test(unittest.TestCase):
             else:
                 np.testing.assert_array_equal(getattr(mutant, attr_to_check), getattr(gene, attr_to_check))
 
-    def test_severity_affects_wiggle_magnitude(self, severity):
+    def test_severity_affects_wiggle_magnitude(self):
         """Check that severity affects wiggle magnitude"""
         original = CreateNeuron(**random_neuron_state(5, 5, 10))
         severities = [0.001, 0.01, 0.1, 0.5, 1.0]

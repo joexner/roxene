@@ -39,7 +39,7 @@ def random_neuron_state(input_size=10, feedback_size=10, hidden_size=10, rng: Ge
     }
 
 
-def wiggle(x, log_wiggle, absolute_wiggle=0, rng: Generator = None):
+def wiggle(x, log_wiggle, absolute_wiggle = None, rng: Generator = None):
     """
     Randomly vary a value x != 0 by
     y = e^ln(x +/- log_wiggle) +/- absolute_wiggle

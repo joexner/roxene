@@ -11,7 +11,7 @@ from roxene.genes import CompositeGene, RotateCells
 from roxene.mutagens.add_gene import AddGene
 from roxene.util import set_rng
 
-SEED = 456
+SEED = 11235
 
 new_gene = Gene()
 

@@ -87,3 +87,16 @@ class AddGene_test(unittest.TestCase):
         self.assertEqual(mutant_gene.iterations, original_gene.iterations)
         self.assertEqual(len(mutant_gene.child_genes), len(original_gene.child_genes) + 1)
         self.assertEqual(mutant_gene.parent_gene, original_gene)
+
+    def test_none_gene_returns_unchanged(self):
+        """Test that returning None from get_new_gene leaves the parent unchanged"""
+        class NoneReturningAddGene(TestAddGene):
+            def get_new_gene(self, parent_gene: CompositeGene) -> None:
+                return None
+
+        mutagen = NoneReturningAddGene()
+        original_gene = CompositeGene([RotateCells(RotateCells.Direction.BACKWARD)])
+        mutant_gene = mutagen.mutate_CompositeGene(original_gene)
+
+        # Should return the exact same object, unchanged
+        self.assertIs(mutant_gene, original_gene)

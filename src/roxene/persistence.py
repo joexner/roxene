@@ -3,9 +3,10 @@ from operator import getitem
 import numpy as np
 import sqlalchemy.types
 import torch
-from sqlalchemy import PickleType
+from sqlalchemy import PickleType, Float, Integer
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.mutable import Mutable
+from sqlalchemy.types import TypeDecorator
 
 
 class EntityBase(DeclarativeBase):
@@ -73,8 +74,7 @@ class TrackedTensor(Mutable):
         return self.tensor.shape
 
 
-class WrappedTensor(sqlalchemy.types.TypeDecorator):
-
+class WrappedTensor(TypeDecorator):
     impl = PickleType
     cache_ok = True
 
@@ -83,3 +83,18 @@ class WrappedTensor(sqlalchemy.types.TypeDecorator):
 
     def process_result_value(self, value: torch.Tensor, dialect):
         return TrackedTensor(value) if value is not None else None
+
+class NumpySafeFloat(TypeDecorator):
+    impl = Float
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        return float(value) if value is not None else None
+
+
+class NumpySafeInt(TypeDecorator):
+    impl = Integer
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        return int(value) if value is not None else None

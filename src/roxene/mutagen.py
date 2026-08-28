@@ -1,16 +1,17 @@
 import uuid
 from typing import Optional
 
-from sqlalchemy import ForeignKey, Integer, Float
+from sqlalchemy import ForeignKey
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict, validates
+
+from .persistence import EntityBase, NumpySafeFloat, NumpySafeInt
 
 from .gene import Gene
 from .genes.composite_gene import CompositeGene
 from .genes.connect_neurons import ConnectNeurons
 from .genes.create_neuron import CreateNeuron
 from .genes.rotate_cells import RotateCells
-from .persistence import EntityBase
 from .util import wiggle, get_rng
 
 # Constant for susceptibility log wiggle used across all mutagens
@@ -22,7 +23,7 @@ class _Mutagen_Susceptibility(EntityBase):
 
     mutagen_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mutagen.id"), primary_key=True)
     gene_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("gene.id"), primary_key=True)
-    susceptibility: Mapped[float]
+    susceptibility: Mapped[float] = mapped_column(NumpySafeFloat)
 
     mutagen: Mapped["Mutagen"] = relationship(back_populates="_susceptibility_records")
     gene: Mapped[Optional[Gene]] = relationship()
@@ -37,13 +38,13 @@ class Mutagen(EntityBase):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
     type: Mapped[str]
-    base_susceptibility: Mapped[float]
-    severity: Mapped[Optional[float]] = mapped_column(nullable=True)
+    base_susceptibility: Mapped[float] = mapped_column(NumpySafeFloat)
+    severity: Mapped[Optional[float]] = mapped_column(NumpySafeFloat, nullable=True)
 
     # Columns for subclass use - not used in base Mutagen
-    _i1: Mapped[Optional[int]] = mapped_column("i1", Integer, nullable=True)
-    _i2: Mapped[Optional[int]] = mapped_column("i2", Integer, nullable=True)
-    _i3: Mapped[Optional[int]] = mapped_column("i3", Integer, nullable=True)
+    _i1: Mapped[Optional[int]] = mapped_column("i1", NumpySafeInt, nullable=True)
+    _i2: Mapped[Optional[int]] = mapped_column("i2", NumpySafeInt, nullable=True)
+    _i3: Mapped[Optional[int]] = mapped_column("i3", NumpySafeInt, nullable=True)
 
     __mapper_args__ = {
         "polymorphic_identity": "mutagen",
@@ -68,8 +69,9 @@ class Mutagen(EntityBase):
 
     @validates("severity", "base_susceptibility")
     def validate_range(self, key, value):
-        if value is not None and (value < 0.0 or value > 1.0):
-            raise ValueError(f"{key} must be between 0.0 and 1.0, got {value}")
+        if value is not None:
+            if value < 0.0 or value > 1.0:
+                raise ValueError(f"{key} must be between 0.0 and 1.0, got {value}")
         return value
 
     def get_mutation_susceptibility(self, gene: Gene) -> float:

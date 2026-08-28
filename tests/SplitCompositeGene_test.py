@@ -22,14 +22,27 @@ class SplitCompositeGene_test(unittest.TestCase):
         for _ in range(20):
             original_gene = CompositeGene([RotateCells() for _ in range(3)], iterations=10)
             mutant_gene = mutagen.mutate_CompositeGene(original_gene)
+
             self.assertIsInstance(mutant_gene, CompositeGene)
             self.assertEqual(mutant_gene.iterations, 1)
             self.assertEqual(len(mutant_gene.child_genes), 2)
-            self.assertEqual(sum([child.iterations for child in mutant_gene.child_genes]), original_gene.iterations)
+
+            total_child_iterations = sum([child.iterations for child in mutant_gene.child_genes])
+            self.assertEqual(total_child_iterations, original_gene.iterations)
+
+            self.assertIs(mutant_gene.parent_gene, original_gene)
             for new_child_gene in mutant_gene.child_genes:
                 self.assertIsInstance(new_child_gene, CompositeGene)
                 self.assertSequenceEqual(new_child_gene.child_genes, original_gene.child_genes)
                 self.assertGreaterEqual(new_child_gene.iterations, 1)
+                self.assertIs(new_child_gene.parent_gene, original_gene)
+
+    def test_no_split_below_two_iterations(self):
+        mutagen = SplitCompositeGene()
+        for iterations in (0, 1):
+            original_gene = CompositeGene([RotateCells()], iterations=iterations)
+            mutant_gene = mutagen.mutate_CompositeGene(original_gene)
+            self.assertIs(mutant_gene, original_gene)
 
     def test_persist_reload(self):
         mutagen = SplitCompositeGene(0.01)

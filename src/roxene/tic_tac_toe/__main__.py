@@ -55,8 +55,9 @@ else:
     admin_engine.dispose()
     db_url = f"postgresql+psycopg2://postgres:postgres@localhost:5432/{db_name}"
 
+num_threads = args.num_threads
 
-engine = create_engine(db_url)
+engine = create_engine(db_url, pool_size=num_threads)
 EntityBase.metadata.create_all(engine)
 
 logger.info(f"Seed={SEED}")
@@ -89,7 +90,6 @@ def run_trials(worker_trials: int, worker_rng: Generator, worker_logger: logging
             env.breed(num_to_breed)
             worker_logger.info("Done breeding")
 
-num_threads = args.num_threads
 threads = []
 rngs = main_rng.spawn(num_threads)
 

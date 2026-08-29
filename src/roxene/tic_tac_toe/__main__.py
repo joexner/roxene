@@ -7,6 +7,7 @@ from threading import Thread
 
 from numpy.random import Generator, default_rng
 from sqlalchemy import create_engine
+from sqlalchemy.testing.config import db_url
 
 from .environment import Environment
 from ..persistence import EntityBase
@@ -19,11 +20,12 @@ logger = logging.getLogger(__name__)
 
 parser = argparse.ArgumentParser(description='Play some tic-tac-toe')
 
-parser.add_argument('pool_size', type=int, help='Number of cloned Organisms initially in the pool')
-parser.add_argument('num_trials', type=int, help='Number of tic-tac-toe trials to run')
+parser.add_argument('pool_size',                 type=int, help='Number of cloned Organisms initially in the pool')
+parser.add_argument('num_trials',                type=int, help='Number of tic-tac-toe trials to run')
+parser.add_argument('--num_threads',             type=int, help='Number of threads to use to run trials', default=1)
 parser.add_argument('--breed_and_cull_interval', type=int, help='Number of trials between rounds of culling and breeding', default=10)
-parser.add_argument('--num_mutagens', type=int, help='Number of mutagens in the pool', default=100)
-
+parser.add_argument('--num_mutagens',            type=int, help='Number of mutagens in the pool', default=100)
+parser.add_argument("--db_url",                  type=str, help='Database URL')
 args = parser.parse_args(sys.argv[1:])
 
 num_organisms = args.pool_size
@@ -40,16 +42,20 @@ SEED = 11235
 #     'seed': SEED
 # })
 
-# Create a fresh Postgres database for this run and initialize schema
-admin_url = "postgresql+psycopg2://postgres:postgres@localhost:5432/postgres"
-db_name = f"roxene_{int(time.time())}"
-logger.info(f"Creating database {db_name}")
-admin_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
-with admin_engine.connect() as conn:
-    conn.execute(text(f'CREATE DATABASE "{db_name}"'))
-admin_engine.dispose()
+if args.db_url:
+    db_url = args.db_url
+else:
+    # Create a fresh Postgres database for this run and initialize schema
+    admin_url = "postgresql+psycopg2://postgres:postgres@localhost:5432/postgres"
+    db_name = f"roxene_{int(time.time())}"
+    logger.info(f"Creating database {db_name}")
+    admin_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
+    with admin_engine.connect() as conn:
+        conn.execute(text(f'CREATE DATABASE "{db_name}"'))
+    admin_engine.dispose()
+    db_url = f"postgresql+psycopg2://postgres:postgres@localhost:5432/{db_name}"
 
-db_url = f"postgresql+psycopg2://postgres:postgres@localhost:5432/{db_name}"
+
 engine = create_engine(db_url)
 EntityBase.metadata.create_all(engine)
 
@@ -66,7 +72,7 @@ logger.info("Done populating environment")
 # Replace 5% of the herd at a time, up to 5
 num_to_cull = num_to_breed = int(max(num_organisms * .05, 5))
 
-def run(worker_trials: int, worker_rng: Generator, worker_logger: logging.Logger):
+def run_trials(worker_trials: int, worker_rng: Generator, worker_logger: logging.Logger):
     set_rng(worker_rng)
     for iteration in range(worker_trials):
         worker_logger.info(f"Building trial {iteration}")
@@ -83,14 +89,14 @@ def run(worker_trials: int, worker_rng: Generator, worker_logger: logging.Logger
             env.breed(num_to_breed)
             worker_logger.info("Done breeding")
 
-num_threads = 10
+num_threads = args.num_threads
 threads = []
 rngs = main_rng.spawn(num_threads)
 
 for i in range(num_threads):
     logger.info(f"Starting thread {i}")
     thread = Thread(
-        target=run,
+        target=run_trials,
         args=(
             int(( num_trials - 1 ) / num_threads ) + 1, # Estimate, total could be over by (num_threads - 1)
             rngs.pop(),

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from typing import Dict, List, Optional
 
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import ForeignKey, Integer, String, DateTime
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
@@ -77,16 +78,15 @@ class Organism(EntityBase):
     __tablename__ = "organism"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
+    created_date: Mapped[datetime] = mapped_column(DateTime)
+    deleted_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     cells: Mapped[List[Cell]] = association_proxy(target_collection="_cells_list", attr="cell", creator=_Organism_Cell)
-    inputs: Mapped[Dict[str, InputCell]] = association_proxy(target_collection="_inputs_map", attr="inputcell",
-                                                             creator=_Organism_Input)
-    outputs: Mapped[Dict[str, Neuron]] = association_proxy(target_collection="_outputs_map", attr="neuron",
-                                                           creator=_Organism_Output)
+    inputs: Mapped[Dict[str, InputCell]] = association_proxy(target_collection="_inputs_map", attr="inputcell", creator=_Organism_Input)
+    outputs: Mapped[Dict[str, Neuron]] = association_proxy(target_collection="_outputs_map", attr="neuron", creator=_Organism_Output)
 
     genotype: Mapped[Optional[Gene]] = relationship()
-    unused_output_names: Mapped[List[str]] = association_proxy(target_collection="_unused_output_names_list",
-                                                               attr="name", creator=_Organism_Unused_Output_Name)
+    unused_output_names: Mapped[List[str]] = association_proxy(target_collection="_unused_output_names_list", attr="name", creator=_Organism_Unused_Output_Name)
 
     genotype_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("gene.id"))
 
@@ -122,6 +122,7 @@ class Organism(EntityBase):
 
     def __init__(self, input_names={}, output_names={}, genotype: Gene = None):
         self.id = uuid.uuid4()
+        self.created_date = datetime.now()
         for name in input_names:
             self.inputs[name] = InputCell()
         self.unused_output_names.extend(output_names)

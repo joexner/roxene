@@ -76,10 +76,12 @@ class Population_test(unittest.TestCase):
             initial_count = pop.count(session)
             self.assertEqual(initial_count, pop_size)
 
-            # Try to remove non-existent organism
+            # Try to remove non-existent organism - should raise
             fake_id = uuid.uuid4()
-            self.assertNotIn(fake_id, ids) # Not the ID of an Organism we added already
-            pop.remove(fake_id, session)  # Should not raise exception
+            self.assertNotIn(fake_id, ids)  # Not the ID of an Organism we added already
+            with self.assertRaises(ValueError) as context:
+                pop.remove(fake_id, session)
+            self.assertIn("No organism", str(context.exception))
 
             # Count should remain the same
             self.assertEqual(initial_count, pop.count(session))
@@ -231,9 +233,11 @@ class Population_test(unittest.TestCase):
             # Verify population is empty
             self.assertEqual(0, pop.count(session))
 
-            # Try to remove non-existent organism
+            # Try to remove non-existent organism - should raise
             fake_id = uuid.uuid4()
-            pop.remove(fake_id, session)
+            with self.assertRaises(ValueError) as context:
+                pop.remove(fake_id, session)
+            self.assertIn("No organism", str(context.exception))
 
             # Population should still be empty
             self.assertEqual(0, pop.count(session))
@@ -261,8 +265,10 @@ class Population_test(unittest.TestCase):
             pop.remove(organisms[1].id, session)
             self.assertEqual(2, pop.count(session))
 
-            # Try removing it again
-            pop.remove(organisms[1].id, session)
+            # Try removing it again - should raise
+            with self.assertRaises(ValueError) as context:
+                pop.remove(organisms[1].id, session)
+            self.assertIn("already removed", str(context.exception))
             self.assertEqual(2, pop.count(session))
 
             # Add another organism

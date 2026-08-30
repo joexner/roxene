@@ -78,7 +78,8 @@ def run_trials(worker_trials: int, worker_rng: Generator, worker_logger: logging
     for iteration in range(worker_trials):
         worker_logger.info(f"Building trial {iteration}")
         trial = env.start_trial()
-        worker_logger.info(f"Starting trial {iteration} between players {trial.participants[0]} and {trial.participants[1]}")
+        total_num_trials = env.count_trials()
+        worker_logger.info(f"Starting trial {total_num_trials} between players {trial.participants[0]} and {trial.participants[1]}")
         trial.run()
         worker_logger.info(f"Trial {iteration} complete, saving results")
         env.complete_trial(trial)

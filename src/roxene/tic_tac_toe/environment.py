@@ -4,6 +4,7 @@ from typing import Set, List
 
 from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.sql.expression import func
 
 from .move import Move
 from .outcome import Outcome
@@ -66,6 +67,10 @@ class Environment(object):
     def count_organisms(self) -> int:
         with self.sessionmaker() as session:
             return self.population.count(session)
+
+    def count_trials(self) -> int:
+        with self.sessionmaker() as session:
+            return session.scalar(select(func.count(Trial.id)))
 
     def add_mutagens(self, num_mutagens):
         mutagen_severity_spread_log_wiggle = 0.03

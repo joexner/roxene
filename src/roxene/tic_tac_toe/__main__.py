@@ -73,23 +73,23 @@ logger.info("Done populating environment")
 # Replace 5% of the herd at a time, up to 5
 num_to_cull = num_to_breed = int(max(num_organisms * .05, 5))
 
-def run_trials(worker_trials: int, worker_rng: Generator, worker_logger: logging.Logger):
+def run_trials(worker_trials: int, worker_rng: Generator):
     set_rng(worker_rng)
     for iteration in range(worker_trials):
-        worker_logger.info(f"Building trial {iteration}")
+        logger.info(f"Building trial {iteration}")
         trial = env.start_trial()
         total_num_trials = env.count_trials()
-        worker_logger.info(f"Starting trial {total_num_trials} between players {trial.participants[0]} and {trial.participants[1]}")
+        logger.info(f"Starting trial")
         trial.run()
-        worker_logger.info(f"Trial {iteration} complete, saving results")
+        logger.info(f"Trial {iteration} complete, saving results")
         env.complete_trial(trial)
-        worker_logger.info(f"Finished trial {iteration} with moves {[(move.letter, move.position, move.outcomes) for move in trial.moves]}")
+        logger.info(f"Finished trial {iteration} with moves {[(move.letter, move.position, move.outcomes) for move in trial.moves]}")
         if iteration % args.breed_and_cull_interval == 0 and iteration > 0:
-            worker_logger.info("Culling")
+            logger.info("Culling")
             env.cull(num_to_cull)
-            worker_logger.info("Done culling, breeding")
+            logger.info("Done culling, breeding")
             env.breed(num_to_breed)
-            worker_logger.info("Done breeding")
+            logger.info("Done breeding")
 
 threads = []
 rngs = main_rng.spawn(num_threads)
@@ -101,7 +101,6 @@ for i in range(num_threads):
         args=(
             int(( num_trials - 1 ) / num_threads ) + 1, # Estimate, total could be over by (num_threads - 1)
             rngs.pop(),
-            logger.getChild('_' + str(i)),
         )
     )
     thread.start()

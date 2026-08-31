@@ -78,12 +78,11 @@ def run_trials(worker_trials: int, worker_rng: Generator):
     for iteration in range(worker_trials):
         logger.info(f"Building trial {iteration}")
         trial = env.start_trial()
-        total_num_trials = env.count_trials()
-        logger.info(f"Starting trial")
+        logger.info(f"Starting trial {trial}, {env.count_trials()} trials started, {env.count_trials(False)} still running, ")
         trial.run()
-        logger.info(f"Trial {iteration} complete, saving results")
+        logger.info(f"Trial {trial} complete, saving results")
         env.complete_trial(trial)
-        logger.info(f"Finished trial {iteration} with moves {[(move.letter, move.position, move.outcomes) for move in trial.moves]}")
+        logger.info(f"Finished trial {trial} with {len(trial.moves)} moves")
         if iteration % args.breed_and_cull_interval == 0 and iteration > 0:
             logger.info("Culling")
             env.cull(num_to_cull)

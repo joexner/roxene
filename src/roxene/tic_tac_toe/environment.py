@@ -5,6 +5,7 @@ from typing import Set, List
 from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.sql.expression import func
+from torch._inductor import select_algorithm
 
 from .move import Move
 from .outcome import Outcome
@@ -47,30 +48,46 @@ class Environment(object):
     def populate(self, num_organisms: int, neuron_shape = None):
         if neuron_shape is None:
             neuron_shape = {"input_size": 10, "feedback_size": 5, "hidden_size": 10}
-        for _ in range(num_organisms):
-            with (self.sessionmaker.begin() as session):
-                # Build the genotype
-                # For each required output, make an output neuron, wire it to all the inputs and rotate it to the back
-                child_genes = list()
-                for _ in REQUIRED_OUTPUTS:
-                    child_genes.extend([
-                        CreateNeuron(**random_neuron_state(**neuron_shape)),
-                        *[ConnectNeurons(n, n) for n in range(1, len(REQUIRED_INPUTS) + 1)],
-                        RotateCells()
-                    ])
-                base_genotype = CompositeGene(child_genes)
+        batch_size = 100
+        for batch_start in range(0, num_organisms, batch_size):
+            batch_end = min(batch_start + batch_size, num_organisms)
+            with self.sessionmaker.begin() as session:
+                for i in range(batch_start, batch_end):
+                    # Build the genotype
+                    # For each required output, make an output neuron, wire it to all the inputs and rotate it to the back
+                    child_genes = list()
+                    for _ in REQUIRED_OUTPUTS:
+                        child_genes.extend([
+                            CreateNeuron(**random_neuron_state(**neuron_shape)),
+                            *[ConnectNeurons(n, n) for n in range(1, len(REQUIRED_INPUTS) + 1)],
+                            RotateCells()
+                        ])
+                    base_genotype = CompositeGene(child_genes)
 
-                # Create the organism and add it to the population
-                new_organism: Organism = Organism(REQUIRED_INPUTS, REQUIRED_OUTPUTS, base_genotype)
-                self.population.add(new_organism, session)
+                    # Create the organism and add it to the population
+                    new_organism: Organism = Organism(REQUIRED_INPUTS, REQUIRED_OUTPUTS, base_genotype)
+                    self.population.add(new_organism, session)
+
+                    if (i + 1) % 10 == 0:
+                        logger.info(f"Populated {i + 1}/{num_organisms} organisms")
+
+            logger.info(f"Committed batch {batch_start + 1}–{batch_end}")
+
+        logger.info(f"Populated {num_organisms} organisms total")
 
     def count_organisms(self) -> int:
         with self.sessionmaker() as session:
             return self.population.count(session)
 
-    def count_trials(self) -> int:
+    def count_trials(self, completed: bool = None) -> int:
+        select_statement = select(func.count(Trial.id))
+        if completed is not None:
+            if completed:
+                select_statement = select_statement.where(Trial.end_date.isnot(None))
+            else:
+                select_statement = select_statement.where(Trial.end_date.is_(None))
         with self.sessionmaker() as session:
-            return session.scalar(select(func.count(Trial.id)))
+            return session.scalar(select_statement)
 
     def add_mutagens(self, num_mutagens):
         mutagen_severity_spread_log_wiggle = 0.03

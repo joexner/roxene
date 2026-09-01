@@ -13,9 +13,6 @@ from .environment import Environment
 from ..persistence import EntityBase
 from ..util import set_rng
 
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - [%(threadName)s]\t- %(name)s: %(message)s',
-                    force=True)
 logger = logging.getLogger(__name__)
 
 parser = argparse.ArgumentParser(description='Play some tic-tac-toe')

@@ -112,12 +112,18 @@ class Environment(object):
 
     def start_trial(self) -> Trial:
         with (self.sessionmaker(expire_on_commit=False) as session):
+            logger.debug("Selecting organisms for trial")
             org_ids: List[uuid.UUID] = self.population.sample(2, True, session)
-            p1 = Player(session.get(Organism, org_ids[0]))
-            p2 = Player(session.get(Organism, org_ids[1]))
-            trial = Trial(p1, p2)
+            logger.debug("Getting organisms from database")
+            orgs = map(lambda oid: session.get(Organism, oid), org_ids)
+            logger.debug("Building players from organisms")
+            players = map(Player, orgs)
+            logger.debug("Building trial from players")
+            trial = Trial(*players)
+            logger.debug("Saving trial to database")
             session.add(trial)
             session.commit()
+            logger.debug("Done starting trial")
             return trial
 
     def complete_trial(self, trial: Trial):

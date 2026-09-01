@@ -76,11 +76,11 @@ num_to_cull = num_to_breed = int(max(num_organisms * .05, 5))
 def run_trials(worker_trials: int, worker_rng: Generator):
     set_rng(worker_rng)
     for iteration in range(worker_trials):
-        logger.info(f"Building trial {iteration}")
+        logger.info("Building trial")
         trial = env.start_trial()
-        logger.info(f"Starting trial {trial}, {env.count_trials()} trials started, {env.count_trials(False)} still running, ")
+        logger.info(f"Starting trial, {env.count_trials(True, False)} trials running, {env.count_trials()} trials total")
         trial.run()
-        logger.info(f"Trial {trial} complete, saving results")
+        logger.info("Trial complete, saving results")
         env.complete_trial(trial)
         logger.info(f"Finished trial {trial} with {len(trial.moves)} moves")
         if iteration % args.breed_and_cull_interval == 0 and iteration > 0:

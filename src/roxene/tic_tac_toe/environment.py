@@ -79,8 +79,13 @@ class Environment(object):
         with self.sessionmaker() as session:
             return self.population.count(session)
 
-    def count_trials(self, completed: bool = None) -> int:
+    def count_trials(self, started: bool = None, completed: bool = None) -> int:
         select_statement = select(func.count(Trial.id))
+        if started is not None:
+            if started:
+                select_statement = select_statement.where(Trial.start_date.isnot(None))
+            else:
+                select_statement = select_statement.where(Trial.start_date.is_(None))
         if completed is not None:
             if completed:
                 select_statement = select_statement.where(Trial.end_date.isnot(None))

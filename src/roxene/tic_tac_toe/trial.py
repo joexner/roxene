@@ -4,16 +4,15 @@ import itertools
 import logging
 import uuid
 from datetime import datetime
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import Iterator, List
+
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .move import Move
 from .outcome import Outcome
 from .persistence import Point
 from .players import Player
 from ..persistence import EntityBase
-
-# import roxene.tic_tac_toe as ttt
 
 WIN_SETS = [
     {(0, 0), (0, 1), (0, 2)},
@@ -50,7 +49,6 @@ class Trial(EntityBase):
                any(filter(lambda move: Outcome.WIN in move.outcomes or Outcome.LOSE in move.outcomes, self.moves))
 
     def run(self, timeout=1000, queued_input: List[tuple[int, int]] = None):
-        self.start_date = datetime.now()
         board = [[None, None, None], [None, None, None], [None, None, None]]
         logging.info(f"Beginning trial for {[str(p) for p in self.participants]}")
         player_iter: Iterator[Player] = itertools.cycle(self.participants)

@@ -1,11 +1,11 @@
 import logging
 import uuid
+from datetime import datetime
 from typing import Set, List
 
 from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.sql.expression import func
-from torch._inductor import select_algorithm
 
 from .move import Move
 from .outcome import Outcome
@@ -120,6 +120,7 @@ class Environment(object):
             players = map(Player, orgs)
             logger.debug("Building trial from players")
             trial = Trial(*players)
+            trial.start_date = datetime.now()
             logger.debug("Saving trial to database")
             session.add(trial)
             session.commit()

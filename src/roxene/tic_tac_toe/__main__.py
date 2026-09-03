@@ -2,12 +2,10 @@ import argparse
 import logging
 import sys
 import time
-from sqlalchemy import create_engine, text
 from threading import Thread
 
 from numpy.random import Generator, default_rng
-from sqlalchemy import create_engine
-from sqlalchemy.testing.config import db_url
+from sqlalchemy import create_engine, text
 
 from .environment import Environment
 from ..persistence import EntityBase

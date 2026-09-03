@@ -16,6 +16,9 @@ dev = [
     "parameterized>=0.8.0",
     "testcase>=0.1.0",
 ]
+alloydb = [
+    "google-cloud-alloydb-connector[pg8000]>=1.0.0",
+]
 
 [build-system]
 requires = ["hatchling"]

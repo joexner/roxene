@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: worker
+  labels:
+    app: worker
+spec:
+  # Workers are independent; Parallel so a scale-up/scale-down doesn't serialize
+  serviceName: worker
+  replicas: 4
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      # Spot preemption / rollout sends SIGTERM; the worker finishes the current
+      # trial then exits. Give it a bit of time before the hard kill.
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: worker
+          image: roxene:latest
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "roxene.tic_tac_toe", "--role", "worker", "--num_trials", "forever"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: roxene
+                  key: DATABASE_URL
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              # Torch plus a loaded population needs more headroom than the
+              # request; at 1Gi workers were getting OOMKilled mid-trial.
+              memory: 2Gi
+  # Workers share no local state; the seed offset comes from the pod ordinal,
+  # so a headless service is not strictly required.
+  updateStrategy:
+    type: RollingUpdate

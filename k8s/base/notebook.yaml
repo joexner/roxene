@@ -1,0 +1,85 @@
+# Interactive notebook for inspecting/plotting training results.
+# Access with: kubectl -n roxene port-forward svc/notebook 8888:8888
+# then open http://localhost:8888 (token is in the roxene secret).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: notebook-data
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notebook
+  labels:
+    app: notebook
+spec:
+  selector:
+    app: notebook
+  ports:
+    - name: jupyter
+      port: 8888
+      targetPort: 8888
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notebook
+  labels:
+    app: notebook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notebook
+  template:
+    metadata:
+      labels:
+        app: notebook
+    spec:
+      containers:
+        - name: jupyter
+          image: roxene-notebook:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - >-
+              exec jupyter server
+              --allow-root
+              --ServerApp.ip=0.0.0.0
+              --ServerApp.port=8888
+              --ServerApp.root_dir=/app/notebooks
+              --ServerApp.token="$JUPYTER_TOKEN"
+              --ServerApp.allow_remote_access=True
+          env:
+            - name: JUPYTER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: roxene
+                  key: JUPYTER_TOKEN
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: roxene
+                  key: DATABASE_URL
+          ports:
+            - name: jupyter
+              containerPort: 8888
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              memory: 2Gi
+          volumeMounts:
+            - name: data
+              mountPath: /app/notebooks
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: notebook-data

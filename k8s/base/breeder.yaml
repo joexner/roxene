@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: breeder
+  labels:
+    app: breeder
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: breeder
+  template:
+    metadata:
+      labels:
+        app: breeder
+    spec:
+      containers:
+        - name: breeder
+          image: roxene:latest
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "roxene.tic_tac_toe", "--role", "breeder"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: roxene
+                  key: DATABASE_URL
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              memory: 1Gi

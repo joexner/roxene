@@ -1,0 +1,36 @@
+# Deletes trials abandoned by dead workers (e.g. spot preemption) so the
+# organisms they were holding return to the idle pool.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: reaper
+  labels:
+    app: reaper
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: reaper
+              image: roxene:latest
+              imagePullPolicy: IfNotPresent
+              command: ["python", "-m", "roxene.tic_tac_toe", "--role", "reaper"]
+              env:
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: roxene
+                      key: DATABASE_URL
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  memory: 512Mi

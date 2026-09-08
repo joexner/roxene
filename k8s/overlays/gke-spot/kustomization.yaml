@@ -1,0 +1,18 @@
+# GKE with a spot (preemptible) worker pool.
+#
+# Create the pool first:
+#   gcloud container node-pools create roxene-spot \
+#     --cluster <cluster> --location us-central1 \
+#     --spot --num-nodes 2 --machine-type e2-medium
+#
+# Workers and the breeder are pinned to spot nodes; Postgres, pgbouncer and
+# the notebook stay on regular nodes.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+patches:
+  - path: worker-spot-patch.yaml
+  - path: breeder-spot-patch.yaml

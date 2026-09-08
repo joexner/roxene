@@ -152,6 +152,16 @@ def run_worker(env, num_trials: int | None, num_threads: int, seed: int) -> None
 
 
 def main() -> None:
+    # Configured here rather than at import time so that importing this module
+    # (e.g. from a notebook) doesn't hijack logging. This has to happen for the
+    # CLI/container entrypoint though: with no handler installed, Python falls
+    # back to logging.lastResort, which drops everything below WARNING -- which
+    # is why the k8s pods emitted no output at all.
+    logging.basicConfig(
+        level=os.environ.get("LOG_LEVEL", "INFO").upper(),
+        format="%(asctime)s - [%(threadName)s]\t- %(name)s: %(message)s",
+        force=True,
+    )
     args = parser.parse_args()
     num_trials = parse_num_trials(args.num_trials)
 

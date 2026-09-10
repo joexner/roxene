@@ -9,6 +9,7 @@ from threading import Event, Thread
 from numpy.random import Generator, default_rng
 from sqlalchemy import create_engine, text
 
+from . import metrics
 from .environment import Environment
 from ..persistence import EntityBase
 from ..util import set_rng
@@ -36,6 +37,8 @@ parser.add_argument('--stale_after_minutes', type=int, default=15,
                     help='Trials running longer than this are considered abandoned (reaper)')
 parser.add_argument("--db_url",
                     help='Database URL', default=os.environ.get('DATABASE_URL'))
+parser.add_argument("--metrics_port", type=int, default=None,
+                    help='Port to serve /metrics on (worker/breeder). Defaults to the METRICS_PORT env var; 0 disables.')
 
 
 def parse_num_trials(value: str) -> int | None:
@@ -87,27 +90,31 @@ def run_reaper(args, engine) -> None:
     logger.info(f"Reaped {len(reaped)} abandoned trials: {reaped}")
 
 
-def run_breeder(args, env, seed: int) -> None:
+def run_breeder(args, env, seed: int, metrics_port: int) -> None:
     """Repeatedly cull the weakest organisms and breed their replacements."""
     num_organisms = env.count_organisms()
     # Replace 5% of the herd at a time, up to 5
     num_to_cull = num_to_breed = int(max(num_organisms * 0.05, 5))
     set_rng(default_rng(seed))
     logger.info(f"Breeder started: culling/breeding {num_to_cull}/{num_to_breed} every {args.breed_and_cull_interval}s")
+    metrics.start_server(metrics_port, env)
     try:
         while True:
             time.sleep(args.breed_and_cull_interval)
             logger.info("Culling")
             env.cull(num_to_cull)
+            metrics.record_culls(num_to_cull)
             logger.info("Done culling, breeding")
             env.breed(num_to_breed)
+            metrics.record_breeds(num_to_breed)
             logger.info("Done breeding")
     except KeyboardInterrupt:
         pass
 
 
-def run_worker(env, num_trials: int | None, num_threads: int, seed: int) -> None:
+def run_worker(env, num_trials: int | None, num_threads: int, seed: int, metrics_port: int) -> None:
     """Run trials across worker threads until stopped (by count or signal)."""
+    metrics.start_server(metrics_port, env)
     stop_event = Event()
 
     def handle_sigterm(signum, _frame):
@@ -125,10 +132,13 @@ def run_worker(env, num_trials: int | None, num_threads: int, seed: int) -> None
             logger.info("Building trial")
             trial = env.start_trial()
             logger.info(f"Starting trial, {env.count_trials(True, False)} trials running, {env.count_trials()} trials total")
+            t0 = time.monotonic()
             trial.run()
+            duration = time.monotonic() - t0
             logger.info("Trial complete, saving results")
             env.complete_trial(trial)
-            logger.info(f"Finished trial {trial} with {len(trial.moves)} moves")
+            metrics.record_trial(trial, duration)
+            logger.info(f"Finished trial {trial} with {len(trial.moves)} moves in {duration:.3f}s")
             iteration += 1
 
     # Distribute the trials across threads: ceil(num_trials / num_threads) each,
@@ -164,6 +174,11 @@ def main() -> None:
     )
     args = parser.parse_args()
     num_trials = parse_num_trials(args.num_trials)
+    # 0 disables the metrics server. Defaulting to the METRICS_PORT env var (set
+    # in the k8s manifests) means the same image works with or without Prometheus.
+    metrics_port = args.metrics_port
+    if metrics_port is None:
+        metrics_port = int(os.environ.get("METRICS_PORT") or 0)
 
     # Per-process seed: base seed + this pod's ordinal, so every process in a
     # StatefulSet gets a distinct (and reproducible) UUID stream. In a k8s pod the
@@ -187,9 +202,9 @@ def main() -> None:
             case 'reaper':
                 run_reaper(args, engine)
             case 'breeder':
-                run_breeder(args, env, seed)
+                run_breeder(args, env, seed, metrics_port)
             case 'worker':
-                run_worker(env, num_trials, args.num_threads, seed)
+                run_worker(env, num_trials, args.num_threads, seed, metrics_port)
     finally:
         engine.dispose()
 

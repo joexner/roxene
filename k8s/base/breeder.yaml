@@ -13,6 +13,10 @@ spec:
     metadata:
       labels:
         app: breeder
+      # Expose /metrics on :9101 so Prometheus (kubernetes_sd, role: pod) can scrape it
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9101"
     spec:
       containers:
         - name: breeder
@@ -25,6 +29,11 @@ spec:
                 secretKeyRef:
                   name: roxene
                   key: DATABASE_URL
+            - name: METRICS_PORT
+              value: "9101"
+          ports:
+            - name: metrics
+              containerPort: 9101
           resources:
             requests:
               cpu: 250m

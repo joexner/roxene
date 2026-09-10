@@ -19,6 +19,13 @@ resources:
   - breeder.yaml
   - reaper-cronjob.yaml
   - notebook.yaml
+  # Observability: Prometheus (metrics) + Loki (logs) + Alloy (log collector)
+  # + Grafana (dashboards). All in the roxene namespace, local + GKE.
+  - prometheus.yaml
+  - loki.yaml
+  - alloy.yaml
+  - grafana.yaml
+  - grafana-dashboard.yaml
 
 images:
   - name: roxene

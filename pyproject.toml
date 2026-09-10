@@ -8,6 +8,7 @@ dependencies = [
     "numpy>=1.23.0",
     "sqlalchemy>=2.0.0",
     "psycopg2-binary>=2.9.11",
+    "prometheus-client>=0.20.0",
 ]
 
 [project.optional-dependencies]

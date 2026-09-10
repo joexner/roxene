@@ -16,6 +16,10 @@ spec:
     metadata:
       labels:
         app: worker
+      # Expose /metrics on :9101 so Prometheus (kubernetes_sd, role: pod) can scrape it
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9101"
     spec:
       # Spot preemption / rollout sends SIGTERM; the worker finishes the current
       # trial then exits. Give it a bit of time before the hard kill.
@@ -31,6 +35,11 @@ spec:
                 secretKeyRef:
                   name: roxene
                   key: DATABASE_URL
+            - name: METRICS_PORT
+              value: "9101"
+          ports:
+            - name: metrics
+              containerPort: 9101
           resources:
             requests:
               cpu: 500m

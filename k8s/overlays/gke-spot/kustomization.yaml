@@ -16,3 +16,11 @@ resources:
 patches:
   - path: worker-spot-patch.yaml
   - path: breeder-spot-patch.yaml
+
+images:
+  - name: roxene
+    newName: us-central1-docker.pkg.dev/joexner/roxene/roxene
+    newTag: latest
+  - name: roxene-notebook
+    newName: us-central1-docker.pkg.dev/joexner/roxene/roxene-notebook
+    newTag: latest

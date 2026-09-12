@@ -140,6 +140,7 @@ class Environment(object):
                 else:
                     selectee_scores: dict[uuid.UUID, int] = dict([(oid, 0) for oid in selectee_ids])
                     relevant_moves = self.get_relevant_moves(selectee_ids, session)
+                    logger.info(f"Found {len(relevant_moves)} relevant moves to cull about")
                     for move in relevant_moves:
                         selectee_scores[move.organism_id] += self.score_move(move)
 
@@ -164,6 +165,7 @@ class Environment(object):
                 else:
                     selectee_scores: dict[uuid.UUID, int] = dict([(oid, 0) for oid in selectee_ids])
                     relevant_moves = self.get_relevant_moves(selectee_ids, session)
+                    logger.info(f"Found {len(relevant_moves)} relevant moves to breed about")
                     for move in relevant_moves:
                         selectee_scores[move.organism_id] += self.score_move(move)
 

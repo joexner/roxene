@@ -140,9 +140,12 @@ class Environment(object):
                 else:
                     selectee_scores: dict[uuid.UUID, int] = dict([(oid, 0) for oid in selectee_ids])
                     relevant_moves = self.get_relevant_moves(selectee_ids, session)
-                    logger.info(f"Found {len(relevant_moves)} relevant moves to cull about")
+                    num_moves = 0
                     for move in relevant_moves:
                         selectee_scores[move.organism_id] += self.score_move(move)
+                        num_moves += 1
+
+                    logger.info(f"Found {len(relevant_moves)} relevant moves to cull about")
 
                     # Put the Organisms with the highest scores at the front of the list
                     sorted_orgs_and_scores = sorted(selectee_scores.items(), key=lambda item: item[1], reverse=True)
@@ -165,9 +168,12 @@ class Environment(object):
                 else:
                     selectee_scores: dict[uuid.UUID, int] = dict([(oid, 0) for oid in selectee_ids])
                     relevant_moves = self.get_relevant_moves(selectee_ids, session)
-                    logger.info(f"Found {len(relevant_moves)} relevant moves to breed about")
+                    num_moves = 0
                     for move in relevant_moves:
                         selectee_scores[move.organism_id] += self.score_move(move)
+                        num_moves += 1
+
+                    logger.info(f"Found {num_moves} relevant moves to breed about")
 
                     # Put the Organisms with the lowest scores at the front of the list
                     sorted_orgs_and_scores = sorted(selectee_scores.items(), key=lambda item: item[1], reverse=False)

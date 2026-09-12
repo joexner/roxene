@@ -147,8 +147,8 @@ class Environment(object):
 
                     logger.info(f"Found {num_moves} relevant moves to cull about")
 
-                    # Put the Organisms with the highest scores at the front of the list
-                    sorted_orgs_and_scores = sorted(selectee_scores.items(), key=lambda item: item[1], reverse=True)
+                    # Put the Organisms with the lowest scores at the front of the list
+                    sorted_orgs_and_scores = sorted(selectee_scores.items(), key=lambda item: item[1])
 
                     rand = get_rng().random()
                     index_to_kill = int((rand ** 2) * num_to_compare)  # Squaring the random number to skew it towards the lower end
@@ -175,8 +175,8 @@ class Environment(object):
 
                     logger.info(f"Found {num_moves} relevant moves to breed about")
 
-                    # Put the Organisms with the lowest scores at the front of the list
-                    sorted_orgs_and_scores = sorted(selectee_scores.items(), key=lambda item: item[1], reverse=False)
+                    # Put the Organisms with the highest scores at the front of the list
+                    sorted_orgs_and_scores = sorted(selectee_scores.items(), key=lambda item: item[1], reverse=True)
 
                     # Squaring the random number skews it towards the front,
                     # but don't just take the very fittest always

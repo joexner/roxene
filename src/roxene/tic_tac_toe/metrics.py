@@ -24,6 +24,8 @@ from prometheus_client import (
     start_http_server,
 )
 
+from . import Outcome
+
 if TYPE_CHECKING:
     from .environment import Environment
 
@@ -81,7 +83,8 @@ def record_trial(trial, duration_seconds: float) -> None:
     outcome_counts: collections.Counter[str] = collections.Counter()
     for move in trial.moves:
         for outcome in move.outcomes:
-            outcome_counts[outcome.name] += 1
+            if outcome in {Outcome.VALID_MOVE, Outcome.INVALID_MOVE, Outcome.TIMEOUT}:
+                outcome_counts[outcome.name] += 1
     MOVES_TOTAL.inc(len(trial.moves))
     for name, count in outcome_counts.items():
         OUTCOMES_TOTAL.labels(outcome=name).inc(count)

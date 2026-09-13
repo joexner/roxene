@@ -7,10 +7,11 @@ import time
 from threading import Event, Thread
 
 from numpy.random import Generator, default_rng
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, Engine
 
 from . import metrics
 from .environment import Environment
+from .init_gate import wait_for_db, wait_for_init
 from ..persistence import EntityBase
 from ..util import set_rng
 
@@ -20,33 +21,32 @@ parser = argparse.ArgumentParser(description='Play some tic-tac-toe')
 
 parser.add_argument('--role', choices=['init', 'worker', 'breeder', 'reaper'], default='worker',
                     help='Which job this process does: init populates the pool, worker runs trials, breeder culls and breeds, reaper deletes trials abandoned by dead workers')
-# Flags, not positionals: pool_size and num_trials are used by different roles
-# (init vs worker) and are never both passed, so two `nargs='?'` positionals
-# would make a single trailing positional ambiguous.
 parser.add_argument('--pool_size', type=int, default=1000,
                     help='Number of organisms in the pool (init)')
 parser.add_argument('--num_trials', default='forever',
                     help='Number of trials to run (worker), or "forever"')
-parser.add_argument('--num_threads', type=int, default=1,
-                    help='Number of threads to use to run trials')
+parser.add_argument('--num_threads', type=int, default=5,
+                    help='Number of threads to use to run trials.')
 parser.add_argument('--breed_and_cull_interval', type=int, default=10,
                     help='Seconds between rounds of culling and breeding (breeder)')
 parser.add_argument('--num_mutagens', type=int, default=100,
-                    help='Number of mutagens in the pool (init)')
+                    help='Number of mutagens to put in the pool (init only)')
 parser.add_argument('--stale_after_minutes', type=int, default=15,
-                    help='Trials running longer than this are considered abandoned (reaper)')
+                    help='Trials running longer than this are considered abandoned (reaper only)')
 parser.add_argument("--db_url",
                     help='Database URL', default=os.environ.get('DATABASE_URL'))
 parser.add_argument("--metrics_port", type=int, default=None,
                     help='Port to serve /metrics on (worker/breeder). Defaults to the METRICS_PORT env var; 0 disables.')
+parser.add_argument("--wait_for_init", action="store_true",
+                    help='Block until the init Job has populated the organism pool before starting (worker/breeder)')
+parser.add_argument("--init_timeout", type=float, default=None,
+                    help='Seconds to wait for --wait_for_init before giving up. Default: wait forever')
+parser.add_argument("--db_timeout", type=float, default=300.0,
+                    help='Seconds to wait for the database to accept connections before giving up')
 
 
-def parse_num_trials(value: str) -> int | None:
-    """Return the number of trials to run, or None for 'forever'."""
-    return None if value == 'forever' else int(value)
 
-
-def make_engine(db_url: str | None, num_threads: int):
+def make_engine(db_url: str | None, num_threads: int) -> Engine:
     if not db_url:
         # Create a fresh Postgres database for this run and initialize schema
         admin_url = "postgresql+psycopg2://postgres:postgres@localhost:5432/postgres"
@@ -57,19 +57,18 @@ def make_engine(db_url: str | None, num_threads: int):
             conn.execute(text(f'CREATE DATABASE "{db_name}"'))
         admin_engine.dispose()
         db_url = f"postgresql+psycopg2://postgres:postgres@localhost:5432/{db_name}"
-    return create_engine(db_url, pool_size=max(num_threads, 2))
+    return create_engine(db_url, pool_size=num_threads)
 
 
-def run_init(args, env, seed: int) -> None:
+def run_init(env: Environment, num_organisms: int, num_mutagens: int, seed: int | None) -> None:
     """Populate the organism pool and add mutagens (idempotent)."""
-    num_organisms = args.pool_size
     if env.count_organisms() > 0:
         logger.info(f"Pool already has {env.count_organisms()} organisms, skipping population")
     else:
-        logger.info(f"Populating environment with {num_organisms} organisms and {args.num_mutagens} mutagens")
+        logger.info(f"Populating environment with {num_organisms} organisms and {num_mutagens} mutagens")
         set_rng(default_rng(seed))
         env.populate(num_organisms)
-        env.add_mutagens(args.num_mutagens)
+        env.add_mutagens(num_mutagens)
         logger.info("Done populating environment")
 
 
@@ -92,29 +91,33 @@ def run_reaper(args, engine) -> None:
 
 def run_breeder(args, env, seed: int, metrics_port: int) -> None:
     """Repeatedly cull the weakest organisms and breed their replacements."""
-    num_organisms = env.count_organisms()
-    # Replace 5% of the herd at a time, up to 5
-    num_to_cull = num_to_breed = int(max(num_organisms * 0.05, 5))
-    set_rng(default_rng(seed))
-    logger.info(f"Breeder started: culling/breeding {num_to_cull}/{num_to_breed} every {args.breed_and_cull_interval}s")
     metrics.start_server(metrics_port, env)
+    set_rng(default_rng(seed))
+    logger.info("Breeder starting")
     try:
         while True:
             time.sleep(args.breed_and_cull_interval)
             logger.info("Culling")
-            env.cull(num_to_cull)
-            metrics.record_culls(num_to_cull)
-            logger.info("Done culling, breeding")
-            env.breed(num_to_breed)
-            metrics.record_breeds(num_to_breed)
-            logger.info("Done breeding")
+            culled = env.cull()
+            if culled:
+                metrics.record_cull()
+            logger.info(("Done culling" if culled else "Didn't cull" ) + ", breeding")
+            bred = env.breed()
+            if bred:
+                metrics.record_breed()
+            logger.info("Done breeding" if bred else "Didn't breed")
+            if not culled and not bred:
+                time.sleep(60)
     except KeyboardInterrupt:
         pass
 
 
-def run_worker(env, num_trials: int | None, num_threads: int, seed: int, metrics_port: int) -> None:
+def run_worker(env, num_trials: int | None, num_threads: int, seed: int | None, metrics_port: int) -> None:
     """Run trials across worker threads until stopped (by count or signal)."""
-    metrics.start_server(metrics_port, env)
+
+    # Start the metrics server but don't keep updating trial counts and pool size metrics
+    metrics.start_server(metrics_port, None)
+
     stop_event = Event()
 
     def handle_sigterm(signum, _frame):
@@ -162,49 +165,53 @@ def run_worker(env, num_trials: int | None, num_threads: int, seed: int, metrics
 
 
 def main() -> None:
-    # Configured here rather than at import time so that importing this module
-    # (e.g. from a notebook) doesn't hijack logging. This has to happen for the
-    # CLI/container entrypoint though: with no handler installed, Python falls
-    # back to logging.lastResort, which drops everything below WARNING -- which
-    # is why the k8s pods emitted no output at all.
+
+    # Set up logging
     logging.basicConfig(
         level=os.environ.get("LOG_LEVEL", "INFO").upper(),
         format="%(asctime)s - [%(threadName)s]\t- %(name)s: %(message)s",
         force=True,
     )
+
+    # Parse args
     args = parser.parse_args()
-    num_trials = parse_num_trials(args.num_trials)
-    # 0 disables the metrics server. Defaulting to the METRICS_PORT env var (set
-    # in the k8s manifests) means the same image works with or without Prometheus.
+
+    # 0 disables the metrics server
     metrics_port = args.metrics_port
     if metrics_port is None:
         metrics_port = int(os.environ.get("METRICS_PORT") or 0)
 
+    # Trial limit before the workers stop, default = unlimited
+    num_trials = int(args.num_trials) if args.num_trials and args.num_trials != 'forever' else None
+
     # Per-process seed: base seed + this pod's ordinal, so every process in a
     # StatefulSet gets a distinct (and reproducible) UUID stream. In a k8s pod the
     # ordinal is the suffix of the hostname (e.g. roxene-worker-7 -> 7).
-    seed_offset_env = os.environ.get('SEED_OFFSET')
-    if seed_offset_env is not None:
-        seed_offset = int(seed_offset_env)
-    else:
-        m = re.search(r"-(\d+)$", os.environ.get("HOSTNAME", ""))
-        seed_offset = int(m.group(1)) if m else 0
+    m = re.search(r"-(\d+)$", os.environ.get("HOSTNAME", ""))
+    seed_offset = int(m.group(1)) if m else 0
     seed = 11235 + seed_offset
     logger.info(f"Role={args.role}, seed offset={seed_offset}")
 
-    engine = make_engine(args.db_url, args.num_threads)
+    # Wait for Postgres and pgbouncer
+    wait_for_db(args.db_url, timeout=args.db_timeout)
+
+    # Wait for the init job to finish populating the environment
+    if args.wait_for_init:
+        wait_for_init(args.db_url, timeout=args.init_timeout)
+
+    engine: Engine = make_engine(args.db_url, args.num_threads)
     try:
-        EntityBase.metadata.create_all(engine)
         env = Environment(engine)
         match args.role:
             case 'init':
-                run_init(args, env, seed)
+                EntityBase.metadata.create_all(engine)
+                run_init(env, args.pool_size, args.num_mutagens, seed)
+            case 'worker':
+                run_worker(env, num_trials, args.num_threads, seed, metrics_port)
             case 'reaper':
                 run_reaper(args, engine)
             case 'breeder':
                 run_breeder(args, env, seed, metrics_port)
-            case 'worker':
-                run_worker(env, num_trials, args.num_threads, seed, metrics_port)
     finally:
         engine.dispose()
 

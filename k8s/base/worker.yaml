@@ -24,11 +24,30 @@ spec:
       # Spot preemption / rollout sends SIGTERM; the worker finishes the current
       # trial then exits. Give it a bit of time before the hard kill.
       terminationGracePeriodSeconds: 60
+      serviceAccountName: worker
       containers:
         - name: worker
           image: roxene:latest
           imagePullPolicy: IfNotPresent
-          command: ["python", "-m", "roxene.tic_tac_toe", "--role", "worker", "--num_trials", "forever"]
+          # --wait_for_init blocks until the init Job has populated the pool.
+          # Workers sample 2 idle organisms per trial and Population.sample
+          # raises ValueError below 2, so starting early means dying on the
+          # first trial and burning restart backoff.
+          #
+          # Nothing in core k8s makes a StatefulSet wait for a Job, so this
+          # polls in-process (roxene/tic_tac_toe/init_gate.py). In-process
+          # rather than an initContainer so it needs no extra image: the gate
+          # reads the mounted ServiceAccount token with stdlib urllib.
+          # --num_threads is explicit (not left at the default) so the value is
+          # visible here.
+          #
+          # 5, not 10. A single pod at 10 threads measured ~2.4GiB, which
+          # looked fine against the 4Gi limit -- but that was one pod on an
+          # idle node. At 4 pods x 10 threads (40 concurrent trials) real peak
+          # RSS hit 3.88GiB and 3 of 4 workers were OOMKilled (exit 137).
+          # Concurrency costs far more than the per-thread slope suggests.
+          # At 5 threads: ~1.8GiB/pod, and 20 DB connections total.
+          command: ["python", "-m", "roxene.tic_tac_toe", "--role", "worker", "--num_threads", "5", "--wait_for_init"]
           env:
             - name: DATABASE_URL
               valueFrom:
@@ -42,12 +61,10 @@ spec:
               containerPort: 9101
           resources:
             requests:
-              cpu: 500m
-              memory: 1Gi
-            limits:
-              # Torch plus a loaded population needs more headroom than the
-              # request; at 1Gi workers were getting OOMKilled mid-trial.
+              cpu: 2000m
               memory: 2Gi
+            limits:
+              memory: 4Gi
   # Workers share no local state; the seed offset comes from the pod ordinal,
   # so a headless service is not strictly required.
   updateStrategy:

@@ -18,11 +18,17 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9101"
     spec:
+      serviceAccountName: breeder
       containers:
         - name: breeder
           image: roxene:latest
           imagePullPolicy: IfNotPresent
-          command: ["python", "-m", "roxene.tic_tac_toe", "--role", "breeder"]
+          # --wait_for_init blocks until the init Job has populated the pool.
+          # run_breeder reads count_organisms() once at startup and derives
+          # num_to_cull from it, so starting against an empty pool latches it
+          # at the max(0, 5) floor -- silently wrong for the pod's whole life,
+          # with no crash to show for it. See init_gate.py.
+          command: ["python", "-m", "roxene.tic_tac_toe", "--role", "breeder", "--wait_for_init"]
           env:
             - name: DATABASE_URL
               valueFrom:

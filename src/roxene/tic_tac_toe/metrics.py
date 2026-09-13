@@ -90,12 +90,12 @@ def record_trial(trial, duration_seconds: float) -> None:
         OUTCOMES_TOTAL.labels(outcome=name).inc(count)
 
 
-def record_breeds(num: int) -> None:
-    ORGANISMS_BRED.inc(num)
+def record_breed() -> None:
+    ORGANISMS_BRED.inc()
 
 
-def record_culls(num: int) -> None:
-    ORGANISMS_CULLED.inc(num)
+def record_cull() -> None:
+    ORGANISMS_CULLED.inc()
 
 
 class MetricsServer:

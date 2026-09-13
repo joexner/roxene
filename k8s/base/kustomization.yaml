@@ -15,6 +15,7 @@ resources:
   - postgres.yaml
   - pgbouncer.yaml
   - init-job.yaml
+  - worker-rbac.yaml
   - worker.yaml
   - breeder.yaml
   - reaper-cronjob.yaml

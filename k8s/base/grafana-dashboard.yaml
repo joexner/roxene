@@ -1,0 +1,44 @@
+# Provisions the "Roxene - GA Evolution" dashboard into Grafana automatically.
+# The provider config lives in this same ConfigMap; Grafana loads every .json in
+# /etc/grafana/provisioning/dashboards, so drop more dashboards in here to add them.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  labels:
+    app: grafana
+data:
+  dashboardproviders.yaml: |
+    apiVersion: 1
+    providers:
+      - name: roxene
+        folder: Roxene
+        type: file
+        updateIntervalSeconds: 30
+        allowUiUpdates: true
+        options:
+          path: /etc/grafana/provisioning/dashboards
+          foldersFromFilesStructure: false
+  roxene-evolution.json: |
+    {
+      "uid": "roxene-evolution",
+      "title": "Roxene - GA Evolution",
+      "tags": ["roxene"],
+      "timezone": "browser",
+      "editable": true,
+      "refresh": "10s",
+      "schemaVersion": 39,
+      "version": 1,
+      "time": {"from": "now-1h", "to": "now"},
+      "panels": [
+        {"id": 1, "type": "stat", "title": "Pool size", "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"expr": "roxene_pool_size", "refId": "A"}]},
+        {"id": 2, "type": "stat", "title": "Trials running", "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"expr": "roxene_trials_running", "refId": "A"}]},
+        {"id": 3, "type": "stat", "title": "Trials / min", "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"expr": "sum(rate(roxene_trials_completed_total[5m])) * 60", "refId": "A"}]},
+        {"id": 4, "type": "stat", "title": "Avg trial (s)", "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"expr": "sum(rate(roxene_trial_duration_seconds_sum[5m])) / sum(rate(roxene_trial_duration_seconds_count[5m]))", "refId": "A"}]},
+        {"id": 5, "type": "timeseries", "title": "Outcomes over time (the learning signal)", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"expr": "sum by(outcome) (changes(roxene_outcomes_total[5m]))", "legendFormat": "{{outcome}}", "refId": "A"}], "fieldConfig": {"defaults": {"custom": {"fillOpacity": 25, "lineWidth": 1, "stacking": {"mode": "normal"}}}, "overrides": []}},
+        {"id": 6, "type": "timeseries", "title": "Pool size & trials running", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"expr": "roxene_pool_size", "legendFormat": "pool size", "refId": "A"}, {"expr": "roxene_trials_running", "legendFormat": "trials running", "refId": "B"}]},
+        {"id": 7, "type": "timeseries", "title": "Trial duration (s)", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"expr": "histogram_quantile(0.5, sum(rate(roxene_trial_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p50", "refId": "A"}, {"expr": "histogram_quantile(0.95, sum(rate(roxene_trial_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p95", "refId": "B"}, {"expr": "sum(rate(roxene_trial_duration_seconds_sum[5m])) / sum(rate(roxene_trial_duration_seconds_count[5m]))", "legendFormat": "avg", "refId": "C"}]},
+        {"id": 8, "type": "timeseries", "title": "Breeding rate (organisms / min)", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"expr": "sum(rate(roxene_organisms_bred_total[5m])) * 60", "legendFormat": "bred", "refId": "A"}, {"expr": "sum(rate(roxene_organisms_culled_total[5m])) * 60", "legendFormat": "culled", "refId": "B"}]}
+      ],
+      "templating": {"list": []}
+    }

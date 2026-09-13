@@ -1,7 +1,5 @@
 import threading
-import uuid
 from typing import Dict
-from uuid import UUID
 
 from numpy import ndarray, sign, exp, log
 from numpy.random import Generator
@@ -11,11 +9,16 @@ from .constants import NP_PRECISION
 thread_local_data = threading.local()
 
 def set_rng(rng: Generator) -> None:
-    thread_local_data.rng = rng
-    uuid.uuid4 = new_uuid
+    """
+    Bind a seeded RNG to the calling thread.
 
-def new_uuid() -> UUID:
-    return uuid.UUID(bytes=get_rng().bytes(16))
+    Deliberately does not patch uuid.uuid4. Identifiers have to be unique, not
+    reproducible: deriving them from the deterministic per-pod seed meant every
+    restart replayed the same ID stream, so new trials collided on their primary
+    key. IDs now come from real entropy, while the seeded RNG still drives all
+    of the evolutionary randomness.
+    """
+    thread_local_data.rng = rng
 
 def get_rng() -> Generator:
     return thread_local_data.rng

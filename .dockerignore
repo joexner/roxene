@@ -1,0 +1,10 @@
+.git
+.venv
+.idea
+.pytest_cache
+__pycache__
+*.egg-info
+**/test.db
+run_*.db
+.DS_Store
+k8s

@@ -9,10 +9,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python 3.10
+    - name: Set up Python 3.12
       uses: actions/setup-python@v5
       with:
-        python-version: "3.10"
+        python-version: "3.12"
     - name: Install uv
       uses: astral-sh/setup-uv@v6
       with:
@@ -20,7 +20,30 @@ jobs:
         cache-dependency-glob: "uv.lock"
 
     - name: Install roxene and dependencies
-      run: uv sync --all-extras
+      run: uv sync --extra dev
 
     - name: Test with pytest
       run: uv run python -m pytest
+
+  image:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_JSON }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push to Artifact Registry
+        run: |
+          gcloud auth configure-docker us-central1-docker.pkg.dev
+          docker build --target training -t us-central1-docker.pkg.dev/joexner/roxene/roxene:latest .
+          docker push us-central1-docker.pkg.dev/joexner/roxene/roxene:latest
+          docker build --target notebook -t us-central1-docker.pkg.dev/joexner/roxene/roxene-notebook:latest .
+          docker push us-central1-docker.pkg.dev/joexner/roxene/roxene-notebook:latest
+

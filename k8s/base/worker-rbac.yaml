@@ -1,0 +1,63 @@
+# The wait-for-init containers in worker.yaml and breeder.yaml poll
+# `kubectl get job init`. The default ServiceAccount in a namespace has no
+# RBAC at all, so the get would fail with 403 and the initContainer would
+# loop forever. Grant only what the gate needs: read the one Job, nothing else.
+#
+# Both workloads get their own ServiceAccount so each keeps only the
+# permissions it actually needs, but they share one Role since the rule
+# is identical.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: worker
+  labels:
+    app: worker
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: breeder
+  labels:
+    app: breeder
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: wait-for-init
+rules:
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    # Scoped to the single Job the gate waits on. Omitting resourceNames
+    # would let these pods read every Job in the namespace.
+    resourceNames: ["init"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: worker
+  labels:
+    app: worker
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: wait-for-init
+subjects:
+  - kind: ServiceAccount
+    name: worker
+    namespace: roxene
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: breeder
+  labels:
+    app: breeder
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: wait-for-init
+subjects:
+  - kind: ServiceAccount
+    name: breeder
+    namespace: roxene

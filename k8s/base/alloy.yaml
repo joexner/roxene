@@ -1,0 +1,191 @@
+# Grafana Alloy tails the pod logs from /var/log/pods and ships them to Loki.
+# It needs a ServiceAccount (to discover pods via the API) and a hostPath mount
+# of the node's /var/log/pods (where containerd writes container logs).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: alloy
+  labels:
+    app: alloy
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: alloy
+  labels:
+    app: alloy
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "nodes/proxy", "pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: alloy
+  labels:
+    app: alloy
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: alloy
+subjects:
+  - kind: ServiceAccount
+    name: alloy
+    namespace: roxene
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alloy
+  labels:
+    app: alloy
+data:
+  config.alloy: |
+    // Tail container logs from the roxene namespace and push them to Loki.
+    // (loki.source.podlogs needs PodLogs custom resources; this is the plain
+    // discovery + file-tail pipeline, which needs no extra CRDs.)
+    discovery.kubernetes "pods" {
+      role = "pod"
+      // Namespace-scoped discovery: makes the namespace Role above sufficient
+      // (no ClusterRole needed) and naturally limits collection to roxene.
+      namespaces {
+        names = ["roxene"]
+      }
+    }
+
+    discovery.relabel "podlogs" {
+      targets = discovery.kubernetes.pods.targets
+
+      // Only collect logs from the roxene namespace
+      rule {
+        action        = "keep"
+        source_labels = ["__meta_kubernetes_namespace"]
+        regex         = "roxene"
+      }
+
+      rule {
+        source_labels = ["__meta_kubernetes_namespace"]
+        target_label  = "namespace"
+      }
+
+      rule {
+        source_labels = ["__meta_kubernetes_pod_name"]
+        target_label  = "pod"
+      }
+
+      rule {
+        source_labels = ["__meta_kubernetes_pod_container_name"]
+        target_label  = "container"
+      }
+
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_app"]
+        target_label  = "app"
+      }
+
+      rule {
+        source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_name"]
+        separator     = "/"
+        target_label  = "job"
+      }
+
+      // /var/log/pods/<namespace>_<pod>_<uid>/<container>/0.log
+      // Built as a fully concrete path: the *-globbed form (…/*<uid>/<c>/*.log)
+      // resolves fine in a shell but Alloy stats it literally and finds nothing.
+      rule {
+        source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_name", "__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+        separator     = "/"
+        regex         = "([^/]+)/([^/]+)/([^/]+)/([^/]+)"
+        target_label  = "__path__"
+        replacement   = "/var/log/pods/${1}_${2}_${3}/$4/0.log"
+      }
+    }
+
+    loki.source.file "podlogs" {
+      targets    = discovery.relabel.podlogs.output
+      forward_to = [loki.write.default.receiver]
+    }
+
+    loki.write "default" {
+      endpoint {
+        url = "http://loki.roxene.svc.cluster.local:3100/loki/api/v1/push"
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alloy
+  labels:
+    app: alloy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alloy
+  template:
+    metadata:
+      labels:
+        app: alloy
+    spec:
+      serviceAccountName: alloy
+      containers:
+        - name: alloy
+          image: grafana/alloy:v1.18.1
+          args:
+            - run
+            - /etc/alloy/config.alloy
+            - --storage.path=/alloy/data
+            # Bind 0.0.0.0 rather than the default 127.0.0.1, otherwise the
+            # readiness probe and Prometheus' scrape of alloy:12345 can't reach it.
+            - --server.http.listen-addr=0.0.0.0:12345
+          ports:
+            - name: ui
+              containerPort: 12345
+          readinessProbe:
+            # Alloy serves its own non-standard paths on this port; a TCP check is
+            # the robust readiness signal, and it gates the Service endpoint that
+            # Prometheus scrapes.
+            tcpSocket:
+              port: 12345
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+          volumeMounts:
+            - name: pods
+              mountPath: /var/log/pods
+              readOnly: true
+            - name: config
+              mountPath: /etc/alloy
+            - name: data
+              mountPath: /alloy/data
+      volumes:
+        - name: pods
+          hostPath:
+            path: /var/log/pods
+            type: Directory
+        - name: config
+          configMap:
+            name: alloy
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alloy
+  labels:
+    app: alloy
+spec:
+  selector:
+    app: alloy
+  ports:
+    - name: ui
+      port: 12345
+      targetPort: 12345

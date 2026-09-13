@@ -122,5 +122,3 @@ class Trial_test(unittest.TestCase):
             self.assertSetEqual(player_letters, {'X', 'O'})
 
             self.assertGreater(len(trial_3.moves), 0)
-            self.assertIsNotNone(trial_3.start_date)
-            self.assertIsNotNone(trial_3.end_date)

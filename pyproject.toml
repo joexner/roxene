@@ -2,12 +2,13 @@
 name = "roxene"
 version = "0.1.0"
 description = "A genetic algorithm project for evolving neural networks"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
     "torch>=2.0.0",
     "numpy>=1.23.0",
     "sqlalchemy>=2.0.0",
     "psycopg2-binary>=2.9.11",
+    "prometheus-client>=0.20.0",
 ]
 
 [project.optional-dependencies]
@@ -15,9 +16,6 @@ dev = [
     "pytest>=7.0.0",
     "parameterized>=0.8.0",
     "testcase>=0.1.0",
-]
-alloydb = [
-    "google-cloud-alloydb-connector[pg8000]>=1.0.0",
 ]
 
 [build-system]

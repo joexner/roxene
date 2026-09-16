@@ -1,6 +1,13 @@
 # Grafana ties it all together: one UI for both PromQL (metrics) and LogQL (logs).
 # Access with: kubectl -n roxene port-forward svc/grafana 3000:3000
 # Login: admin / admin (see the grafana-admin Secret; change it for anything shared).
+#
+# Logs Drilldown (grafana-lokiexplore-app) declares grafanaDependency:
+#   ">=11.6.11-0 <12 || >=12.0.10-0 <12.1 || >=12.1.7-0 <12.2 || >=12.2.5-0"
+# The final clause has NO upper bound, so 12.2.5+ and 13.x both satisfy it.
+# Running 13.2.2 (latest, fixes CVE-2026-15815 / -76154 / -79656).
+# If a future Grafana major ever breaks the plugin, the symptom is the app
+# failing to load in the nav -- check /var/lib/grafana/plugins and the logs.
 apiVersion: v1
 kind: Secret
 metadata:
@@ -54,7 +61,7 @@ spec:
     spec:
       containers:
         - name: grafana
-          image: grafana/grafana:10.4.3
+          image: grafana/grafana:13.2.2
           ports:
             - name: web
               containerPort: 3000
@@ -69,6 +76,11 @@ spec:
                 secretKeyRef:
                   name: grafana-admin
                   key: admin-password
+            # Grafana Logs Drilldown: queryless Loki log exploration
+            # (volume + pattern detection, no LogQL required).
+            # Syntax is <pluginId>@<version>; GF_INSTALL_PLUGINS is deprecated.
+            - name: GF_PLUGINS_PREINSTALL
+              value: "grafana-lokiexplore-app@2.5.2"
           readinessProbe:
             httpGet:
               path: /api/health
@@ -77,10 +89,10 @@ spec:
             periodSeconds: 10
           resources:
             requests:
-              cpu: 100m
-              memory: 256Mi
-            limits:
+              cpu: 200m
               memory: 512Mi
+            limits:
+              memory: 1Gi
           volumeMounts:
             - name: datasources
               mountPath: /etc/grafana/provisioning/datasources

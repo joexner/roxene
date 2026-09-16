@@ -68,4 +68,8 @@ spec:
         accessModes: ["ReadWriteOnce"]
         resources:
           requests:
-            storage: 10Gi
+            # 5Gi suits a local/training stack (organisms + trials are small rows).
+            # NOTE: volumeClaimTemplates are IMMUTABLE on an existing StatefulSet --
+            # changing this requires deleting and recreating the StatefulSet (and
+            # migrating data), not just re-applying.
+            storage: 5Gi

@@ -16,7 +16,7 @@ spec:
         - name: init
           image: roxene:latest
           imagePullPolicy: IfNotPresent
-          command: ["python", "-m", "roxene.tic_tac_toe", "--role", "init"]
+          command: ["python", "-m", "roxene.tic_tac_toe", "--role", "init", "--pool_size", "100", "--num_mutagens", "10"]
           env:
             - name: DATABASE_URL
               valueFrom:

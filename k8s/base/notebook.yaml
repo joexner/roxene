@@ -12,7 +12,9 @@ spec:
   accessModes: ["ReadWriteOnce"]
   resources:
     requests:
-      storage: 5Gi
+      # Notebooks + scratch plots; 2Gi is plenty locally. PVC storage requests
+      # are immutable once bound, so shrinking an existing one needs a recreate.
+      storage: 2Gi
 ---
 apiVersion: v1
 kind: Service

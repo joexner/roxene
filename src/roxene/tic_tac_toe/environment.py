@@ -112,13 +112,17 @@ class Environment(object):
         return session.scalars(select(Mutagen)).all()
 
     def start_trial(self) -> Trial:
-        with (self.sessionmaker(expire_on_commit=False) as session):
+        with self.sessionmaker() as session:
             logger.debug("Selecting organisms for trial")
             org_ids: List[uuid.UUID] = self.population.sample(2, True, session)
+            session.commit()
+            logger.debug(f"Claimed organisms {org_ids}")
+
+        with self.sessionmaker(expire_on_commit=False) as session:
             logger.debug("Getting organisms from database")
-            orgs = map(lambda oid: session.get(Organism, oid), org_ids)
+            organisms: List[Organism] = [session.get(Organism, oid) for oid in org_ids]
             logger.debug("Building players from organisms")
-            players = map(Player, orgs)
+            players = map(Player, organisms)
             logger.debug("Building trial from players")
             trial = Trial(*players)
             trial.start_date = datetime.now()
@@ -147,22 +151,21 @@ class Environment(object):
             if num_moves == 0:
                 return False
 
-            # Put the Organisms with the lowest scores at the front of the list
+            # Put the least-fit Organisms at the front of the list
             sorted_orgs_and_scores = sorted(selectee_scores.items(), key=lambda item: item[1])
 
-            rand = get_rng().random()
-            index_to_kill = int((rand ** 2) * num_to_compare)  # Squaring the random number to skew it towards the lower end
+            index_to_kill = int((get_rng().random() ** 2) * num_to_compare)  # Squaring the random number to skew it towards the lower end
             logger.info(f"Removing organism at index {index_to_kill} of {num_to_compare}")
 
             organism_id_to_kill = sorted_orgs_and_scores[index_to_kill][0]
-
-            logger.info(f"Removing organism {organism_id_to_kill}")
             self.population.remove(organism_id_to_kill, session)
+
+            logger.info(f"Culled organism {organism_id_to_kill}")
             return True
 
-    def breed(self, num_to_consider: int = 10):
+    def breed(self, num_to_compare: int = 10):
         with self.sessionmaker.begin() as session:
-            selectee_ids = self.population.sample(num_to_consider, False, session)
+            selectee_ids = self.population.sample(num_to_compare, False, session)
             selectee_scores: dict[uuid.UUID, int] = dict([(oid, 0) for oid in selectee_ids])
             relevant_moves = self.get_relevant_moves(selectee_ids, session)
             num_moves = 0
@@ -175,21 +178,20 @@ class Environment(object):
             if num_moves == 0:
                 return False
 
-            # Put the Organisms with the highest scores at the front of the list
+            # Put the fittest Organisms at the front of the list
             sorted_orgs_and_scores = sorted(selectee_scores.items(), key=lambda item: item[1], reverse=True)
 
             # Squaring the random number skews it towards the front,
             # but don't just take the very fittest always
             #TODO: Examine / parameterize this
-            index_to_clone = int((get_rng().random() ** 2) * num_to_consider)
-            logger.info(f"Cloning organism at index {index_to_clone} of {num_to_consider}")
+            index_to_clone = int((get_rng().random() ** 2) * num_to_compare)
+            logger.info(f"Cloning organism at index {index_to_clone} of {num_to_compare}")
 
             organism_id_to_breed = sorted_orgs_and_scores[index_to_clone][0]
-            logger.info(f"Cloning organism {organism_id_to_breed}")
-
             new_organism = self.clone(organism_id_to_breed, session)
-            logger.info(f"Bred organism {new_organism.id} from {organism_id_to_breed}")
             self.population.add(new_organism, session)
+
+            logger.info(f"Bred organism {new_organism.id} from {organism_id_to_breed}")
             return True
 
     def clone(self, organism_id: uuid.UUID, session: Session, mutate=True) -> Organism:

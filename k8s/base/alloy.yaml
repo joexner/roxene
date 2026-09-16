@@ -90,6 +90,16 @@ data:
         target_label  = "job"
       }
 
+      // service_name is the label Grafana Logs Drilldown uses to group and
+      // browse logs by service. Without it every stream shows up as
+      // "unknown_service" in the Drilldown service selector.
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_app"]
+        target_label  = "service_name"
+        regex         = "(.+)"
+        replacement   = "$1"
+      }
+
       // /var/log/pods/<namespace>_<pod>_<uid>/<container>/0.log
       // Built as a fully concrete path: the *-globbed form (…/*<uid>/<c>/*.log)
       // resolves fine in a shell but Alloy stats it literally and finds nothing.
@@ -104,6 +114,54 @@ data:
 
     loki.source.file "podlogs" {
       targets    = discovery.relabel.podlogs.output
+      forward_to = [loki.process.levels.receiver]
+    }
+
+    // Promote the log level to structured metadata so Loki sets detected_level
+    // and Grafana Logs Drilldown can split INFO/WARN/ERROR.
+    //
+    // The app already writes "2026-.. - INFO - [MainThread] - ..." (see
+    // logging.basicConfig in tic_tac_toe/__main__.py), and Loki's own
+    // discover_log_levels would catch that on its own. This stage makes it
+    // explicit so levels survive format drift and also cover containers whose
+    // output we don't control (postgres, pgbouncer, notebook, init jobs).
+    //
+    // Two match stages, most specific first:
+    //   1. "TS - LEVEL - [thread] - logger: msg"  (our app's format)
+    //   2. "LEVEL:logger:msg"                      (Python logging default)
+    // Anything unmatched falls through with no level -- Loki then labels it
+    // "unknown", which is correct rather than guessing.
+    loki.process "levels" {
+      stage.match {
+        selector = "{namespace=\"roxene\"}"
+
+        stage.regex {
+          expression = "^(?P<ts>\\S+ \\S+) - (?P<level>[A-Z]+) - \\[(?P<thread>[^\\]]+)\\]\\s*-\\s*(?P<logger>\\S+?): (?P<message>.*)$"
+        }
+
+        stage.structured_metadata {
+          values = {
+            level  = "level",
+            logger = "logger",
+          }
+        }
+      }
+
+      stage.match {
+        selector = "{namespace=\"roxene\"}"
+
+        stage.regex {
+          expression = "^(?P<level>DEBUG|INFO|WARNING|WARN|ERROR|CRITICAL|FATAL):(?P<logger>\\S+):(?P<message>.*)$"
+        }
+
+        stage.structured_metadata {
+          values = {
+            level  = "level",
+            logger = "logger",
+          }
+        }
+      }
+
       forward_to = [loki.write.default.receiver]
     }
 
@@ -132,7 +190,7 @@ spec:
       serviceAccountName: alloy
       containers:
         - name: alloy
-          image: grafana/alloy:v1.18.1
+          image: grafana/alloy:v1.19.2
           args:
             - run
             - /etc/alloy/config.alloy

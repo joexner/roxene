@@ -1,0 +1,31 @@
+# Idempotent: if the organism pool is already populated it just exits.
+# Run manually after wiping the database: kubectl apply -k k8s/base (recreates
+# the Job only if it doesn't exist) or bump the annotation to retrigger.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: init
+  labels:
+    app: init
+spec:
+  backoffLimit: 5
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: init
+          image: roxene:latest
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "roxene.tic_tac_toe", "--role", "init", "--pool_size", "100", "--num_mutagens", "10"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: roxene
+                  key: DATABASE_URL
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              memory: 2Gi

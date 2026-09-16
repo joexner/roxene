@@ -1,0 +1,149 @@
+# Loki stores container logs shipped by Alloy. Single-binary, on-disk storage.
+# You normally query it through Grafana (Logs Drilldown or Explore), but you can also:
+#   kubectl -n roxene port-forward svc/loki 3100:3100   -> http://localhost:3100
+#
+# Loki 3.5 requires schema v13 + the tsdb store: structured metadata (required by
+# Grafana Logs Drilldown) lives in chunk format V4, which needs schema >= v13.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loki
+  labels:
+    app: loki
+data:
+  loki-config.yaml: |
+    auth_enabled: false
+    server:
+      http_listen_port: 3100
+    common:
+      instance_addr: 127.0.0.1
+      path_prefix: /loki
+      storage:
+        filesystem:
+          chunks_directory: /loki/chunks
+          rules_directory: /loki/rules
+      replication_factor: 1
+      ring:
+        kvstore:
+          store: inmemory
+    # Explicit rather than relying on Loki 3.x defaults: Grafana Logs Drilldown
+    # needs structured metadata (schema v13), log-volume endpoints (volume_enabled)
+    # and level detection (discover_log_levels) to group and classify log lines.
+    limits_config:
+      allow_structured_metadata: true
+      volume_enabled: true
+      discover_log_levels: true
+      # Only takes effect when compactor.retention_enabled is true (see below).
+      retention_period: 168h
+    # Powers the Patterns tab in Grafana Logs Drilldown: Loki clusters similar
+    # log lines into templates ("user loaded: <_>") so you can spot spikes and
+    # include/exclude whole classes of log lines without writing LogQL.
+    # Must be enabled explicitly -- it defaults to false.
+    pattern_ingester:
+      enabled: true
+      # CRITICAL: this ring defaults to "consul", which would hang startup in a
+      # single-binary deployment with no Consul. Mirror common.ring (inmemory).
+      lifecycler:
+        ring:
+          kvstore:
+            store: inmemory
+    compactor:
+      working_directory: /loki/compactor
+      # Required for retention deletes on filesystem-backed storage, and the
+      # switch that makes limits_config.retention_period actually apply.
+      delete_request_store: filesystem
+      retention_enabled: true
+    schema_config:
+      configs:
+        - from: "2025-01-01"
+          store: tsdb
+          object_store: filesystem
+          schema: v13
+          index:
+            prefix: index_
+            period: 24h
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loki
+  labels:
+    app: loki
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loki
+  template:
+    metadata:
+      labels:
+        app: loki
+    spec:
+      containers:
+        - name: loki
+          image: grafana/loki:3.5.12
+          args:
+            - -config.file=/etc/loki/loki-config.yaml
+          ports:
+            - name: http
+              containerPort: 3100
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3100
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 300m
+              memory: 768Mi
+            limits:
+              memory: 1536Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/loki
+            - name: data
+              mountPath: /loki
+      volumes:
+        - name: config
+          configMap:
+            name: loki
+        - name: data
+          persistentVolumeClaim:
+            claimName: loki-data
+---
+# Loki's log data. Was emptyDir before, which silently discarded every log on
+# pod restart. The compactor enforces 7d retention (limits_config.retention_period
+# above), which is what actually bounds this volume's growth.
+#
+# Sized at 4Gi for local/minikube. These PVCs are thin-provisioned but minikube's
+# 'standard' storage class reserves the full requested size up front, and the
+# whole stack has to fit on the node disk -- over-requesting here is what filled
+# a 17G node to 100% and crashed Loki (mkdir: no space left on device) and
+# Grafana (database or disk is full). Raise this for GKE/longer retention.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: loki-data
+  labels:
+    app: loki
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 4Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki
+  labels:
+    app: loki
+spec:
+  selector:
+    app: loki
+  ports:
+    - name: http
+      port: 3100
+      targetPort: 3100

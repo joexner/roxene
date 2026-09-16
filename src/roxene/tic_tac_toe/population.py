@@ -60,16 +60,26 @@ class Population:
                 idx = get_rng().integers(0, num_candidates)
             indexes.append(idx)
 
-        indexes.sort()
-
         for idx in indexes:
             stmt_with_offset = candidate_select_stmt.offset(idx).limit(1)
+            if idle_only:
+                # Lock the row we're about to claim so concurrent workers can't pick the same organism.
+                stmt_with_offset = stmt_with_offset.with_for_update(skip_locked=True)
             if logger.isEnabledFor(logging.DEBUG):
                 start = time.perf_counter()
-            result = session.scalars(stmt_with_offset).unique().all()[0]
+            # SKIP LOCKED can return zero rows if another worker holds the lock
+            # on this index, so retry with a fresh random index until we get one.
+            while True:
+                result = session.scalars(stmt_with_offset).unique().all()
+                if result:
+                    break
+                idx = get_rng().integers(0, num_candidates)
+                stmt_with_offset = candidate_select_stmt.offset(idx).limit(1)
+                if idle_only:
+                    stmt_with_offset = stmt_with_offset.with_for_update(skip_locked=True)
             if logger.isEnabledFor(logging.DEBUG):
                 end = time.perf_counter()
                 logger.debug(f"Organism fetch took {end - start} seconds")
-            results.append(result)
+            results.append(result[0])
 
         return results

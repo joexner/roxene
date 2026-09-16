@@ -1,0 +1,109 @@
+# Interactive notebook for inspecting/plotting training results.
+# Access with: kubectl -n roxene port-forward svc/notebook 8888:8888
+# then open http://localhost:8888/lab?token=roxene-dev
+# Bare http://localhost:8888 just prints "A Jupyter Server is running." -- this
+# runs `jupyter server`, which serves no UI at /, so ask for /lab (or /tree).
+# The token is JUPYTER_TOKEN in the roxene secret.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: notebook-data
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      # Notebooks + scratch plots; 2Gi is plenty locally. PVC storage requests
+      # are immutable once bound, so shrinking an existing one needs a recreate.
+      storage: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notebook
+  labels:
+    app: notebook
+spec:
+  selector:
+    app: notebook
+  ports:
+    - name: jupyter
+      port: 8888
+      targetPort: 8888
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notebook
+  labels:
+    app: notebook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notebook
+  template:
+    metadata:
+      labels:
+        app: notebook
+    spec:
+      # The PVC mounted at /app/notebooks shadows the notebooks baked into the
+      # image (training.ipynb, wiggle.ipynb), so the file browser would come up
+      # empty. Seed it from the image on boot; `cp -n` never clobbers notebooks
+      # you have since created or edited, so this stays idempotent.
+      initContainers:
+        - name: seed-notebooks
+          image: roxene-notebook:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - cp -rn /app/notebooks/. /notebooks-seed/ 2>/dev/null || true
+          volumeMounts:
+            - name: data
+              mountPath: /notebooks-seed
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+      containers:
+        - name: jupyter
+          image: roxene-notebook:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - >-
+              exec jupyter server
+              --allow-root
+              --ServerApp.ip=0.0.0.0
+              --ServerApp.port=8888
+              --ServerApp.root_dir=/app/notebooks
+              --ServerApp.token="$JUPYTER_TOKEN"
+              --ServerApp.allow_remote_access=True
+          env:
+            - name: JUPYTER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: roxene
+                  key: JUPYTER_TOKEN
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: roxene
+                  key: DATABASE_URL
+          ports:
+            - name: jupyter
+              containerPort: 8888
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              memory: 2Gi
+          volumeMounts:
+            - name: data
+              mountPath: /app/notebooks
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: notebook-data

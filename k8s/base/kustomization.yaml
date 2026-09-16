@@ -1,0 +1,29 @@
+# Base deployment for the roxene tic-tac-toe training stack.
+#
+#   kubectl apply -k k8s/base            # local kind cluster
+#   kubectl apply -k k8s/overlays/gke-spot  # GKE with spot worker pool
+#
+# The image is rewritten here so the manifests stay registry-agnostic.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: roxene
+
+resources:
+  - namespace.yaml
+  - secret.yaml
+  - postgres.yaml
+  - pgbouncer.yaml
+  - init-job.yaml
+  - worker-rbac.yaml
+  - worker.yaml
+  - breeder.yaml
+  - reaper-cronjob.yaml
+  - notebook.yaml
+  # Observability: Prometheus (metrics) + Loki (logs) + Alloy (log collector)
+  # + Grafana (dashboards). All in the roxene namespace, local + GKE.
+  - prometheus.yaml
+  - loki.yaml
+  - alloy.yaml
+  - grafana.yaml
+  - grafana-dashboard.yaml

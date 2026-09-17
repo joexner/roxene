@@ -138,7 +138,7 @@ class Environment(object):
 
     def cull(self, num_to_compare: int = 10) -> bool:
         with self.sessionmaker.begin() as session:
-            selectee_ids = self.population.sample(num_to_compare, False, session)
+            selectee_ids = self.population.sample(num_to_compare, True, session)
             selectee_scores: dict[uuid.UUID, int] = dict([(oid, 0) for oid in selectee_ids])
             relevant_moves = self.get_relevant_moves(selectee_ids, session)
             num_moves = 0

@@ -36,6 +36,36 @@ subjects:
     name: prometheus
     namespace: roxene
 ---
+# Container-level memory/CPU comes from kubelet's cAdvisor, reached via the
+# /api/v1/nodes/<node>/proxy/metrics/cadvisor subresource. Nodes are
+# cluster-scoped, so this must be a ClusterRole -- the Role above only covers
+# pods/services inside roxene and cannot grant node access.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus-cadvisor
+  labels:
+    app: prometheus
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "nodes/proxy", "nodes/metrics"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-cadvisor
+  labels:
+    app: prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus-cadvisor
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: roxene
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -75,6 +105,42 @@ data:
           - source_labels: [__meta_kubernetes_pod_label_app]
             action: replace
             target_label: app
+      # Container memory/CPU from kubelet's cAdvisor. This is what backs
+      # container_memory_working_set_bytes -- the pod /metrics endpoints above
+      # only expose app-level gauges and carry no container resource data.
+      # Discovered per node, then rewritten to hit the API server's node proxy
+      # subresource rather than the kubelet directly (works on minikube and GKE
+      # alike, and needs no hostNetwork or kubelet cert juggling).
+      - job_name: kubernetes-cadvisor
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        authorization:
+          credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - target_label: __address__
+            replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_name]
+            regex: (.+)
+            target_label: __metrics_path__
+            replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor
+          - source_labels: [__meta_kubernetes_node_name]
+            target_label: node
+          - source_labels: [__meta_kubernetes_node_name]
+            target_label: instance
+        # cAdvisor emits container="" (pod sandbox aggregate) and container="POD"
+        # (pause container) alongside the real containers. Both are near-zero and
+        # inflate/duplicate any sum, so filter them out at scrape time.
+        metric_relabel_configs:
+          - source_labels: [container]
+            action: drop
+            regex: ""
+          - source_labels: [container]
+            action: drop
+            regex: POD
       # The observability stack's own metrics
       - job_name: observability
         static_configs:

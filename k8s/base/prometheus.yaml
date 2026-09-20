@@ -105,6 +105,25 @@ data:
           - source_labels: [__meta_kubernetes_pod_label_app]
             action: replace
             target_label: app
+        # kube-state-metrics is scraped through this same pod-role job, so its
+        # own pod/container/namespace labels describe the *exporter*, and the
+        # subject of each series arrives as exported_pod / exported_container /
+        # exported_namespace. Without this the ksm series all carry
+        # pod="kube-state-metrics-..." and never join against cAdvisor's
+        # container_memory_working_set_bytes, which uses the real pod name.
+        #
+        # This must be metric_relabel_configs, not relabel_configs: exported_*
+        # only exists after the scrape, so target-level relabeling never sees it.
+        metric_relabel_configs:
+          - source_labels: [exported_pod]
+            regex: (.+)
+            target_label: ksm_pod
+          - source_labels: [exported_container]
+            regex: (.+)
+            target_label: ksm_container
+          - source_labels: [exported_namespace]
+            regex: (.+)
+            target_label: ksm_namespace
       # Container memory/CPU from kubelet's cAdvisor. This is what backs
       # container_memory_working_set_bytes -- the pod /metrics endpoints above
       # only expose app-level gauges and carry no container resource data.

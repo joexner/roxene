@@ -27,3 +27,7 @@ resources:
   - alloy.yaml
   - grafana.yaml
   - grafana-dashboard.yaml
+  # Cluster-state metrics (resource limits, replica counts, pod phase).
+  # Cluster-wide read, so a ClusterRole, but deployed into roxene like the
+  # rest of the observability stack.
+  - kube-state-metrics.yaml

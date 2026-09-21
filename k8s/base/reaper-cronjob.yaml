@@ -1,5 +1,3 @@
-# Deletes trials abandoned by dead workers (e.g. spot preemption) so the
-# organisms they were holding return to the idle pool.
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -21,14 +19,7 @@ spec:
             - name: reaper
               image: roxene:latest
               imagePullPolicy: IfNotPresent
-              # 30, not the 15-minute default. Measured end_date - start_date on a
-              # local run: avg 105s, p90 412s, max 583s - but that's with an idle
-              # database. The first cycle after init, with the DB still writing out
-              # the pool, stalled ~10 minutes in start_trial alone, and those trials
-              # were reaped while their workers were still playing them. 30 minutes
-              # is ~3x the worst observed trial, and Environment.complete_trial now
-              # survives a reaped trial anyway, so over-reaping costs work, not pods.
-              command: ["python", "-m", "roxene.tic_tac_toe", "--role", "reaper", "--stale_after_minutes", "30"]
+              command: ["python", "-m", "roxene.tic_tac_toe", "--role", "reaper"]
               env:
                 - name: DATABASE_URL
                   valueFrom:

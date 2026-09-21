@@ -32,10 +32,16 @@ class Player(EntityBase):
     trial: Mapped["Trial"] = relationship("Trial", back_populates='participants', lazy="joined")
     organism: Mapped[Organism] = relationship(Organism, lazy="joined")
 
-    def __init__(self, organism: Organism = None, letter: str = None):
+    def __init__(self, organism: Organism = None, letter: str = None, organism_id: uuid.UUID = None):
         self.id = uuid.uuid4()
-        self.organism = organism
         self.letter = letter
+        if organism is not None:
+            self.organism = organism
+        elif organism_id is not None:
+            # Don't assign self.organism: that overwrites this FK with NULL at flush
+            self.organism_id = organism_id
+        else:
+            self.organism = None
 
     def get_move_coords(self, board, timeout=MAX_UPDATES) -> Tuple[int, int]:
         for x in range(3):

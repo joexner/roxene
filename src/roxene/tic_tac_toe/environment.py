@@ -112,23 +112,30 @@ class Environment(object):
         return session.scalars(select(Mutagen)).all()
 
     def start_trial(self) -> Trial:
-        with self.sessionmaker() as session:
+        with (self.sessionmaker(expire_on_commit=False) as session):
+
             logger.debug("Selecting organisms for trial")
             org_ids: List[uuid.UUID] = self.population.sample(2, True, session)
-            session.commit()
             logger.debug(f"Claimed organisms {org_ids}")
 
-        with self.sessionmaker(expire_on_commit=False) as session:
-            logger.debug("Getting organisms from database")
-            organisms: List[Organism] = [session.get(Organism, oid) for oid in org_ids]
             logger.debug("Building players from organisms")
-            players = map(Player, organisms)
+            # Bind by ID, so nothing is loaded before the trial is written out
+            players = [Player(organism_id=organism_id) for organism_id in org_ids]
+
             logger.debug("Building trial from players")
             trial = Trial(*players)
             trial.start_date = datetime.now()
-            logger.debug("Saving trial to database")
             session.add(trial)
+
+            # Commit before the slow part, so other workers see these organisms as busy
             session.commit()
+            logger.debug(f"Saved trial {trial.id}")
+
+            logger.debug("Loading organisms for trial")
+            for player in players:
+                # Load the organisms so the trial can be played after this session is gone
+                player.organism = session.get(Organism, player.organism_id)
+
             logger.debug("Done starting trial")
             return trial
 

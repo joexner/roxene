@@ -1,0 +1,56 @@
+# The breeder is a CronJob, not an always-on Deployment. It ticks on the
+# finest schedule a CronJob allows (every minute); each run does a single
+# cull+breed cycle, but only if >= --breed_every_n_trials trials have
+# completed since the last cycle (tracked in the breeder_state table). The
+# effective breeding frequency therefore scales with the rate of trial
+# completions -- busy workers breed on most ticks, quiet workers skip most.
+# When the implied interval is under a minute the cycle simply runs every
+# tick instead of faster. See run_breeder in tic_tac_toe/__main__.py.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: breeder
+  labels:
+    app: breeder
+spec:
+  schedule: "*/1 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            app: breeder
+          # Expose /metrics on :9101 so Prometheus (kubernetes_sd, role: pod) can scrape it
+          annotations:
+            prometheus.io/scrape: "true"
+            prometheus.io/port: "9101"
+        spec:
+          serviceAccountName: breeder
+          restartPolicy: OnFailure
+          containers:
+            - name: breeder
+              image: roxene:latest
+              imagePullPolicy: IfNotPresent
+              # --wait_for_init blocks until the init Job has populated the pool.
+              command: ["python", "-m", "roxene.tic_tac_toe", "--role", "breeder", "--wait_for_init"]
+              env:
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: roxene
+                      key: DATABASE_URL
+                - name: METRICS_PORT
+                  value: "9101"
+              ports:
+                - name: metrics
+                  containerPort: 9101
+              resources:
+                requests:
+                  cpu: 250m
+                  memory: 512Mi
+                limits:
+                  memory: 1Gi

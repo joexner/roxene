@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Set, List
 
 from sqlalchemy import Engine, select
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Mapped, mapped_column, Session, sessionmaker
 from sqlalchemy.sql.expression import func
 
 from .move import Move
@@ -20,6 +20,7 @@ from ..genes.rotate_cells import RotateCells
 from ..mutagen import Mutagen
 from ..mutagens.wiggle_create_neuron import WiggleCreateNeuron, CNLayer
 from ..organism import Organism
+from ..persistence import EntityBase
 from ..util import random_neuron_state
 from ..util import wiggle, get_rng
 
@@ -227,3 +228,19 @@ class Environment(object):
             select(Move)
             .join(Organism)
             .where(Organism.id.in_(selectee_ids)))
+
+
+class BreederState(EntityBase):
+    """Single-row (id=1) control record for the breeder's dynamic schedule.
+
+    The breeder runs as a CronJob with a fixed 1-minute heartbeat. This row
+    remembers how many trials had completed at the last cull+breed cycle so
+    the gate can decide whether enough new fitness data has accumulated
+    before the next cycle, making the effective run frequency track the
+    rate of trial completions.
+    """
+    __tablename__ = 'breeder_state'
+
+    id: Mapped[int] = mapped_column(primary_key=True, default=1)
+    trials_completed_at_last_breed: Mapped[int] = mapped_column(default=0)
+    last_breed_at: Mapped[datetime] = mapped_column(nullable=True)

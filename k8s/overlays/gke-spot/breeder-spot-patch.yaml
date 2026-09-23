@@ -1,15 +1,17 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: batch/v1
+kind: CronJob
 metadata:
   name: breeder
   namespace: roxene
 spec:
-  template:
+  jobTemplate:
     spec:
-      nodeSelector:
-        cloud.google.com/gke-spot: "true"
-      tolerations:
-        - key: cloud.google.com/gke-spot
-          operator: Equal
-          value: "true"
-          effect: NoSchedule
+      template:
+        spec:
+          nodeSelector:
+            cloud.google.com/gke-spot: "true"
+          tolerations:
+            - key: cloud.google.com/gke-spot
+              operator: Equal
+              value: "true"
+              effect: NoSchedule

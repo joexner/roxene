@@ -17,7 +17,7 @@ resources:
   - init-job.yaml
   - worker-rbac.yaml
   - worker.yaml
-  - breeder.yaml
+  - breeder-cronjob.yaml
   - reaper-cronjob.yaml
   - notebook.yaml
   # Observability: Prometheus (metrics) + Loki (logs) + Alloy (log collector)

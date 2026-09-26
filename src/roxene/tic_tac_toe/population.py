@@ -44,7 +44,7 @@ class Population:
 
         if logger.isEnabledFor(logging.DEBUG):
             start = time.perf_counter()
-        num_candidates = session.execute(select(func.count()).select_from(candidate_select_stmt)).scalar()
+        num_candidates = session.execute(select(func.count()).select_from(candidate_select_stmt.subquery())).scalar()
         if logger.isEnabledFor(logging.DEBUG):
             end = time.perf_counter()
             logger.debug(f"Count query took {end - start} seconds")

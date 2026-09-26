@@ -8,10 +8,14 @@ from sqlalchemy.orm import sessionmaker
 from roxene import Organism
 from roxene.tic_tac_toe import Population, Player, Trial
 from util import get_engine
+from roxene.util import set_rng
 
 SEED = 1123581321
 
 class Population_test(unittest.TestCase):
+
+    def setUp(self):
+        set_rng(default_rng(seed=SEED))
 
     def test_add(self):
         seshmaker = sessionmaker(get_engine())

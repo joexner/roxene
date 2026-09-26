@@ -16,7 +16,7 @@ from .environment import BreederState, Environment
 from .init_gate import wait_for_db, wait_for_init
 from .trial import Trial
 from ..persistence import EntityBase
-from ..util import set_rng
+from ..util import set_rng, get_rng
 
 logger = logging.getLogger(__name__)
 
@@ -124,8 +124,7 @@ def run_breeder(args, env, seed: int, metrics_port: int) -> None:
 def run_worker(env, num_trials: int | None, num_threads: int, seed: int | None, metrics_port: int) -> None:
     """Run trials across worker threads until stopped (by count or signal)."""
 
-    # Start the metrics server but don't keep updating trial counts and pool size metrics
-    metrics.start_server(metrics_port, None)
+    metrics.start_server(metrics_port, env)
 
     stop_event = Event()
 

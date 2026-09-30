@@ -6,6 +6,7 @@ import signal
 import time
 from datetime import datetime, timedelta
 from threading import Event, Thread
+from time import sleep
 
 from numpy.random import Generator, default_rng
 from sqlalchemy import create_engine, text, update, Engine
@@ -28,7 +29,7 @@ parser.add_argument('--pool_size', type=int, default=1000,              help='Nu
 parser.add_argument('--num_mutagens', type=int, default=100,            help='Number of mutagens to put in the pool (init only)')
 parser.add_argument('--num_trials', default='forever',                  help='Number of trials to run (worker), or "forever"')
 parser.add_argument('--num_threads', type=int, default=5,               help='Number of threads to use to run trials.')
-parser.add_argument('--breed_every_n_trials', type=int, default=50,      help='Breeder: run a cull+breed cycle once this many trials have completed since the last one, so the run frequency scales with the trial completion rate (breeder)')
+parser.add_argument('--breed_every_n_trials', type=int, default=50,     help='Breeder: run a cull+breed cycle once this many trials have completed since the last one, so the run frequency scales with the trial completion rate (breeder)')
 parser.add_argument('--stale_after_minutes', type=int, default=60,      help='Trials running longer than this are considered abandoned (reaper only)')
 parser.add_argument("--db_url", default=os.environ.get('DATABASE_URL'), help='Database URL')
 parser.add_argument("--metrics_port", type=int, default=None,           help='Port to serve /metrics on (worker/breeder). Defaults to the METRICS_PORT env var; 0 disables.')
@@ -38,7 +39,7 @@ parser.add_argument("--db_timeout", type=float, default=300.0,          help='Se
 
 
 
-def make_engine(db_url: str | None, num_threads: int) -> Engine:
+def make_engine(db_url: str | None) -> Engine:
     if not db_url:
         # Create a fresh Postgres database for this run and initialize schema
         admin_url = "postgresql+psycopg2://postgres:postgres@localhost:5432/postgres"
@@ -49,7 +50,7 @@ def make_engine(db_url: str | None, num_threads: int) -> Engine:
             conn.execute(text(f'CREATE DATABASE "{db_name}"'))
         admin_engine.dispose()
         db_url = f"postgresql+psycopg2://postgres:postgres@localhost:5432/{db_name}"
-    return create_engine(db_url, pool_size=num_threads)
+    return create_engine(db_url)
 
 
 def run_init(env: Environment, num_organisms: int, num_mutagens: int, seed: int | None) -> None:
@@ -140,17 +141,20 @@ def run_worker(env, num_trials: int | None, num_threads: int, seed: int | None, 
         set_rng(worker_rng)
         iteration = 0
         while not stop_event.is_set() and (worker_trials is None or iteration < worker_trials):
-            logger.info("Building trial")
-            trial = env.start_trial()
-            logger.info(f"Starting trial, {env.count_trials(True, False)} trials running, {env.count_trials()} trials total")
-            t0 = time.monotonic()
-            trial.run()
-            duration = time.monotonic() - t0
-            logger.info("Trial complete, saving results")
-            env.complete_trial(trial)
-            metrics.record_trial(trial, duration)
-            logger.info(f"Finished trial {trial} with {len(trial.moves)} moves in {duration:.3f}s")
-            iteration += 1
+            try:
+                logger.info("Building trial")
+                trial = env.start_trial()
+                logger.info(f"Starting trial, {env.count_trials(True, False)} trials running, {env.count_trials()} trials total")
+                t0 = time.monotonic()
+                trial.run()
+                duration = time.monotonic() - t0
+                logger.info("Trial complete, saving results")
+                env.complete_trial(trial)
+                metrics.record_trial(trial, duration)
+                logger.info(f"Finished trial {trial} with {len(trial.moves)} moves in {duration:.3f}s")
+                iteration += 1
+            except Exception as e:
+                logger.exception("Exception while running trial, continuing...", e)
 
     # Distribute the trials across threads: ceil(num_trials / num_threads) each,
     # so the total could overshoot by up to (num_threads - 1).
@@ -160,8 +164,11 @@ def run_worker(env, num_trials: int | None, num_threads: int, seed: int | None, 
 
     threads = []
     for i in range(num_threads):
-        logger.info(f"Starting thread {i}")
-        thread = Thread(target=run_trials, args=(per_thread, rngs[i]))
+        delay = 60 + main_rng.integers(60)
+        logger.info(f"Sleeping for {delay} seconds")
+        sleep(delay)
+        logger.info(f"Starting worker thread {i}")
+        thread = Thread(target=run_trials, args=(per_thread, rngs.pop()))
         thread.start()
         threads.append(thread)
 
@@ -207,7 +214,7 @@ def main() -> None:
     if args.wait_for_init:
         wait_for_init(args.db_url, timeout=args.init_timeout)
 
-    engine: Engine = make_engine(args.db_url, args.num_threads)
+    engine: Engine = make_engine(args.db_url)
     try:
         env = Environment(engine)
         match args.role:

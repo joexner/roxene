@@ -47,7 +47,7 @@ spec:
           # RSS hit 3.88GiB and 3 of 4 workers were OOMKilled (exit 137).
           # Concurrency costs far more than the per-thread slope suggests.
           # At 5 threads: ~1.8GiB/pod, and 20 DB connections total.
-          command: ["python", "-m", "roxene.tic_tac_toe", "--role", "worker", "--num_threads", "5", "--wait_for_init"]
+          command: ["python", "-m", "roxene.tic_tac_toe", "--role", "worker", "--wait_for_init"]
           env:
             - name: DATABASE_URL
               valueFrom:

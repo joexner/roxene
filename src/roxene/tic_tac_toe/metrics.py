@@ -1,6 +1,6 @@
 """Prometheus metrics for the roxene training stack.
 
-The worker and breeder are long-running processes, so each can host a small
+The workers are long-running processes, so each can host a small
 ``/metrics`` HTTP endpoint (backed by ``prometheus_client``) for Prometheus to
 scrape. Counters and the trial-duration histogram are updated inline as work
 happens; the gauges that require a database query (pool size, in-flight and
@@ -117,7 +117,7 @@ class MetricsServer:
                 POOL_SIZE.set(self._env.count_organisms())
                 TRIALS_RUNNING.set(self._env.count_trials(started=True, completed=False))
                 TRIALS_TOTAL.set(self._env.count_trials())
-            except Exception:  # a failing gauge scrape must never take down the worker/breeder
+            except Exception:  # a failing gauge scrape must never take down the worker
                 logger.exception("Failed to refresh roxene metric gauges")
             self._stop.wait(self._refresh_seconds)
 

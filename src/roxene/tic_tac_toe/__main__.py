@@ -13,7 +13,7 @@ from sqlalchemy import create_engine, text, update, Engine
 from sqlalchemy.orm import Session
 
 from . import metrics
-from .environment import BreederState, Environment
+from .environment import Environment
 from .init_gate import wait_for_db, wait_for_init
 from .trial import Trial
 from ..persistence import EntityBase
@@ -23,17 +23,17 @@ logger = logging.getLogger(__name__)
 
 parser = argparse.ArgumentParser(description='Play some tic-tac-toe')
 
-parser.add_argument('--role', choices=['init', 'worker', 'breeder', 'reaper'], default='worker',
-                    help='Which job this process does: init populates the pool, worker runs trials, breeder culls and breeds, reaper finishes off trials abandoned by dead workers')
+parser.add_argument('--role', choices=['init', 'worker', 'reaper'], default='worker',
+                    help='Which job this process does: init populates the pool, worker runs trials (and culls+breeds between them), reaper finishes off trials abandoned by dead workers')
 parser.add_argument('--pool_size', type=int, default=1000,              help='Number of organisms in the pool (init)')
 parser.add_argument('--num_mutagens', type=int, default=100,            help='Number of mutagens to put in the pool (init only)')
 parser.add_argument('--num_trials', default='forever',                  help='Number of trials to run (worker), or "forever"')
 parser.add_argument('--num_threads', type=int, default=5,               help='Number of threads to use to run trials.')
-parser.add_argument('--breed_every_n_trials', type=int, default=50,     help='Breeder: run a cull+breed cycle once this many trials have completed since the last one, so the run frequency scales with the trial completion rate (breeder)')
+parser.add_argument('--cycle_every_n_trials', type=int, default=50,      help='Worker: expected trials between cull/breed cycles; each is decided stochastically after each trial (worker)')
 parser.add_argument('--stale_after_minutes', type=int, default=60,      help='Trials running longer than this are considered abandoned (reaper only)')
 parser.add_argument("--db_url", default=os.environ.get('DATABASE_URL'), help='Database URL')
-parser.add_argument("--metrics_port", type=int, default=None,           help='Port to serve /metrics on (worker/breeder). Defaults to the METRICS_PORT env var; 0 disables.')
-parser.add_argument("--wait_for_init", action="store_true",             help='Block until the init Job has populated the organism pool before starting (worker/breeder)')
+parser.add_argument("--metrics_port", type=int, default=None,           help='Port to serve /metrics on (worker). Defaults to the METRICS_PORT env var; 0 disables.')
+parser.add_argument("--wait_for_init", action="store_true",             help='Block until the init Job has populated the organism pool before starting (worker)')
 parser.add_argument("--init_timeout", type=float, default=None,         help='Seconds to wait for --wait_for_init before giving up. Default: wait forever')
 parser.add_argument("--db_timeout", type=float, default=300.0,          help='Seconds to wait for the database to accept connections before giving up')
 
@@ -53,7 +53,12 @@ def make_engine(db_url: str | None) -> Engine:
     return create_engine(db_url)
 
 
-def run_init(env: Environment, num_organisms: int, num_mutagens: int, seed: int | None) -> None:
+def run_init(
+    env: Environment,
+    num_organisms: int,
+    num_mutagens: int,
+    seed: int | None,
+) -> None:
     """Populate the organism pool and add mutagens (idempotent)."""
     if env.count_organisms() > 0:
         logger.info(f"Pool already has {env.count_organisms()} organisms, skipping population")
@@ -80,49 +85,14 @@ def run_reaper(args, engine) -> None:
     logger.info(f"Marked {len(reaped)} abandoned trials as finished: {reaped}")
 
 
-def run_breeder(args, env, seed: int, metrics_port: int) -> None:
-    metrics.start_server(metrics_port, env)
-    set_rng(default_rng(seed))
-    logger.info("Breeder starting")
-
-    completed_total = env.count_trials(completed=True)
-    with env.sessionmaker() as session:
-        state = session.get(BreederState, 1)
-        if state is None:
-            # First run after init: base the counter on the current total so we
-            # breed once --breed_every_n_trials NEW trials have finished.
-            state = BreederState(id=1, trials_completed_at_last_breed=completed_total)
-            session.add(state)
-            session.commit()
-        since_last_breed = max(0, completed_total - state.trials_completed_at_last_breed)
-        last_breed_at = state.last_breed_at
-
-    if since_last_breed < args.breed_every_n_trials:
-        logger.info(
-            f"Skipping cull+breed cycle: {since_last_breed}/{args.breed_every_n_trials} "
-            f"trials completed since last cycle (last ran {last_breed_at})"
-        )
-        return
-
-    logger.info(f"Running cull+breed cycle ({since_last_breed} trials completed since last cycle)")
-    culled = env.cull()
-    if culled:
-        metrics.record_cull()
-    bred = env.breed()
-    if bred:
-        metrics.record_breed()
-    logger.info(f"Done (culled={culled}, bred={bred})")
-
-    # Record the high-water mark after the cycle so a crash mid-cycle re-runs
-    # the cycle instead of silently skipping the next --breed_every_n_trials.
-    with env.sessionmaker() as session:
-        state = session.get(BreederState, 1)
-        state.trials_completed_at_last_breed = completed_total
-        state.last_breed_at = datetime.now()
-        session.commit()
-
-
-def run_worker(env, num_trials: int | None, num_threads: int, seed: int | None, metrics_port: int) -> None:
+def run_worker(
+        env: Environment,
+        num_trials: int | None,
+        num_threads: int,
+        seed: int | None,
+        metrics_port: int,
+        cycle_every_n_trials: int,
+) -> None:
     """Run trials across worker threads until stopped (by count or signal)."""
 
     metrics.start_server(metrics_port, env)
@@ -137,7 +107,7 @@ def run_worker(env, num_trials: int | None, num_threads: int, seed: int | None, 
     signal.signal(signal.SIGTERM, handle_sigterm)
     signal.signal(signal.SIGINT, handle_sigterm)
 
-    def run_trials(worker_trials: int | None, worker_rng: Generator) -> None:
+    def worker_loop(worker_trials: int | None, worker_rng: Generator) -> None:
         set_rng(worker_rng)
         iteration = 0
         while not stop_event.is_set() and (worker_trials is None or iteration < worker_trials):
@@ -156,6 +126,23 @@ def run_worker(env, num_trials: int | None, num_threads: int, seed: int | None, 
             except Exception as e:
                 logger.exception("Exception while running trial, continuing...", e)
 
+            rng = get_rng()
+            if rng.random() < 1 / cycle_every_n_trials:
+                culled = env.cull()
+                if not culled:
+                    logger.info("Breed and cull skipped (no moves)")
+                else:
+                    metrics.record_cull()
+                    logger.info(f"Cull succeeded, starting breeding")
+                    bred = False
+                    while not bred:
+                        bred = env.breed()
+                        logger.info(f"Breed {'succeeded' if bred else 'skipped (no moves), retrying...'}")
+                        if bred:
+                            metrics.record_breed()
+
+            iteration += 1
+
     # Distribute the trials across threads: ceil(num_trials / num_threads) each,
     # so the total could overshoot by up to (num_threads - 1).
     per_thread = None if num_trials is None else int((num_trials - 1) / num_threads) + 1
@@ -168,7 +155,7 @@ def run_worker(env, num_trials: int | None, num_threads: int, seed: int | None, 
         logger.info(f"Sleeping for {delay} seconds")
         sleep(delay)
         logger.info(f"Starting worker thread {i}")
-        thread = Thread(target=run_trials, args=(per_thread, rngs.pop()))
+        thread = Thread(target=worker_loop, args=(per_thread, rngs.pop()))
         thread.start()
         threads.append(thread)
 
@@ -222,14 +209,16 @@ def main() -> None:
                 EntityBase.metadata.create_all(engine)
                 run_init(env, args.pool_size, args.num_mutagens, seed)
             case 'worker':
-                run_worker(env, num_trials, args.num_threads, seed, metrics_port)
+                run_worker(
+                    env,
+                    num_trials,
+                    args.num_threads,
+                    seed,
+                    metrics_port,
+                    args.cycle_every_n_trials,
+                )
             case 'reaper':
                 run_reaper(args, engine)
-            case 'breeder':
-                # The breeder is a CronJob and needs its control table to exist
-                # even on a database created before the table was added.
-                EntityBase.metadata.create_all(engine)
-                run_breeder(args, env, seed, metrics_port)
     finally:
         engine.dispose()
 

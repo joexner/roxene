@@ -1,5 +1,5 @@
 # Prometheus scrapes the app's /metrics endpoints (discovered via k8s SD on the
-# prometheus.io/* annotations on the worker/breeder pods) plus the observability
+# prometheus.io/* annotations on the worker pods) plus the observability
 # stack's own /metrics. Access with:
 #   kubectl -n roxene port-forward svc/prometheus 9090:9090
 apiVersion: v1

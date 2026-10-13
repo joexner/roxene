@@ -1,6 +1,6 @@
 """Block until the init Job has populated the organism pool.
 
-Used as a pre-flight gate by the worker and breeder. Both need a non-empty
+Used as a pre-flight gate by the worker. It needs a non-empty
 pool before they can do anything useful, and there is no k8s primitive that
 makes a StatefulSet/Deployment wait for a Job -- so we poll.
 

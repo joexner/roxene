@@ -5,8 +5,8 @@
 #     --cluster <cluster> --location us-central1 \
 #     --spot --num-nodes 2 --machine-type e2-medium
 #
-# Workers and the breeder are pinned to spot nodes; Postgres, pgbouncer and
-# the notebook stay on regular nodes.
+# Workers are pinned to spot nodes; Postgres, pgbouncer and the notebook stay
+# on regular nodes. Cull+breed now runs inside the workers, so it rides along.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
@@ -15,7 +15,6 @@ resources:
 
 patches:
   - path: worker-spot-patch.yaml
-  - path: breeder-spot-patch.yaml
 
 images:
   - name: roxene

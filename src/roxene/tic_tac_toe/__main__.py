@@ -6,6 +6,7 @@ import signal
 import time
 from datetime import datetime, timedelta
 from threading import Event, Thread
+from time import sleep
 
 from numpy.random import Generator, default_rng
 from sqlalchemy import create_engine, text, update, Engine
@@ -53,20 +54,20 @@ def make_engine(db_url: str | None, num_threads: int) -> Engine:
 def run_init(env: Environment, num_organisms: int, num_mutagens: int, seed: int | None) -> None:
     """Populate the organism pool and add mutagens (idempotent)."""
     if env.count_organisms() > 0:
-        logger.info(f'Pool already has {env.count_organisms()} organisms, skipping population')
+        logger.info(f"Pool already has {env.count_organisms()} organisms, skipping population")
     else:
-        logger.info(f'Populating environment with {num_organisms} organisms and {num_mutagens} mutagens')
+        logger.info(f"Populating environment with {num_organisms} organisms and {num_mutagens} mutagens")
         set_rng(default_rng(seed))
         env.populate(num_organisms)
         env.add_mutagens(num_mutagens)
-        logger.info('Done populating environment')
+        logger.info("Done populating environment")
 
 
 def run_reaper(args, engine) -> None:
     """Mark trials abandoned by dead workers as finished so their organisms return to the pool."""
     now = datetime.now()
     cutoff = now - timedelta(minutes=args.stale_after_minutes)
-    with Session(engine) as session:
+    with (Session(engine) as session):
         reaped = session.scalars(
             update(Trial)
             .where(Trial.end_date.is_(None), Trial.start_date < cutoff)
@@ -74,16 +75,25 @@ def run_reaper(args, engine) -> None:
             .returning(Trial.id)
         ).all()
         session.commit()
-    logger.info(f'Marked {len(reaped)} abandoned trials as finished: {reaped}')
+    logger.info(f"Marked {len(reaped)} abandoned trials as finished: {reaped}")
 
 
-def run_worker(env: Environment, num_trials: int | None, num_threads: int, seed: int | None, metrics_port: int, husbandry_rate: float) -> None:
-    """Run trials across worker threads until stopped by count or signal."""
+def run_worker(
+        env: Environment,
+        num_trials: int | None,
+        num_threads: int,
+        seed: int | None,
+        metrics_port: int,
+        husbandry_rate: float,
+) -> None:
+    """Run trials across worker threads until stopped (by count or signal)."""
+
     metrics.start_server(metrics_port, env)
     stop_event = Event()
 
     def handle_sigterm(signum, _frame):
-        logger.info(f'Got signal {signum}, will stop after the current trial')
+        # Spot preemption / rollout: finish the current trial, then exit.
+        logger.info(f"Got signal {signum}, will stop after the current trial")
         stop_event.set()
 
     signal.signal(signal.SIGTERM, handle_sigterm)
@@ -93,25 +103,29 @@ def run_worker(env: Environment, num_trials: int | None, num_threads: int, seed:
         set_rng(worker_rng)
         iteration = 0
         while not stop_event.is_set() and (worker_trials is None or iteration < worker_trials):
-            logger.info('Building trial')
-            trial = env.start_trial()
-            logger.info(f'Starting trial, {env.count_trials(True, False)} trials running, {env.count_trials()} trials total')
-            t0 = time.monotonic()
-            trial.run()
-            duration = time.monotonic() - t0
-            logger.info('Trial complete, saving results')
-            env.complete_trial(trial)
-            metrics.record_trial(trial, duration)
-            logger.info(f'Finished trial {trial} with {len(trial.moves)} moves in {duration:.3f}s')
+            try:
+                logger.info("Building trial")
+                trial = env.start_trial()
+                logger.info(f"Starting trial, {env.count_trials(True, False)} trials running, {env.count_trials()} trials total")
+                t0 = time.monotonic()
+                trial.run()
+                duration = time.monotonic() - t0
+                logger.info("Trial complete, saving results")
+                env.complete_trial(trial)
+                metrics.record_trial(trial, duration)
+                logger.info(f"Finished trial {trial} with {len(trial.moves)} moves in {duration:.3f}s")
+                iteration += 1
+            except Exception as e:
+                logger.exception("Exception while running trial, continuing...", e)
 
             rng = get_rng()
             if rng.random() < husbandry_rate:
                 culled = env.cull()
                 if not culled:
-                    logger.info('Breed and cull skipped (no moves)')
+                    logger.info("Breed and cull skipped (no moves)")
                 else:
                     metrics.record_cull()
-                    logger.info('Cull succeeded, starting breeding')
+                    logger.info(f"Cull succeeded, starting breeding")
                     bred = False
                     while not bred:
                         bred = env.breed()
@@ -127,8 +141,11 @@ def run_worker(env: Environment, num_trials: int | None, num_threads: int, seed:
 
     threads = []
     for i in range(num_threads):
-        logger.info(f'Starting thread {i}')
-        thread = Thread(target=worker_loop, args=(per_thread, rngs[i]))
+        delay = 60 + main_rng.integers(60)
+        logger.info(f"Sleeping for {delay} seconds")
+        sleep(delay)
+        logger.info(f"Starting worker thread {i}")
+        thread = Thread(target=worker_loop, args=(per_thread, rngs.pop()))
         thread.start()
         threads.append(thread)
 
@@ -137,27 +154,37 @@ def run_worker(env: Environment, num_trials: int | None, num_threads: int, seed:
 
 
 def main() -> None:
+
+    # Set up logging
     logging.basicConfig(
-        level=os.environ.get('LOG_LEVEL', 'INFO').upper(),
-        format='%(asctime)s - %(levelname)s - [%(threadName)s]\t- %(name)s: %(message)s',
+        level=os.environ.get("LOG_LEVEL", "INFO").upper(),
+        format="%(asctime)s - %(levelname)s - [%(threadName)s]\t- %(name)s: %(message)s",
         force=True,
     )
 
+    # Parse args
     args = parser.parse_args()
 
+    # 0 disables the metrics server
     metrics_port = args.metrics_port
     if metrics_port is None:
-        metrics_port = int(os.environ.get('METRICS_PORT') or 0)
+        metrics_port = int(os.environ.get("METRICS_PORT") or 0)
 
+    # Trial limit before the workers stop, default = unlimited
     num_trials = int(args.num_trials) if args.num_trials and args.num_trials != 'forever' else None
 
-    m = re.search(r'-(\d+)$', os.environ.get('HOSTNAME', ''))
+    # Per-process seed: base seed + this pod's ordinal, so every process in a
+    # StatefulSet gets a distinct (and reproducible) UUID stream. In a k8s pod the
+    # ordinal is the suffix of the hostname (e.g. roxene-worker-7 -> 7).
+    m = re.search(r"-(\d+)$", os.environ.get("HOSTNAME", ""))
     seed_offset = int(m.group(1)) if m else 0
     seed = 11235 + seed_offset
-    logger.info(f'Role={args.role}, seed offset={seed_offset}')
+    logger.info(f"Role={args.role}, seed offset={seed_offset}")
 
+    # Wait for Postgres and pgbouncer
     wait_for_db(args.db_url, timeout=args.db_timeout)
 
+    # Wait for the init job to finish populating the environment
     if args.wait_for_init:
         wait_for_init(args.db_url, timeout=args.init_timeout)
 

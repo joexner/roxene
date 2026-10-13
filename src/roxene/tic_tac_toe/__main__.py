@@ -23,57 +23,50 @@ logger = logging.getLogger(__name__)
 parser = argparse.ArgumentParser(description='Play some tic-tac-toe')
 
 parser.add_argument('--role', choices=['init', 'worker', 'reaper'], default='worker',
-                    help='Which job this process does: init populates the pool, worker runs trials (and culls+breeds between them), reaper finishes off trials abandoned by dead workers')
-parser.add_argument('--pool_size', type=int, default=1000,              help='Number of organisms in the pool (init)')
-parser.add_argument('--num_mutagens', type=int, default=100,            help='Number of mutagens to put in the pool (init only)')
-parser.add_argument('--num_trials', default='forever',                  help='Number of trials to run (worker), or "forever"')
-parser.add_argument('--num_threads', type=int, default=5,               help='Number of threads to use to run trials.')
-parser.add_argument('--cycle_every_n_trials', type=int, default=50,      help='Worker: expected trials between cull/breed cycles; each is decided stochastically after each trial (worker)')
-parser.add_argument('--stale_after_minutes', type=int, default=60,      help='Trials running longer than this are considered abandoned (reaper only)')
-parser.add_argument("--db_url", default=os.environ.get('DATABASE_URL'), help='Database URL')
-parser.add_argument("--metrics_port", type=int, default=None,           help='Port to serve /metrics on (worker). Defaults to the METRICS_PORT env var; 0 disables.')
-parser.add_argument("--wait_for_init", action="store_true",             help='Block until the init Job has populated the organism pool before starting (worker)')
-parser.add_argument("--init_timeout", type=float, default=None,         help='Seconds to wait for --wait_for_init before giving up. Default: wait forever')
-parser.add_argument("--db_timeout", type=float, default=300.0,          help='Seconds to wait for the database to accept connections before giving up')
-
+                    help='Which job this process does: init populates the pool, worker runs trials and culls/breeds between them, reaper finishes off abandoned trials')
+parser.add_argument('--pool_size', type=int, default=1000, help='Number of organisms in the pool (init)')
+parser.add_argument('--num_mutagens', type=int, default=100, help='Number of mutagens to put in the pool (init only)')
+parser.add_argument('--num_trials', default='forever', help='Number of trials to run (worker), or "forever"')
+parser.add_argument('--num_threads', type=int, default=5, help='Number of threads to use to run trials.')
+parser.add_argument('--husbandry_rate', type=float, default=0.02, help='Chance each trial triggers cull+breed.')
+parser.add_argument('--stale_after_minutes', type=int, default=60, help='Trials running longer than this are considered abandoned (reaper only)')
+parser.add_argument('--db_url', default=os.environ.get('DATABASE_URL'), help='Database URL')
+parser.add_argument('--metrics_port', type=int, default=None, help='Port to serve /metrics on (worker). Defaults to the METRICS_PORT env var; 0 disables.')
+parser.add_argument('--wait_for_init', action='store_true', help='Block until the init Job has populated the organism pool before starting (worker)')
+parser.add_argument('--init_timeout', type=float, default=None, help='Seconds to wait for --wait_for_init before giving up. Default: wait forever')
+parser.add_argument('--db_timeout', type=float, default=300.0, help='Seconds to wait for the database to accept connections before giving up')
 
 
 def make_engine(db_url: str | None, num_threads: int) -> Engine:
     if not db_url:
-        # Create a fresh Postgres database for this run and initialize schema
-        admin_url = "postgresql+psycopg2://postgres:postgres@localhost:5432/postgres"
-        db_name = f"roxene_{int(time.time())}"
-        logger.info(f"Creating database {db_name}")
-        admin_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
+        admin_url = 'postgresql+psycopg2://postgres:postgres@localhost:5432/postgres'
+        db_name = f'roxene_{int(time.time())}'
+        logger.info(f'Creating database {db_name}')
+        admin_engine = create_engine(admin_url, isolation_level='AUTOCOMMIT')
         with admin_engine.connect() as conn:
             conn.execute(text(f'CREATE DATABASE "{db_name}"'))
         admin_engine.dispose()
-        db_url = f"postgresql+psycopg2://postgres:postgres@localhost:5432/{db_name}"
+        db_url = f'postgresql+psycopg2://postgres:postgres@localhost:5432/{db_name}'
     return create_engine(db_url, pool_size=num_threads)
 
 
-def run_init(
-    env: Environment,
-    num_organisms: int,
-    num_mutagens: int,
-    seed: int | None,
-) -> None:
+def run_init(env: Environment, num_organisms: int, num_mutagens: int, seed: int | None) -> None:
     """Populate the organism pool and add mutagens (idempotent)."""
     if env.count_organisms() > 0:
-        logger.info(f"Pool already has {env.count_organisms()} organisms, skipping population")
+        logger.info(f'Pool already has {env.count_organisms()} organisms, skipping population')
     else:
-        logger.info(f"Populating environment with {num_organisms} organisms and {num_mutagens} mutagens")
+        logger.info(f'Populating environment with {num_organisms} organisms and {num_mutagens} mutagens')
         set_rng(default_rng(seed))
         env.populate(num_organisms)
         env.add_mutagens(num_mutagens)
-        logger.info("Done populating environment")
+        logger.info('Done populating environment')
 
 
 def run_reaper(args, engine) -> None:
     """Mark trials abandoned by dead workers as finished so their organisms return to the pool."""
     now = datetime.now()
     cutoff = now - timedelta(minutes=args.stale_after_minutes)
-    with (Session(engine) as session):
+    with Session(engine) as session:
         reaped = session.scalars(
             update(Trial)
             .where(Trial.end_date.is_(None), Trial.start_date < cutoff)
@@ -81,26 +74,16 @@ def run_reaper(args, engine) -> None:
             .returning(Trial.id)
         ).all()
         session.commit()
-    logger.info(f"Marked {len(reaped)} abandoned trials as finished: {reaped}")
+    logger.info(f'Marked {len(reaped)} abandoned trials as finished: {reaped}')
 
 
-def run_worker(
-        env: Environment,
-        num_trials: int | None,
-        num_threads: int,
-        seed: int | None,
-        metrics_port: int,
-        cycle_every_n_trials: int,
-) -> None:
-    """Run trials across worker threads until stopped (by count or signal)."""
-
+def run_worker(env: Environment, num_trials: int | None, num_threads: int, seed: int | None, metrics_port: int, husbandry_rate: float) -> None:
+    """Run trials across worker threads until stopped by count or signal."""
     metrics.start_server(metrics_port, env)
-
     stop_event = Event()
 
     def handle_sigterm(signum, _frame):
-        # Spot preemption / rollout: finish the current trial, then exit.
-        logger.info(f"Got signal {signum}, will stop after the current trial")
+        logger.info(f'Got signal {signum}, will stop after the current trial')
         stop_event.set()
 
     signal.signal(signal.SIGTERM, handle_sigterm)
@@ -110,25 +93,25 @@ def run_worker(
         set_rng(worker_rng)
         iteration = 0
         while not stop_event.is_set() and (worker_trials is None or iteration < worker_trials):
-            logger.info("Building trial")
+            logger.info('Building trial')
             trial = env.start_trial()
-            logger.info(f"Starting trial, {env.count_trials(True, False)} trials running, {env.count_trials()} trials total")
+            logger.info(f'Starting trial, {env.count_trials(True, False)} trials running, {env.count_trials()} trials total')
             t0 = time.monotonic()
             trial.run()
             duration = time.monotonic() - t0
-            logger.info("Trial complete, saving results")
+            logger.info('Trial complete, saving results')
             env.complete_trial(trial)
             metrics.record_trial(trial, duration)
-            logger.info(f"Finished trial {trial} with {len(trial.moves)} moves in {duration:.3f}s")
+            logger.info(f'Finished trial {trial} with {len(trial.moves)} moves in {duration:.3f}s')
 
             rng = get_rng()
-            if rng.random() < 1 / cycle_every_n_trials:
+            if rng.random() < husbandry_rate:
                 culled = env.cull()
                 if not culled:
-                    logger.info("Breed and cull skipped (no moves)")
+                    logger.info('Breed and cull skipped (no moves)')
                 else:
                     metrics.record_cull()
-                    logger.info(f"Cull succeeded, starting breeding")
+                    logger.info('Cull succeeded, starting breeding')
                     bred = False
                     while not bred:
                         bred = env.breed()
@@ -138,15 +121,13 @@ def run_worker(
 
             iteration += 1
 
-    # Distribute the trials across threads: ceil(num_trials / num_threads) each,
-    # so the total could overshoot by up to (num_threads - 1).
     per_thread = None if num_trials is None else int((num_trials - 1) / num_threads) + 1
     main_rng: Generator = default_rng(seed)
     rngs = main_rng.spawn(num_threads)
 
     threads = []
     for i in range(num_threads):
-        logger.info(f"Starting thread {i}")
+        logger.info(f'Starting thread {i}')
         thread = Thread(target=worker_loop, args=(per_thread, rngs[i]))
         thread.start()
         threads.append(thread)
@@ -154,42 +135,29 @@ def run_worker(
     for thread in threads:
         thread.join()
 
-    # with open('runner.pickle', 'wb') as file:
-    #     pickle.dump(env, file)
-
 
 def main() -> None:
-
-    # Set up logging
     logging.basicConfig(
-        level=os.environ.get("LOG_LEVEL", "INFO").upper(),
-        format="%(asctime)s - %(levelname)s - [%(threadName)s]\t- %(name)s: %(message)s",
+        level=os.environ.get('LOG_LEVEL', 'INFO').upper(),
+        format='%(asctime)s - %(levelname)s - [%(threadName)s]\t- %(name)s: %(message)s',
         force=True,
     )
 
-    # Parse args
     args = parser.parse_args()
 
-    # 0 disables the metrics server
     metrics_port = args.metrics_port
     if metrics_port is None:
-        metrics_port = int(os.environ.get("METRICS_PORT") or 0)
+        metrics_port = int(os.environ.get('METRICS_PORT') or 0)
 
-    # Trial limit before the workers stop, default = unlimited
     num_trials = int(args.num_trials) if args.num_trials and args.num_trials != 'forever' else None
 
-    # Per-process seed: base seed + this pod's ordinal, so every process in a
-    # StatefulSet gets a distinct (and reproducible) UUID stream. In a k8s pod the
-    # ordinal is the suffix of the hostname (e.g. roxene-worker-7 -> 7).
-    m = re.search(r"-(\d+)$", os.environ.get("HOSTNAME", ""))
+    m = re.search(r'-(\d+)$', os.environ.get('HOSTNAME', ''))
     seed_offset = int(m.group(1)) if m else 0
     seed = 11235 + seed_offset
-    logger.info(f"Role={args.role}, seed offset={seed_offset}")
+    logger.info(f'Role={args.role}, seed offset={seed_offset}')
 
-    # Wait for Postgres and pgbouncer
     wait_for_db(args.db_url, timeout=args.db_timeout)
 
-    # Wait for the init job to finish populating the environment
     if args.wait_for_init:
         wait_for_init(args.db_url, timeout=args.init_timeout)
 
@@ -201,14 +169,7 @@ def main() -> None:
                 EntityBase.metadata.create_all(engine)
                 run_init(env, args.pool_size, args.num_mutagens, seed)
             case 'worker':
-                run_worker(
-                    env,
-                    num_trials,
-                    args.num_threads,
-                    seed,
-                    metrics_port,
-                    args.cycle_every_n_trials,
-                )
+                run_worker(env, num_trials, args.num_threads, seed, metrics_port, args.husbandry_rate)
             case 'reaper':
                 run_reaper(args, engine)
     finally:

@@ -115,23 +115,23 @@ def run_worker(
                 metrics.record_trial(trial, duration)
                 logger.info(f"Finished trial {trial} with {len(trial.moves)} moves in {duration:.3f}s")
                 iteration += 1
-            except Exception as e:
-                logger.exception("Exception while running trial, continuing...", e)
 
-            rng = get_rng()
-            if rng.random() < husbandry_rate:
-                culled = env.cull()
-                if not culled:
-                    logger.info("Breed and cull skipped (no moves)")
-                else:
-                    metrics.record_cull()
-                    logger.info(f"Cull succeeded, starting breeding")
-                    bred = False
-                    while not bred:
-                        bred = env.breed()
-                        logger.info(f"Breed {'succeeded' if bred else 'skipped (no moves), retrying...'}")
-                        if bred:
-                            metrics.record_breed()
+                rng = get_rng()
+                if rng.random() < husbandry_rate:
+                    culled = env.cull()
+                    if not culled:
+                        logger.info("Breed and cull skipped (no moves)")
+                    else:
+                        metrics.record_cull()
+                        logger.info(f"Cull succeeded, starting breeding")
+                        bred = False
+                        while not bred:
+                            bred = env.breed()
+                            logger.info(f"Breed {'succeeded' if bred else 'skipped (no moves), retrying...'}")
+                            if bred:
+                                metrics.record_breed()
+            except Exception as e:
+                logger.exception("Exception while running worker, continuing...", e)
 
             iteration += 1
 

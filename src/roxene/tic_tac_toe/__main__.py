@@ -25,17 +25,17 @@ parser = argparse.ArgumentParser(description='Play some tic-tac-toe')
 
 parser.add_argument('--role', choices=['init', 'worker', 'reaper'], default='worker',
                     help='Which job this process does: init populates the pool, worker runs trials and culls/breeds between them, reaper finishes off abandoned trials')
-parser.add_argument('--pool_size', type=int, default=1000, help='Number of organisms in the pool (init)')
-parser.add_argument('--num_mutagens', type=int, default=100, help='Number of mutagens to put in the pool (init only)')
-parser.add_argument('--num_trials', default='forever', help='Number of trials to run (worker), or "forever"')
-parser.add_argument('--num_threads', type=int, default=5, help='Number of threads to use to run trials.')
-parser.add_argument('--husbandry_rate', type=float, default=0.02, help='Chance each trial triggers cull+breed.')
-parser.add_argument('--stale_after_minutes', type=int, default=60, help='Trials running longer than this are considered abandoned (reaper only)')
+parser.add_argument('--pool_size', type=int, default=1000,              help='Number of organisms in the pool (init)')
+parser.add_argument('--num_mutagens', type=int, default=100,            help='Number of mutagens to put in the pool (init only)')
+parser.add_argument('--num_trials', default='forever',                  help='Number of trials to run (worker), or "forever"')
+parser.add_argument('--num_threads', type=int, default=5,               help='Number of threads to use to run trials.')
+parser.add_argument('--husbandry_rate', type=float, default=0.02,       help='Chance each trial triggers cull+breed.')
+parser.add_argument('--stale_after_minutes', type=int, default=60,      help='Trials running longer than this are considered abandoned (reaper only)')
 parser.add_argument('--db_url', default=os.environ.get('DATABASE_URL'), help='Database URL')
-parser.add_argument('--metrics_port', type=int, default=None, help='Port to serve /metrics on (worker). Defaults to the METRICS_PORT env var; 0 disables.')
-parser.add_argument('--wait_for_init', action='store_true', help='Block until the init Job has populated the organism pool before starting (worker)')
-parser.add_argument('--init_timeout', type=float, default=None, help='Seconds to wait for --wait_for_init before giving up. Default: wait forever')
-parser.add_argument('--db_timeout', type=float, default=300.0, help='Seconds to wait for the database to accept connections before giving up')
+parser.add_argument('--metrics_port', type=int, default=None,           help='Port to serve /metrics on (worker). Defaults to the METRICS_PORT env var; 0 disables.')
+parser.add_argument('--wait_for_init', action='store_true',             help='Block until the init Job has populated the organism pool before starting (worker)')
+parser.add_argument('--init_timeout', type=float, default=None,         help='Seconds to wait for --wait_for_init before giving up. Default: wait forever')
+parser.add_argument('--db_timeout', type=float, default=300.0,          help='Seconds to wait for the database to accept connections before giving up')
 
 
 def make_engine(db_url: str | None, num_threads: int) -> Engine:

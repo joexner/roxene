@@ -11,7 +11,7 @@ data:
     listen_addr = 0.0.0.0
     listen_port = 6432
     pool_mode = transaction
-    ; 20 workers x 2 pool connections + breeder + notebook + reaper headroom
+    ; 20 workers x 2 pool connections + notebook + reaper headroom
     max_client_conn = 200
     default_pool_size = 50
     ; In-cluster, so clients don't authenticate (auth_type = trust).

@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: worker-cpu
+  namespace: roxene
+  labels:
+    app: worker-cpu
+spec:
+  serviceName: worker-cpu
+  replicas: 1
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: worker-cpu
+  template:
+    metadata:
+      labels:
+        app: worker-cpu
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9101"
+    spec:
+      terminationGracePeriodSeconds: 60
+      serviceAccountName: worker
+      containers:
+        - name: worker
+          image: docker.io/library/roxene:latest
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "roxene.tic_tac_toe", "--role", "worker", "--num_threads", "10", "--wait_for_init"]
+          env:
+            - name: ROXENE_DEVICE
+              value: cpu
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: roxene
+                  key: DATABASE_URL
+            - name: METRICS_PORT
+              value: "9101"
+          ports:
+            - name: metrics
+              containerPort: 9101
+          resources:
+            requests:
+              cpu: 2000m
+              memory: 8Gi
+            limits:
+              memory: 8Gi
+  updateStrategy:
+    type: RollingUpdate

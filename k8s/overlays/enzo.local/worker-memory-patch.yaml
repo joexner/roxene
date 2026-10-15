@@ -1,12 +1,4 @@
-# Local overlay: give each worker more headroom than the 2Gi/4Gi base.
-#
-# NOTE: requests are what the scheduler reserves, and memory requests are
-# incompressible -- 2 replicas x 8Gi = 16Gi of reserved memory, which fits
-# alongside the rest of the stack on a ~29.6Gi minikube node. Check before
-# raising further:
-#   kubectl get node -o custom-columns='NAME:.metadata.name,MEM:.status.allocatable.memory'
-# If total requests exceed allocatable, the StatefulSet applies fine but the
-# pods sit Pending with FailedScheduling and nothing obvious fails.
+# Local workers each use 10 threads and reserve at most 8Gi of memory.
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -17,10 +9,10 @@ spec:
     spec:
       containers:
         - name: worker
-          command: ["python", "-m", "roxene.tic_tac_toe", "--role", "worker", "--num_threads", "30", "--wait_for_init"]
+          command: ["python", "-m", "roxene.tic_tac_toe", "--role", "worker", "--num_threads", "10", "--wait_for_init"]
           resources:
             requests:
-              cpu: 8000m
-              memory: 16Gi
+              cpu: 2000m
+              memory: 8Gi
             limits:
-              memory: 24Gi
+              memory: 8Gi

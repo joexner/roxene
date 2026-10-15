@@ -4,13 +4,14 @@ kind: Kustomization
 
 resources:
   - ../../base
+  - worker-cpu.yaml
 
 patches:
   - path: worker-memory-patch.yaml
   - path: worker-rocm-patch.yaml
 
 images:
-#   ROCm build of the app, so the worker can run the organisms on the GPU.
+  # The CPU worker uses a qualified image name to avoid this ROCm rewrite.
   - name: roxene
     newName: roxene-rocm
     newTag: latest
@@ -18,4 +19,6 @@ images:
 replicas:
   # One GPU in the box, so one worker pod -- it uses threads to fill it.
   - name: worker
+    count: 1
+  - name: worker-cpu
     count: 1

@@ -17,9 +17,10 @@ spec:
     spec:
       containers:
         - name: worker
-          command: ["python", "-m", "roxene.tic_tac_toe", "--role", "worker", "--num_threads", "10", "--wait_for_init"]
+          command: ["python", "-m", "roxene.tic_tac_toe", "--role", "worker", "--num_threads", "30", "--wait_for_init"]
           resources:
             requests:
-              memory: 8Gi
+              cpu: 8000m
+              memory: 16Gi
             limits:
-              memory: 12Gi
+              memory: 24Gi

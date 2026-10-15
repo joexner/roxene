@@ -1,0 +1,45 @@
+# Local overlay: run the worker on enzo.local's Radeon RX 7600 XT (gfx1102).
+#
+# This is the no-device-plugin path: bind mount the ROCm device nodes and run
+# privileged, because an ordinary pod's device cgroup refuses access to
+# /dev/kfd. (Equivalent to podman/docker's --device /dev/kfd --device /dev/dri.)
+# With rocm/k8s-device-plugin installed in the cluster you can instead delete
+# the volumes/volumeMounts/privileged bits and request `amd.com/gpu: 1`.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: worker
+  namespace: roxene
+spec:
+  template:
+    spec:
+      nodeSelector:
+        roxene.rocm/gpu: "true"
+      containers:
+        - name: worker
+          securityContext:
+            privileged: true
+          env:
+            # gfx1102 is the Radeon RX 7600 XT target; pinning it keeps the
+            # runtime from falling back to the wrong gfx arch.
+            - name: HSA_OVERRIDE_GFX_VERSION
+              value: "11.0.2"
+            # Radeon only gives us compute node 0; expose just that one.
+            - name: ROCR_VISIBLE_DEVICES
+              value: "0"
+            - name: HIP_VISIBLE_DEVICES
+              value: "0"
+          volumeMounts:
+            - name: dev-kfd
+              mountPath: /dev/kfd
+            - name: dev-dri
+              mountPath: /dev/dri
+      volumes:
+        - name: dev-kfd
+          hostPath:
+            path: /dev/kfd
+            type: CharDevice
+        - name: dev-dri
+          hostPath:
+            path: /dev/dri
+            type: Directory

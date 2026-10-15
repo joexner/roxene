@@ -8,6 +8,8 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.mutable import Mutable
 from sqlalchemy.types import TypeDecorator
 
+from .constants import DEVICE
+
 
 class EntityBase(DeclarativeBase):
     pass
@@ -38,7 +40,7 @@ class TrackedTensor(Mutable):
     def __setitem__(self, key, value):
         # Convert numpy values to tensors if needed
         if isinstance(value, (np.ndarray, np.generic)):
-            value = torch.tensor(value, dtype=self.tensor.dtype)
+            value = torch.tensor(value, dtype=self.tensor.dtype, device=self.tensor.device)
         self.tensor[key] = value
         self.changed()
 
@@ -79,10 +81,12 @@ class WrappedTensor(TypeDecorator):
     cache_ok = True
 
     def process_bind_param(self, value: TrackedTensor, dialect) -> torch.Tensor:
-        return value.tensor
+        # Store host-side bytes so a CPU worker can still read rows written by a GPU worker.
+        #TODO: Figure out if we need the .detach().cpu()
+        return value.tensor.detach().cpu()
 
     def process_result_value(self, value: torch.Tensor, dialect):
-        return TrackedTensor(value) if value is not None else None
+        return TrackedTensor(value.to(DEVICE)) if value is not None else None
 
 class NumpySafeFloat(TypeDecorator):
     impl = Float

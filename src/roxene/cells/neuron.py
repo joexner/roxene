@@ -9,7 +9,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
 
 from ..cell import Cell
-from ..constants import NP_PRECISION, TORCH_PRECISION
+from ..constants import DEVICE, NP_PRECISION, TORCH_PRECISION
 from ..persistence import TrackedTensor, WrappedTensor, EntityBase
 
 activation_func = torch.tanh
@@ -55,14 +55,14 @@ class Neuron(Cell):
             that call this c'tor, or else you could build a Neuron that asplodes at runtime
         '''
         self.id = uuid.uuid4()
-        self.input = torch.tensor(input, dtype=TORCH_PRECISION)
-        self.feedback = torch.tensor(feedback, dtype=TORCH_PRECISION)
-        self.output = torch.tensor(output, dtype=TORCH_PRECISION)
+        self.input = torch.tensor(input, dtype=TORCH_PRECISION, device=DEVICE)
+        self.feedback = torch.tensor(feedback, dtype=TORCH_PRECISION, device=DEVICE)
+        self.output = torch.tensor(output, dtype=TORCH_PRECISION, device=DEVICE)
 
-        self.input_hidden = torch.tensor(input_hidden, dtype=TORCH_PRECISION)
-        self.hidden_feedback = torch.tensor(hidden_feedback, dtype=TORCH_PRECISION)
-        self.feedback_hidden = torch.tensor(feedback_hidden, dtype=TORCH_PRECISION)
-        self.hidden_output = torch.tensor(hidden_output, dtype=TORCH_PRECISION)
+        self.input_hidden = torch.tensor(input_hidden, dtype=TORCH_PRECISION, device=DEVICE)
+        self.hidden_feedback = torch.tensor(hidden_feedback, dtype=TORCH_PRECISION, device=DEVICE)
+        self.feedback_hidden = torch.tensor(feedback_hidden, dtype=TORCH_PRECISION, device=DEVICE)
+        self.hidden_output = torch.tensor(hidden_output, dtype=TORCH_PRECISION, device=DEVICE)
         self.bound_ports = {}
 
     def update(self) -> None:

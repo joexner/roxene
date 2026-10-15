@@ -16,6 +16,7 @@ from . import metrics
 from .environment import Environment
 from .init_gate import wait_for_db, wait_for_init
 from .trial import Trial
+from ..constants import DEVICE
 from ..persistence import EntityBase
 from ..util import set_rng, get_rng
 
@@ -179,7 +180,7 @@ def main() -> None:
     m = re.search(r"-(\d+)$", os.environ.get("HOSTNAME", ""))
     seed_offset = int(m.group(1)) if m else 0
     seed = 11235 + seed_offset
-    logger.info(f"Role={args.role}, seed offset={seed_offset}")
+    logger.info(f"Role={args.role}, seed offset={seed_offset}, device={DEVICE}")
 
     # Wait for Postgres and pgbouncer
     wait_for_db(args.db_url, timeout=args.db_timeout)

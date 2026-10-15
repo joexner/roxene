@@ -14,6 +14,7 @@ Reading the mounted ServiceAccount token is one fewer dependency.
 import json
 import logging
 import os
+import ssl
 import time
 import urllib.error
 import urllib.request
@@ -48,7 +49,9 @@ def _api_get(path: str) -> dict | None:
     url = f"https://{host}:{port}{path}"
     request = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"})
     try:
-        with urllib.request.urlopen(request, cafile=CA_PATH, timeout=10) as response:
+        # cafile/capath were dropped from urlopen() in Python 3.14, so hand it
+        # an explicit SSLContext instead (the ROCm base image runs 3.14).
+        with urllib.request.urlopen(request, context=ssl.create_default_context(cafile=CA_PATH), timeout=10) as response:
             return json.load(response)
     except urllib.error.HTTPError as e:
         if e.code == 403:

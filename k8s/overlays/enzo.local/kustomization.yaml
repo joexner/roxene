@@ -7,7 +7,15 @@ resources:
 
 patches:
   - path: worker-memory-patch.yaml
+  - path: worker-rocm-patch.yaml
+
+images:
+#   ROCm build of the app, so the worker can run the organisms on the GPU.
+  - name: roxene
+    newName: roxene-rocm
+    newTag: latest
 
 replicas:
+  # One GPU in the box, so one worker pod -- it uses threads to fill it.
   - name: worker
-    count: 2
+    count: 1

@@ -39,7 +39,7 @@ parser.add_argument("--init_timeout", type=float, default=None,         help="Se
 parser.add_argument("--db_timeout", type=float, default=300.0,          help="Seconds to wait for the database to accept connections before giving up")
 
 
-def make_engine(db_url: str | None, num_threads: int) -> Engine:
+def make_engine(db_url: str | None) -> Engine:
     if not db_url:
         admin_url = "postgresql+psycopg2://postgres:postgres@localhost:5432/postgres"
         db_name = f"roxene_{int(time.time())}"
@@ -49,7 +49,7 @@ def make_engine(db_url: str | None, num_threads: int) -> Engine:
             conn.execute(text(f"CREATE DATABASE \"{db_name}\""))
         admin_engine.dispose()
         db_url = f"postgresql+psycopg2://postgres:postgres@localhost:5432/{db_name}"
-    return create_engine(db_url, pool_size=num_threads)
+    return create_engine(db_url)
 
 
 def run_init(env: Environment, num_organisms: int, num_mutagens: int, seed: int | None) -> None:
@@ -189,7 +189,7 @@ def main() -> None:
     if args.wait_for_init:
         wait_for_init(args.db_url, timeout=args.init_timeout)
 
-    engine: Engine = make_engine(args.db_url, args.num_threads)
+    engine: Engine = make_engine(args.db_url)
     try:
         env = Environment(engine)
         match args.role:

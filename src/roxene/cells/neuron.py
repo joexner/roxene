@@ -66,16 +66,19 @@ class Neuron(Cell):
         self.bound_ports = {}
 
     def update(self) -> None:
-        # TODO: Optimize / make less wack
         for port_num, cell in self.bound_ports.items():
             self.input[port_num] = cell.get_output()
         
         hidden_in = torch.cat([self.input, self.feedback], dim=0).unsqueeze(0)
         hidden_wts = torch.cat([self.input_hidden, self.feedback_hidden], dim=0)
+        out_fb_wts = torch.cat([self.hidden_feedback, self.hidden_output], dim=1)
+        w_big = torch.block_diag(hidden_wts, out_fb_wts)
         hidden = activation_func(torch.matmul(hidden_in, hidden_wts))
-        
-        self.feedback.copy_(activation_func(torch.matmul(hidden, self.hidden_feedback)).squeeze(0))
-        self.output.copy_(activation_func(torch.matmul(hidden, self.hidden_output)).squeeze(0))
+        state = torch.cat([hidden_in, hidden], dim=1)
+        res = activation_func(torch.matmul(state, w_big)).squeeze(0)
+        fb_len = self.feedback.shape[0]
+        self.feedback.copy_(res[hidden_wts.shape[1]:hidden_wts.shape[1] + fb_len])
+        self.output.copy_(res[hidden_wts.shape[1] + fb_len:])
 
     def get_output(self) -> NP_PRECISION:
         return NP_PRECISION(self.output.item())

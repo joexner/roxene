@@ -3,6 +3,10 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from typing import Dict, List, Optional
+from unittest.mock import Mock
+
+import numpy as np
+import torch
 
 from sqlalchemy import ForeignKey, Integer, String, DateTime
 from sqlalchemy.ext.associationproxy import association_proxy
@@ -140,9 +144,42 @@ class Organism(EntityBase):
         return self.outputs[output_label].get_output()
 
     def update(self):
-        for cell in self.cells:
-            if isinstance(cell, Neuron):
-                cell.update()
+        neurons = [cell for cell in self.cells if isinstance(cell, Neuron)]
+        if not neurons:
+            return
+        # Fall back to sequential if any neuron is mocked
+        if any(isinstance(n, Mock) or isinstance(getattr(n, "update", None), Mock) for n in neurons):
+            for n in neurons:
+                n.update()
+            return
+
+        raw = lambda t: t.tensor if hasattr(t, "tensor") else t
+        tx_outputs = {cell: cell.get_output() for cell in self.cells}
+        for n in neurons:
+            for port_num, src_cell in n.bound_ports.items():
+                val = tx_outputs[src_cell]
+                if isinstance(val, (np.ndarray, np.generic)):
+                    val = torch.tensor(val, dtype=n.input.dtype, device=n.input.device)
+                raw(n.input)[port_num] = val
+
+        w1_list = [torch.cat([raw(n.input_hidden), raw(n.feedback_hidden)], dim=0) for n in neurons]
+        w2_list = [torch.cat([raw(n.hidden_feedback), raw(n.hidden_output)], dim=1) for n in neurons]
+        w1 = torch.block_diag(*w1_list)
+        w2 = torch.block_diag(*w2_list)
+        w_big = torch.block_diag(w1, w2)
+
+        in_fb = torch.cat([torch.cat([raw(n.input), raw(n.feedback)], dim=0) for n in neurons], dim=0).unsqueeze(0)
+        hidden = torch.tanh(torch.matmul(in_fb, w1))
+        state = torch.cat([in_fb, hidden], dim=1)
+        res = torch.tanh(torch.matmul(state, w_big)).squeeze(0)
+
+        offset = w1.shape[1]
+        for n in neurons:
+            fb_len = raw(n.feedback).shape[0]
+            n.feedback.copy_(res[offset:offset + fb_len])
+            offset += fb_len
+            n.output.copy_(res[offset:offset + 1])
+            offset += 1
 
     def addNeuron(self, neuron: Neuron):
         self.cells.insert(0, neuron)

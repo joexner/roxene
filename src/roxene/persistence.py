@@ -18,10 +18,15 @@ class EntityBase(DeclarativeBase):
 class TrackedTensor(Mutable):
 
     tensor: torch.Tensor
+    _tracking_enabled: bool = True
 
     def __init__(self, tensor: torch.Tensor):
         super(Mutable, self).__init__()
         self.tensor = tensor
+
+    def changed(self):
+        if TrackedTensor._tracking_enabled:
+            super().changed()
 
     @classmethod
     def coerce(cls, key, value):

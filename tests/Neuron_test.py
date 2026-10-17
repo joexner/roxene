@@ -7,7 +7,7 @@ from numpy.random import default_rng
 from parameterized import parameterized
 from sqlalchemy.orm import Session
 
-from roxene import InputCell, Neuron, random_neuron_state
+from roxene import InputCell, Neuron, Organism, random_neuron_state
 from roxene.util import set_rng
 from tic_tac_toe.util import get_engine
 
@@ -36,18 +36,22 @@ class Neuron_test(unittest.TestCase):
             feedback_sz):
 
         neuron = Neuron(**random_neuron_state(input_sz, hidden_sz, feedback_sz, rng=default_rng(SEED)))
+        org = Organism()
+        org.addNeuron(neuron)
         output_before_update = neuron.get_output()
 
-        neuron.update()
+        org.update()
         output_after_first_update = neuron.get_output()
         self.assertFalse(np.array_equal(output_before_update, output_after_first_update))
 
-        neuron.update()
+        org.update()
         output_after_another_update = neuron.get_output()
         self.assertFalse(np.array_equal(output_after_first_update, output_after_another_update))
 
     def test_check_math_linear(self):
         neuron: Neuron = Neuron(**random_neuron_state(1, 1, 1, rng=default_rng(SEED)))
+        org = Organism()
+        org.addNeuron(neuron)
 
         initial_input_val = neuron.input.numpy()[0]
         initial_feedback_val = neuron.feedback.numpy()[0]
@@ -55,7 +59,7 @@ class Neuron_test(unittest.TestCase):
         input_hidden_weight = neuron.input_hidden.numpy()[0][0]
         feedback_hidden_weight = neuron.feedback_hidden.numpy()[0][0]
 
-        neuron.update()
+        org.update()
 
         expected_hidden_val = np.tanh(initial_input_val * input_hidden_weight + initial_feedback_val * feedback_hidden_weight)
 
@@ -95,6 +99,8 @@ class Neuron_test(unittest.TestCase):
         }
 
         neuron = Neuron(**initial_value)
+        org = Organism()
+        org.addNeuron(neuron)
 
         # Connect some input ports
         num_to_connect = rng.integers(1, input_sz) if input_sz > 1 else 1
@@ -103,9 +109,10 @@ class Neuron_test(unittest.TestCase):
         for port in ports_to_connect:
             new_input_cell = InputCell(np.float16(rng.random()))
             neuron.add_input_connection(new_input_cell, port)
+            org.cells.append(new_input_cell)
             connected_ports[port] = new_input_cell
 
-        neuron.update()
+        org.update()
 
         neuron_input_value: np.ndarray = neuron.input.numpy()
         for port_num in range(0, neuron_input_value.shape[0]):
@@ -121,10 +128,13 @@ class Neuron_test(unittest.TestCase):
         engine = get_engine()
 
         n1 = Neuron(**random_neuron_state())
+        o1 = Organism()
+        o1.addNeuron(n1)
         nid = n1.id
+        oid = o1.id
 
         with Session(engine) as session:
-            session.add(n1)
+            session.add(o1)
             orig_input = n1.input.clone()
             orig_feedback = n1.feedback.clone()
             orig_output = n1.output.clone()
@@ -135,6 +145,7 @@ class Neuron_test(unittest.TestCase):
             session.commit()
 
         with Session(engine) as session:
+            o2 = session.get(Organism, oid)
             n2 = session.get(Neuron, nid)
 
             self.assertFalse(n2 is None)
@@ -147,7 +158,10 @@ class Neuron_test(unittest.TestCase):
             torch.testing.assert_close(torch.as_tensor(n2.feedback_hidden), orig_feedback_hidden)
             torch.testing.assert_close(torch.as_tensor(n2.hidden_output), orig_hidden_output)
 
-            n2.update()
+            o2.update()
+            from sqlalchemy.orm.attributes import flag_modified
+            flag_modified(n2, 'output')
+            flag_modified(n2, 'feedback')
 
             n2_input = n2.input.clone()
             n2_feedback = n2.feedback.clone()

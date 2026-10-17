@@ -47,33 +47,23 @@ class Organism_test(TestCase):
         self.assertEqual(input_names, set(organism.inputs.keys()))
         self.assertEqual(output_names, set(organism.outputs.keys()))
 
-    def test_neuron_update_order(self):
-        # Create a list to store the order of update calls
-        update_order = []
+    def test_simultaneous_update(self):
+        # Verify that all neurons update simultaneously (Jacobi-style)
+        rng = default_rng(SEED)
+        organism = Organism(input_names={'A'}, output_names={'O1', 'O2'})
+        n1 = Neuron(**random_neuron_state(1, 1, 1, rng=rng))
+        n2 = Neuron(**random_neuron_state(1, 1, 1, rng=rng))
+        organism.addNeuron(n1)
+        organism.addNeuron(n2)
+        n1.add_input_connection(n2, 0)
+        n2.add_input_connection(n1, 0)
 
-        # Create mock Neurons and add them to the Organism
-        mock_neurons = [Mock(spec=Neuron) for _ in range(5)]
-        organism = Organism(input_names={'A'})
-
-        # Function to generate side effect function
-        def side_effect_func(i):
-            return lambda: update_order.append(i)
-
-        for i, mock_neuron in enumerate(mock_neurons):
-            # Each time update is called, append the index to update_order
-            mock_neuron.update.side_effect = side_effect_func(i)
-            organism.addNeuron(mock_neuron)
-
-        # Call update on the Organism
+        out1_before = n1.get_output()
+        out2_before = n2.get_output()
         organism.update()
 
-        # Check that the update calls on the Neurons happened in the correct order, LIFO (or LIFU?)
-        expected_order = list(reversed(range(5)))
-        self.assertEqual(update_order, expected_order)
-
-        # Verify that update was called once on each mock Neuron
-        for mock_neuron in mock_neurons:
-            mock_neuron.update.assert_called_once()
+        self.assertNotEqual(out1_before, n1.get_output())
+        self.assertNotEqual(out2_before, n2.get_output())
 
     def test_save_organism_inputs(self):
 

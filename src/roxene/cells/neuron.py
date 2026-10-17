@@ -10,7 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_
 
 from ..cell import Cell
 from ..constants import DEVICE, NP_PRECISION, TORCH_PRECISION
-from ..persistence import TrackedTensor, WrappedTensor, EntityBase
+from ..persistence import WrappedTensor, EntityBase
 
 activation_func = torch.tanh
 
@@ -21,13 +21,13 @@ class Neuron(Cell):
 
     id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cell.id"), primary_key=True)
 
-    input: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedTensor))
-    feedback: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedTensor))
-    output: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedTensor))
-    input_hidden: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedTensor))
-    hidden_feedback: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedTensor))
-    feedback_hidden: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedTensor))
-    hidden_output: Mapped[torch.Tensor] = mapped_column(TrackedTensor.as_mutable(WrappedTensor))
+    input: Mapped[torch.Tensor] = mapped_column(WrappedTensor)
+    feedback: Mapped[torch.Tensor] = mapped_column(WrappedTensor)
+    output: Mapped[torch.Tensor] = mapped_column(WrappedTensor)
+    input_hidden: Mapped[torch.Tensor] = mapped_column(WrappedTensor)
+    hidden_feedback: Mapped[torch.Tensor] = mapped_column(WrappedTensor)
+    feedback_hidden: Mapped[torch.Tensor] = mapped_column(WrappedTensor)
+    hidden_output: Mapped[torch.Tensor] = mapped_column(WrappedTensor)
 
     _ports_map: Mapped[Dict[int, "_Neuron_Input"]] = relationship(
         back_populates="listener_neuron",
@@ -64,21 +64,6 @@ class Neuron(Cell):
         self.feedback_hidden = torch.tensor(feedback_hidden, dtype=TORCH_PRECISION, device=DEVICE)
         self.hidden_output = torch.tensor(hidden_output, dtype=TORCH_PRECISION, device=DEVICE)
         self.bound_ports = {}
-
-    def update(self) -> None:
-        for port_num, cell in self.bound_ports.items():
-            self.input[port_num] = cell.get_output()
-        
-        hidden_in = torch.cat([self.input, self.feedback], dim=0).unsqueeze(0)
-        hidden_wts = torch.cat([self.input_hidden, self.feedback_hidden], dim=0)
-        out_fb_wts = torch.cat([self.hidden_feedback, self.hidden_output], dim=1)
-        w_big = torch.block_diag(hidden_wts, out_fb_wts)
-        hidden = activation_func(torch.matmul(hidden_in, hidden_wts))
-        state = torch.cat([hidden_in, hidden], dim=1)
-        res = activation_func(torch.matmul(state, w_big)).squeeze(0)
-        fb_len = self.feedback.shape[0]
-        self.feedback.copy_(res[hidden_wts.shape[1]:hidden_wts.shape[1] + fb_len])
-        self.output.copy_(res[hidden_wts.shape[1] + fb_len:])
 
     def get_output(self) -> NP_PRECISION:
         return NP_PRECISION(self.output.item())

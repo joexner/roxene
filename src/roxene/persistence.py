@@ -1,11 +1,7 @@
-from operator import getitem
-
 import numpy as np
-import sqlalchemy.types
 import torch
 from sqlalchemy import PickleType, Float, Integer
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.ext.mutable import Mutable
 from sqlalchemy.types import TypeDecorator
 
 from .constants import DEVICE
@@ -15,83 +11,19 @@ class EntityBase(DeclarativeBase):
     pass
 
 
-class TrackedTensor(Mutable):
-
-    tensor: torch.Tensor
-    _tracking_enabled: bool = True
-
-    def __init__(self, tensor: torch.Tensor):
-        super(Mutable, self).__init__()
-        self.tensor = tensor
-
-    def changed(self):
-        if TrackedTensor._tracking_enabled:
-            super().changed()
-
-    @classmethod
-    def coerce(cls, key, value):
-        if isinstance(value, TrackedTensor):
-            return value
-        if isinstance(value, torch.Tensor):
-            return TrackedTensor(value)
-        return Mutable.coerce(key, value)
-
-    def __getattr__(self, item):
-        return getattr(self.tensor, item)
-
-    def __getitem__(self, key):
-        return getitem(self.tensor, key)
-
-    def __setitem__(self, key, value):
-        # Convert numpy values to tensors if needed
-        if isinstance(value, (np.ndarray, np.generic)):
-            value = torch.tensor(value, dtype=self.tensor.dtype, device=self.tensor.device)
-        self.tensor[key] = value
-        self.changed()
-
-    def copy_(self, src):
-        """Override copy_ to automatically track changes"""
-        result = self.tensor.copy_(src)
-        self.changed()
-        return result
-
-    @classmethod
-    def __torch_function__(cls, func, types, args=(), kwargs=None):
-        if kwargs is None:
-            kwargs = {}
-        # Unwrap TrackedTensor instances to their underlying tensors, recursively for tuples/lists
-        def unwrap(x):
-            if isinstance(x, TrackedTensor):
-                return x.tensor
-            elif isinstance(x, (tuple, list)):
-                return type(x)(unwrap(i) for i in x)
-            else:
-                return x
-        args = tuple(unwrap(a) for a in args)
-        kwargs = {k: unwrap(v) for k, v in kwargs.items()}
-        return func(*args, **kwargs)
-
-    def __eq__(self, other):
-        if isinstance(other, torch.Tensor):
-            return torch.equal(self.tensor, other)
-        return super(Mutable, self).__eq__(other)
-    
-    @property
-    def shape(self):
-        return self.tensor.shape
-
-
 class WrappedTensor(TypeDecorator):
     impl = PickleType
     cache_ok = True
 
-    def process_bind_param(self, value: TrackedTensor, dialect) -> torch.Tensor:
-        # Store host-side bytes so a CPU worker can still read rows written by a GPU worker.
-        #TODO: Figure out if we need the .detach().cpu()
-        return value.tensor.detach().cpu()
+    def process_bind_param(self, value, dialect) -> torch.Tensor:
+        if value is None:
+            return None
+        t = value.tensor if hasattr(value, "tensor") else value
+        return t.detach().cpu()
 
     def process_result_value(self, value: torch.Tensor, dialect):
-        return TrackedTensor(value.to(DEVICE)) if value is not None else None
+        return value.to(DEVICE) if value is not None else None
+
 
 class NumpySafeFloat(TypeDecorator):
     impl = Float

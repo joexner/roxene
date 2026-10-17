@@ -1,5 +1,4 @@
 from numpy import ndarray
-import numpy as np
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from typing import Dict
 

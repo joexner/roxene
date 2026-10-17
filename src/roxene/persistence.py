@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 from sqlalchemy import PickleType, Float, Integer
 from sqlalchemy.orm import DeclarativeBase

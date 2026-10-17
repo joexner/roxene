@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import logging
 import uuid
-from typing import Tuple, List
+from typing import Tuple
 
 from sqlalchemy import ForeignKey, CHAR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 # from .trial import Trial
-from ..cells.neuron import Neuron
 from ..organism import Organism
 from ..persistence import EntityBase
 

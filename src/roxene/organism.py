@@ -4,7 +4,6 @@ import uuid
 from datetime import datetime
 from typing import Dict, List, Optional
 
-import numpy as np
 import torch
 
 from sqlalchemy import ForeignKey, Integer, String, DateTime
@@ -138,12 +137,21 @@ class Organism(EntityBase):
     def set_input(self, input_label, input_value):
         input_cell: InputCell = self.inputs[input_label]
         input_cell.set_output(input_value)
+        compiled = getattr(self, "_compiled_execution", None)
+        if compiled is not None and input_cell in compiled["input_cells_map"]:
+            idx = compiled["input_cells_map"][input_cell]
+            compiled["C"][0, idx] = input_value
 
     # TODO: Make output a @property, and maybe input and cells
     def get_output(self, output_label) -> NP_PRECISION:
         return self.outputs[output_label].get_output()
 
-    def update(self):
+    def sync_neuron_inputs(self):
+        compiled = getattr(self, "_compiled_execution", None)
+        if compiled is not None:
+            torch.matmul(compiled["C"], compiled["P_input"], out=compiled["all_inputs"])
+
+    def update(self, sync_neuron_inputs: bool = True):
         compiled = getattr(self, "_compiled_execution", None)
 
         if compiled is None:
@@ -151,82 +159,123 @@ class Organism(EntityBase):
             if not neurons:
                 return
 
+            input_cells = [c for c in self.cells if isinstance(c, InputCell)]
+            num_inputs = len(input_cells)
+            rec_len = sum(n.feedback.shape[0] + 1 for n in neurons)
+
+            unconnected_ports = []
+            for n in neurons:
+                for p in range(n.input.shape[0]):
+                    if p not in n.bound_ports:
+                        unconnected_ports.append((n, p))
+            total_unconnected = len(unconnected_ports)
+            dim_C = num_inputs + rec_len + total_unconnected
+
+            cell_to_idx = {ic: i for i, ic in enumerate(input_cells)}
+            rec_pos = num_inputs
+            for n in neurons:
+                rec_pos += n.feedback.shape[0]
+                cell_to_idx[n] = rec_pos
+                rec_pos += 1
+
+            total_in_fb = sum(n.input.shape[0] + n.feedback.shape[0] for n in neurons)
+            dtype = neurons[0].input.dtype
+            device = neurons[0].input.device
+
+            P_route = torch.zeros(dim_C, total_in_fb, dtype=dtype, device=device)
+            in_fb_pos = 0
+            rec_fb_pos = num_inputs
+            unconn_pos = num_inputs + rec_len
+
+            for n in neurons:
+                for p in range(n.input.shape[0]):
+                    if p in n.bound_ports:
+                        P_route[cell_to_idx[n.bound_ports[p]], in_fb_pos + p] = 1.0
+                    else:
+                        P_route[unconn_pos, in_fb_pos + p] = 1.0
+                        unconn_pos += 1
+                in_fb_pos += n.input.shape[0]
+                for fb_i in range(n.feedback.shape[0]):
+                    P_route[rec_fb_pos + fb_i, in_fb_pos + fb_i] = 1.0
+                rec_fb_pos += n.feedback.shape[0] + 1
+                in_fb_pos += n.feedback.shape[0]
+
             w1_list = [torch.cat([n.input_hidden, n.feedback_hidden], dim=0) for n in neurons]
             w2_list = [torch.cat([n.hidden_feedback, n.hidden_output], dim=1) for n in neurons]
             w1 = torch.block_diag(*w1_list)
             w2 = torch.block_diag(*w2_list)
+            W_eff1 = P_route @ w1
 
-            total_in_fb = sum(n.input.shape[0] + n.feedback.shape[0] for n in neurons)
-            in_fb = torch.zeros(1, total_in_fb, dtype=w1.dtype, device=w1.device)
-
-            in_slices = []
-            fb_slices = []
-            pos = 0
+            total_ports = sum(n.input.shape[0] for n in neurons)
+            P_input = torch.zeros(dim_C, total_ports, dtype=dtype, device=device)
+            port_pos = 0
+            unconn_pos = num_inputs + rec_len
             for n in neurons:
+                for p in range(n.input.shape[0]):
+                    if p in n.bound_ports:
+                        P_input[cell_to_idx[n.bound_ports[p]], port_pos + p] = 1.0
+                    else:
+                        P_input[unconn_pos, port_pos + p] = 1.0
+                        unconn_pos += 1
+                port_pos += n.input.shape[0]
+
+            C = torch.zeros(1, dim_C, dtype=dtype, device=device)
+            for i, ic in enumerate(input_cells):
+                val = ic.get_output()
+                if val is not None:
+                    C[0, i] = torch.tensor(val, dtype=dtype, device=device)
+            rec_pos = num_inputs
+            for n in neurons:
+                fb_len = n.feedback.shape[0]
+                C[0, rec_pos:rec_pos + fb_len] = n.feedback
+                rec_pos += fb_len
+                C[0, rec_pos:rec_pos + 1] = n.output
+                rec_pos += 1
+
+            unconn_idx = num_inputs + rec_len
+            for n, p in unconnected_ports:
+                C[0, unconn_idx] = n.input[p]
+                unconn_idx += 1
+
+            all_inputs = torch.zeros(1, total_ports, dtype=dtype, device=device)
+            rec_pos = num_inputs
+            port_pos = 0
+            for n in neurons:
+                fb_len = n.feedback.shape[0]
+                n.feedback = C[0, rec_pos:rec_pos + fb_len]
+                rec_pos += fb_len
+                n.output = C[0, rec_pos:rec_pos + 1]
+                rec_pos += 1
+
                 in_len = n.input.shape[0]
-                fb_len = n.feedback.shape[0]
-                in_slices.append((pos, pos + in_len))
-                in_fb[0, pos:pos + in_len] = n.input
-                pos += in_len
-                fb_slices.append((pos, pos + fb_len))
-                in_fb[0, pos:pos + fb_len] = n.feedback
-                pos += fb_len
+                n.input = all_inputs[0, port_pos:port_pos + in_len]
+                port_pos += in_len
 
-            res_fb_slices = []
-            res_out_indices = []
-            res_pos = 0
-            for n in neurons:
-                fb_len = n.feedback.shape[0]
-                res_fb_slices.append((res_pos, res_pos + fb_len))
-                res_pos += fb_len
-                res_out_indices.append(res_pos)
-                res_pos += 1
+            input_cells_map = {ic: i for i, ic in enumerate(input_cells)}
 
             compiled = {
                 "id": self.id,
-                "neurons": neurons,
-                "w1": w1,
+                "W_eff1": W_eff1,
                 "w2": w2,
-                "in_fb": in_fb,
-                "in_slices": in_slices,
-                "fb_slices": fb_slices,
-                "res_fb_slices": res_fb_slices,
-                "res_out_indices": res_out_indices,
+                "P_input": P_input,
+                "all_inputs": all_inputs,
+                "C": C,
+                "num_inputs": num_inputs,
+                "rec_len": rec_len,
+                "input_cells_map": input_cells_map,
             }
             self._compiled_execution = compiled
 
-        neurons = compiled["neurons"]
-        in_fb = compiled["in_fb"]
-        w1 = compiled["w1"]
+        C = compiled["C"]
+        W_eff1 = compiled["W_eff1"]
         w2 = compiled["w2"]
-        in_slices = compiled["in_slices"]
-        fb_slices = compiled["fb_slices"]
-        res_fb_slices = compiled["res_fb_slices"]
-        res_out_indices = compiled["res_out_indices"]
+        num_inputs = compiled["num_inputs"]
+        rec_len = compiled["rec_len"]
 
-        tx_outputs = {cell: cell.get_output() for cell in self.cells}
-        for i, n in enumerate(neurons):
-            in_s, _ = in_slices[i]
-            for port_num, src_cell in n.bound_ports.items():
-                val = tx_outputs[src_cell]
-                if isinstance(val, (np.ndarray, np.generic)):
-                    val = torch.tensor(val, dtype=n.input.dtype, device=n.input.device)
-                in_fb[0, in_s + port_num] = val
-                n.input[port_num] = val
-
-        hidden = torch.tanh(torch.matmul(in_fb, w1))
-        res = torch.tanh(torch.matmul(hidden, w2)).squeeze(0)
-
-        for i, n in enumerate(neurons):
-            rf_s, rf_e = res_fb_slices[i]
-            fb_s, fb_e = fb_slices[i]
-            fb_val = res[rf_s:rf_e]
-            in_fb[0, fb_s:fb_e] = fb_val
-            n.feedback.copy_(fb_val)
-
-            out_idx = res_out_indices[i]
-            out_val = res[out_idx:out_idx + 1]
-            n.output.copy_(out_val)
+        hidden = torch.tanh(torch.matmul(C, W_eff1))
+        if sync_neuron_inputs:
+            torch.matmul(C, compiled["P_input"], out=compiled["all_inputs"])
+        torch.tanh(torch.matmul(hidden, w2), out=C[:, num_inputs:num_inputs + rec_len])
 
     def addNeuron(self, neuron: Neuron):
         self._compiled_execution = None

@@ -16,15 +16,32 @@
    - In `Player.sync()`, `self.organism.update()` is called directly without duplicating organism evaluation code or having mock checks in `players.py`.
    - Between updates, only `OUTPUT_READY` is checked.
 
+## Folded Matrix Routing and Matrix Operations
+1. **Pre-folded Input Routing Matrix (`W_eff1`)**:
+   - Port routing represents a static permutation matrix $P_{\text{route}}$ from cell outputs and recurrent feedbacks into neuron inputs: $S_{\text{in\_fb}} = C \cdot P_{\text{route}}$.
+   - Since $H = \tanh(S_{\text{in\_fb}} \cdot W_1) = \tanh((C \cdot P_{\text{route}}) \cdot W_1) = \tanh(C \cdot (P_{\text{route}} \cdot W_1))$, the routing operation is pre-multiplied at compile time:
+     $$W_{\text{eff1}} = P_{\text{route}} \cdot W_1$$
+   - Hidden states are computed directly in a single matrix multiplication from state vector $C$:
+     $$\text{hidden} = \tanh(C \cdot W_{\text{eff1}})$$
+2. **Zero-Loop In-Place Recurrent Update**:
+   - The recurrent block in $C$ (neuron feedbacks and outputs) directly matches the output layout of $W_2$.
+   - Output and feedback activations are written in-place directly into $C$'s contiguous recurrent slice:
+     $$\tanh(\text{hidden} \cdot W_2, \text{out}=C_{[:, \text{recurrent}]})$$
+   - Individual neuron attributes (`n.feedback` and `n.output`) share direct views into $C$'s slices, automatically updating with zero loops and zero tensor copies.
+   - Materializing `n.input` values via `P_input` is optional via `Organism.update(sync_neuron_inputs=False)`, and only synchronized when needed via `organism.sync_neuron_inputs()`. In `Player.sync()`, `sync_neuron_inputs=False` is passed across all internal updates and synced once in the `finally` block.
+
 ## Tensor Reuse and Matrix Caching
 1. **Caching compiled matrices using organism ID (`self.id`)**:
-   - The compiled weight matrices `w1`, `w2`, and the buffer index slices are built once and stored on the organism instance (`self._compiled_execution`).
+   - The compiled weight matrices `W_eff1`, `w2`, `P_input`, and tensor state `C` are built once and stored on the organism instance (`self._compiled_execution`).
    - Because an organism's structure, cell connectivity, and `id` are immutable across its active lifetime, `self._compiled_execution` is bound directly to the organism instance (keyed by `self.id`).
    - If `addNeuron` is called, `self._compiled_execution` is cleared to re-build on the next update.
-2. **Re-using the state buffer (`in_fb`)**:
-   - A pre-allocated contiguous `in_fb` tensor buffer `[1, total_in_fb]` is kept in place across successive update calls.
-   - In each update, input ports write directly into `in_fb`'s input slices.
-   - Feedback slices from `res` are copied directly back into `in_fb`'s feedback positions for the next step, avoiding tensor re-allocation and concatenation on every tick.
+2. **Re-using the state buffer (`C`)**:
+   - A pre-allocated contiguous state tensor buffer `C` is kept in place across successive update calls.
+   - The hot path in `Player.sync()` runs in **just two pure matrix multiplications per tick**:
+     ```python
+     hidden = torch.tanh(torch.matmul(C, W_eff1))
+     torch.tanh(torch.matmul(hidden, w2), out=C[:, num_inputs:num_inputs + rec_len])
+     ```
 
 ## Plan to Eliminate TrackedTensor (Approach A) & Cell.update (Approach B)
 

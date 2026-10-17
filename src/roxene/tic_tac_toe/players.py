@@ -79,46 +79,50 @@ class Player(EntityBase):
         num_updates_used = 0
         next_log_at_update_number = 10
 
-        # Set INPUT_READY high, watch for OUTPUT_READY high
-        logger.debug("Waiting for high output")
-        seen_output_ready_high = False
-        self.organism.set_input(INPUT_READY, HIGH_THRESHOLD)
-        while num_updates_used < timeout:
-            if num_updates_used == next_log_at_update_number:
-                next_log_at_update_number *= 2
-                logger.debug(f"Beginning update {num_updates_used}")
-            self.organism.update()
-            num_updates_used += 1
-            output_value = self.organism.get_output(OUTPUT_READY)
-            if output_value >= HIGH_THRESHOLD:
-                seen_output_ready_high = True
-                logger.debug("Got high output")
-                break
-        if not seen_output_ready_high:
-            logger.info(f"Failed to sync in {timeout} updates")
-            raise TimeoutError(f"Used up all {timeout} updates")
+        try:
+            # Set INPUT_READY high, watch for OUTPUT_READY high
+            logger.debug("Waiting for high output")
+            seen_output_ready_high = False
+            self.organism.set_input(INPUT_READY, HIGH_THRESHOLD)
+            while num_updates_used < timeout:
+                if num_updates_used == next_log_at_update_number:
+                    next_log_at_update_number *= 2
+                    logger.debug(f"Beginning update {num_updates_used}")
+                self.organism.update(sync_neuron_inputs=False)
+                num_updates_used += 1
+                output_value = self.organism.get_output(OUTPUT_READY)
+                if output_value >= HIGH_THRESHOLD:
+                    seen_output_ready_high = True
+                    logger.debug("Got high output")
+                    break
+            if not seen_output_ready_high:
+                logger.info(f"Failed to sync in {timeout} updates")
+                raise TimeoutError(f"Used up all {timeout} updates")
 
-        # Set INPUT_READY low, watch for OUTPUT_READY low
-        logger.debug("Waiting for low output")
-        seen_output_ready_low = False
-        self.organism.set_input(INPUT_READY, LOW_THRESHOLD)
-        while num_updates_used < timeout:
-            if num_updates_used == next_log_at_update_number:
-                next_log_at_update_number *= 2
-                logger.debug(f"Beginning update {num_updates_used}")
-            self.organism.update()
-            num_updates_used += 1
-            output_value = self.organism.get_output(OUTPUT_READY)
-            if output_value <= LOW_THRESHOLD:
-                seen_output_ready_low = True
-                logger.debug("Got low output")
-                break
+            # Set INPUT_READY low, watch for OUTPUT_READY low
+            logger.debug("Waiting for low output")
+            seen_output_ready_low = False
+            self.organism.set_input(INPUT_READY, LOW_THRESHOLD)
+            while num_updates_used < timeout:
+                if num_updates_used == next_log_at_update_number:
+                    next_log_at_update_number *= 2
+                    logger.debug(f"Beginning update {num_updates_used}")
+                self.organism.update(sync_neuron_inputs=False)
+                num_updates_used += 1
+                output_value = self.organism.get_output(OUTPUT_READY)
+                if output_value <= LOW_THRESHOLD:
+                    seen_output_ready_low = True
+                    logger.debug("Got low output")
+                    break
 
-        if not seen_output_ready_low:
-            logger.info(f"Failed to sync in {timeout} updates")
-            raise TimeoutError(f"Used up all {timeout} updates")
+            if not seen_output_ready_low:
+                logger.info(f"Failed to sync in {timeout} updates")
+                raise TimeoutError(f"Used up all {timeout} updates")
 
-        logger.info(f"{self} synced in {num_updates_used} updates")
+            logger.info(f"{self} synced in {num_updates_used} updates")
+        finally:
+            if hasattr(self.organism, "sync_neuron_inputs"):
+                self.organism.sync_neuron_inputs()
 
 
 class ManualPlayer(Player):

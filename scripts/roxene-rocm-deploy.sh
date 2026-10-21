@@ -79,7 +79,7 @@ kubectl config use-context "${PROFILE}" >/dev/null
 kubectl apply -k "${LOCAL_SRC}/k8s/overlays/enzo.local"
 
 # The tag is unchanged, so apply alone won't swap in the rebuilt image.
-kubectl -n roxene rollout restart statefulset/worker deployment/notebook
+kubectl -n roxene rollout restart statefulset/worker statefulset/worker-cpu deployment/notebook
 
 kubectl -n roxene rollout status statefulset/worker --timeout=600s
 kubectl -n roxene get pods -o wide

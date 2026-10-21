@@ -18,6 +18,9 @@ class WrappedTensor(TypeDecorator):
         if value is None:
             return None
         t = value.tensor if hasattr(value, "tensor") else value
+        if not isinstance(t, torch.Tensor):
+            # numpy state from the fp32 fast path
+            t = torch.as_tensor(t)
         return t.detach().cpu()
 
     def process_result_value(self, value: torch.Tensor, dialect):

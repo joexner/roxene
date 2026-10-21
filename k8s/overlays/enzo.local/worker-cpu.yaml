@@ -30,6 +30,11 @@ spec:
           env:
             - name: ROXENE_DEVICE
               value: cpu
+            - name: ROXENE_NUMPY_BACKEND
+              value: "on"
+            # cap OpenBLAS (numpy matmul) threads, same oversubscription logic as torch
+            - name: OPENBLAS_NUM_THREADS
+              value: "2"
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:

@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Dict, List, Optional
 
+import numpy as np
 import torch
 
 from sqlalchemy import ForeignKey, Integer, String, DateTime
@@ -11,7 +12,7 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
 
-from .constants import NP_PRECISION
+from .constants import NP_PRECISION, NUMPY_BACKEND, NUMPY_BACKEND_MAX_FLOPS
 from .cell import Cell
 from .cells.input_cell import InputCell
 from .cells.neuron import Neuron
@@ -149,7 +150,10 @@ class Organism(EntityBase):
     def sync_neuron_inputs(self):
         compiled = getattr(self, "_compiled_execution", None)
         if compiled is not None:
-            torch.matmul(compiled["C"], compiled["P_input"], out=compiled["all_inputs"])
+            if compiled.get("backend") == "numpy":
+                np.matmul(compiled["C"], compiled["P_input"], out=compiled["all_inputs"])
+            else:
+                torch.matmul(compiled["C"], compiled["P_input"], out=compiled["all_inputs"])
 
     def update(self, sync_neuron_inputs: bool = True):
         compiled = getattr(self, "_compiled_execution", None)
@@ -266,11 +270,47 @@ class Organism(EntityBase):
             }
             self._compiled_execution = compiled
 
+            if (NUMPY_BACKEND in ("on", "auto")
+                    and NUMPY_BACKEND_MAX_FLOPS > 0
+                    and dim_C * total_in_fb <= NUMPY_BACKEND_MAX_FLOPS):
+                # fp32 numpy working copy; rebind the state views to it so
+                # set_input/get_output/sync all operate on numpy state.
+                def _np32(t):
+                    return t.detach().cpu().numpy().astype(np.float32)
+
+                C_np = _np32(C)
+                all_inputs_np = _np32(all_inputs)
+                rec_pos = num_inputs
+                port_pos = 0
+                for n in neurons:
+                    fb_len = n.feedback.shape[0]
+                    n.feedback = C_np[0, rec_pos:rec_pos + fb_len]
+                    rec_pos += fb_len
+                    n.output = C_np[0, rec_pos:rec_pos + 1]
+                    rec_pos += 1
+                    in_len = n.input.shape[0]
+                    n.input = all_inputs_np[0, port_pos:port_pos + in_len]
+                    port_pos += in_len
+
+                compiled["backend"] = "numpy"
+                compiled["W_eff1"] = _np32(W_eff1)
+                compiled["w2"] = _np32(w2)
+                compiled["P_input"] = _np32(P_input)
+                compiled["C"] = C_np
+                compiled["all_inputs"] = all_inputs_np
+
         C = compiled["C"]
         W_eff1 = compiled["W_eff1"]
         w2 = compiled["w2"]
         num_inputs = compiled["num_inputs"]
         rec_len = compiled["rec_len"]
+
+        if compiled.get("backend") == "numpy":
+            hidden = np.tanh(np.matmul(C, W_eff1))
+            if sync_neuron_inputs:
+                np.matmul(C, compiled["P_input"], out=compiled["all_inputs"])
+            C[:, num_inputs:num_inputs + rec_len] = np.tanh(np.matmul(hidden, w2))
+            return
 
         hidden = torch.tanh(torch.matmul(C, W_eff1))
         if sync_neuron_inputs:

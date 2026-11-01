@@ -29,6 +29,7 @@ spec:
               resources:
                 requests:
                   cpu: 100m
-                  memory: 256Mi
-                limits:
                   memory: 512Mi
+                limits:
+                  # torch+numpy imports on 3.14t peak near 1Gi RSS; 512Mi got OOMKilled
+                  memory: 2Gi

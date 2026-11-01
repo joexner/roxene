@@ -18,7 +18,11 @@ spec:
       containers:
         - name: worker
           securityContext:
-            privileged: true
+            capabilities:
+              add:
+                - SYS_PTRACE
+            seccompProfile:
+              type: Unconfined
           env:
             # gfx1102 is the Radeon RX 7600 XT target; pinning it keeps the
             # runtime from falling back to the wrong gfx arch.

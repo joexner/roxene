@@ -18,7 +18,7 @@ resources:
   - worker-rbac.yaml
   - worker.yaml
   - reaper-cronjob.yaml
-  - notebook.yaml
+#  - notebook.yaml
   # Observability: Prometheus (metrics) + Loki (logs) + Alloy (log collector)
   # + Grafana (dashboards). All in the roxene namespace, local + GKE.
   - prometheus.yaml

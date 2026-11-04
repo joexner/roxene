@@ -45,17 +45,33 @@ rsync -a --delete \
   "$LOCAL_SRC"/ "$REMOTE":"${REMOTE_DIR}"/
 
 echo "==> 3/4 building images on enzo and loading them into the node"
+
+echo "==> building and loading the training image"
 ssh -o BatchMode=yes "$REMOTE" "set -euo pipefail
 cd ~/${REMOTE_DIR}
 podman build --target training -t docker.io/library/roxene:latest .
-podman build --target training-rocm -t docker.io/library/roxene-rocm:latest .
-podman build --target notebook -t docker.io/library/roxene-notebook:latest .
-# minikube buffers stdin into a temp archive; /tmp is a 16G tmpfs, so use /home.
 mkdir -p ~/tmp
 export TMPDIR=~/tmp
 podman save docker.io/library/roxene:latest | minikube image load -
+rm ~/tmp/*"
+
+echo "==> building and loading the ROCm training image"
+ssh -o BatchMode=yes "$REMOTE" "set -euo pipefail
+cd ~/${REMOTE_DIR}
+podman build --target training-rocm -t docker.io/library/roxene-rocm:latest .
+mkdir -p ~/tmp
+export TMPDIR=~/tmp
 podman save docker.io/library/roxene-rocm:latest | minikube image load -
-podman save docker.io/library/roxene-notebook:latest | minikube image load -"
+rm ~/tmp/*"
+
+#echo "==> building and loading the Jupyter notebook image"
+#ssh -o BatchMode=yes "$REMOTE" "set -euo pipefail
+#cd ~/${REMOTE_DIR}
+#podman build --target notebook -t docker.io/library/roxene-notebook:latest .
+#mkdir -p ~/tmp
+#export TMPDIR=~/tmp
+#podman save docker.io/library/roxene-notebook:latest | minikube image load -
+#rm ~/tmp/*"
 
 echo "==> 4/4 refreshing certs and deploying"
 mkdir -p "${KUBE_DIR}"
@@ -79,7 +95,8 @@ kubectl config use-context "${PROFILE}" >/dev/null
 kubectl apply -k "${LOCAL_SRC}/k8s/overlays/enzo.local"
 
 # The tag is unchanged, so apply alone won't swap in the rebuilt image.
-kubectl -n roxene rollout restart statefulset/worker statefulset/worker-cpu deployment/notebook
+kubectl -n roxene rollout restart statefulset/worker statefulset/worker-cpu
+# deployment/notebook
 
 kubectl -n roxene rollout status statefulset/worker --timeout=600s
 kubectl -n roxene get pods -o wide

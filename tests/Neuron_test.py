@@ -1,7 +1,6 @@
 import unittest
 
 import numpy as np
-import torch
 from numpy.random import default_rng
 # // maya smells...fine
 from parameterized import parameterized
@@ -13,14 +12,10 @@ from tic_tac_toe.util import get_engine
 
 SEED = 732478534
 
-activation = torch.tanh
-precision = torch.float16
-
 
 class Neuron_test(unittest.TestCase):
 
     def setUp(self) -> None:
-        torch.manual_seed(SEED)
         set_rng(default_rng(SEED))
 
     @parameterized.expand([
@@ -41,10 +36,12 @@ class Neuron_test(unittest.TestCase):
         output_before_update = neuron.get_output()
 
         org.update()
+        org.commit_state()
         output_after_first_update = neuron.get_output()
         self.assertFalse(np.array_equal(output_before_update, output_after_first_update))
 
         org.update()
+        org.commit_state()
         output_after_another_update = neuron.get_output()
         self.assertFalse(np.array_equal(output_after_first_update, output_after_another_update))
 
@@ -53,22 +50,24 @@ class Neuron_test(unittest.TestCase):
         org = Organism()
         org.addNeuron(neuron)
 
-        initial_input_val = neuron.input.numpy()[0]
-        initial_feedback_val = neuron.feedback.numpy()[0]
+        # dynamics run in fp16 (TORCH_PRECISION), so the reference is computed at that precision
+        initial_input_val = np.float16(neuron.input[0])
+        initial_feedback_val = np.float16(neuron.feedback[0])
 
-        input_hidden_weight = neuron.input_hidden.numpy()[0][0]
-        feedback_hidden_weight = neuron.feedback_hidden.numpy()[0][0]
+        input_hidden_weight = np.float16(neuron.input_hidden[0][0])
+        feedback_hidden_weight = np.float16(neuron.feedback_hidden[0][0])
 
         org.update()
+        org.commit_state()
 
         expected_hidden_val = np.tanh(initial_input_val * input_hidden_weight + initial_feedback_val * feedback_hidden_weight)
 
-        hidden_feedback_weight = neuron.hidden_feedback.numpy()[0][0]
+        hidden_feedback_weight = np.float16(neuron.hidden_feedback[0][0])
         expected_feedback_val = np.tanh(expected_hidden_val * hidden_feedback_weight)
-        actual_feedback_val = neuron.feedback.numpy()[0]
+        actual_feedback_val = neuron.feedback[0]
         self.assertAlmostEqual(actual_feedback_val, expected_feedback_val)
 
-        hidden_out_weight = neuron.hidden_output.numpy()[0][0]
+        hidden_out_weight = np.float16(neuron.hidden_output[0][0])
         expected_output_val = np.tanh(expected_hidden_val * hidden_out_weight)
         actual_output_val = neuron.get_output()
         self.assertAlmostEqual(actual_output_val, expected_output_val)
@@ -113,8 +112,9 @@ class Neuron_test(unittest.TestCase):
             connected_ports[port] = new_input_cell
 
         org.update()
+        org.commit_state()
 
-        neuron_input_value: np.ndarray = neuron.input.numpy()
+        neuron_input_value: np.ndarray = neuron.input
         for port_num in range(0, neuron_input_value.shape[0]):
             if port_num in connected_ports.keys():
                 input_cell = connected_ports[port_num]
@@ -135,13 +135,13 @@ class Neuron_test(unittest.TestCase):
 
         with Session(engine) as session:
             session.add(o1)
-            orig_input = n1.input.clone()
-            orig_feedback = n1.feedback.clone()
-            orig_output = n1.output.clone()
-            orig_input_hidden = n1.input_hidden.clone()
-            orig_hidden_feedback = n1.hidden_feedback.clone()
-            orig_feedback_hidden = n1.feedback_hidden.clone()
-            orig_hidden_output = n1.hidden_output.clone()
+            orig_input = n1.input.copy()
+            orig_feedback = n1.feedback.copy()
+            orig_output = n1.output.copy()
+            orig_input_hidden = n1.input_hidden.copy()
+            orig_hidden_feedback = n1.hidden_feedback.copy()
+            orig_feedback_hidden = n1.feedback_hidden.copy()
+            orig_hidden_output = n1.hidden_output.copy()
             session.commit()
 
         with Session(engine) as session:
@@ -150,36 +150,34 @@ class Neuron_test(unittest.TestCase):
 
             self.assertFalse(n2 is None)
 
-            torch.testing.assert_close(torch.as_tensor(n2.input), orig_input)
-            torch.testing.assert_close(torch.as_tensor(n2.feedback), orig_feedback)
-            torch.testing.assert_close(torch.as_tensor(n2.output), orig_output)
-            torch.testing.assert_close(torch.as_tensor(n2.input_hidden), orig_input_hidden)
-            torch.testing.assert_close(torch.as_tensor(n2.hidden_feedback), orig_hidden_feedback)
-            torch.testing.assert_close(torch.as_tensor(n2.feedback_hidden), orig_feedback_hidden)
-            torch.testing.assert_close(torch.as_tensor(n2.hidden_output), orig_hidden_output)
+            np.testing.assert_array_equal(n2.input, orig_input)
+            np.testing.assert_array_equal(n2.feedback, orig_feedback)
+            np.testing.assert_array_equal(n2.output, orig_output)
+            np.testing.assert_array_equal(n2.input_hidden, orig_input_hidden)
+            np.testing.assert_array_equal(n2.hidden_feedback, orig_hidden_feedback)
+            np.testing.assert_array_equal(n2.feedback_hidden, orig_feedback_hidden)
+            np.testing.assert_array_equal(n2.hidden_output, orig_hidden_output)
 
             o2.update()
-            from sqlalchemy.orm.attributes import flag_modified
-            flag_modified(n2, 'output')
-            flag_modified(n2, 'feedback')
+            o2.commit_state()
 
-            n2_input = n2.input.clone()
-            n2_feedback = n2.feedback.clone()
-            n2_output = n2.output.clone()
+            n2_input = n2.input.copy()
+            n2_feedback = n2.feedback.copy()
+            n2_output = n2.output.copy()
             np.testing.assert_array_equal(n2_input, orig_input) # input is not changed w/ update()
-            self.assertFalse(torch.allclose(n2_feedback, orig_feedback))
-            self.assertNotEqual(n2_output, orig_output)
+            self.assertFalse(np.allclose(n2_feedback, orig_feedback))
+            self.assertNotEqual(float(n2_output[0]), float(orig_output[0]))
             session.commit()
 
         with Session(engine) as session:
             n3 = session.get(Neuron, nid)
-            n3_input = n3.input.clone()
-            n3_feedback = n3.feedback.clone()
-            n3_output = n3.output.clone()
-            self.assertNotEqual(n3_output, orig_output)
+            n3_input = n3.input.copy()
+            n3_feedback = n3.feedback.copy()
+            n3_output = n3.output.copy()
+            self.assertNotEqual(float(n3_output[0]), float(orig_output[0]))
             np.testing.assert_array_equal(n3_input, n2_input)
             np.testing.assert_array_equal(n3_feedback, n2_feedback)
-            self.assertEqual(n3_output, n2_output)
+            np.testing.assert_array_equal(n3_output, n2_output)
 
     def test_save_linked_neurons(self):
         engine = get_engine()

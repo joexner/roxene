@@ -17,10 +17,10 @@ DEVICE = torch.device(os.environ.get("ROXENE_DEVICE") or ("cuda" if torch.cuda.i
 # sweet spot. Override with ROXENE_TORCH_THREADS.
 torch.set_num_threads(int(os.environ.get("ROXENE_TORCH_THREADS", "2")))
 
-# Optional numpy fp32 fast path for small organisms (isolated benches: ~4x
+# Optional numpy fast path for small organisms (isolated benches: ~4x
 # faster than torch CPU, ~13x faster than torch GPU at small matrix sizes).
-# "off" keeps the torch path everywhere (tests); "on" uses numpy for organisms
-# under the flop threshold; "auto" = "on".
+# torch is the default; "off" keeps it everywhere, "on"/"auto" use numpy for
+# organisms under NUMPY_BACKEND_MAX_FLOPS.
 NUMPY_BACKEND = os.environ.get("ROXENE_NUMPY_BACKEND", "off").lower()
 # numpy is used when dim_C * total_in_fb <= this (0 disables it)
 NUMPY_BACKEND_MAX_FLOPS = int(os.environ.get("ROXENE_NUMPY_BACKEND_MAX_FLOPS", "200000"))

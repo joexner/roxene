@@ -58,12 +58,12 @@ class Organism_test(TestCase):
         n1.add_input_connection(n2, 0)
         n2.add_input_connection(n1, 0)
 
-        out1_before = n1.get_output()
-        out2_before = n2.get_output()
+        out1_before = organism.get_output('O1')
+        out2_before = organism.get_output('O2')
         organism.update()
 
-        self.assertNotEqual(out1_before, n1.get_output())
-        self.assertNotEqual(out2_before, n2.get_output())
+        self.assertNotEqual(out1_before, organism.get_output('O1'))
+        self.assertNotEqual(out2_before, organism.get_output('O2'))
 
     def test_save_organism_inputs(self):
 

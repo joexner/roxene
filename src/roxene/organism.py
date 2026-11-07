@@ -1,21 +1,20 @@
 from __future__ import annotations
 
+import itertools
 import uuid
 from datetime import datetime
 from typing import Dict, List, Optional
 
-import numpy as np
-import torch
-
-from sqlalchemy import ForeignKey, Integer, String, DateTime
+from sqlalchemy import ForeignKey, Integer, String, DateTime, event
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
-from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
+from sqlalchemy.orm import Mapped, Session, mapped_column, relationship, attribute_keyed_dict
 
-from .constants import NP_PRECISION, NUMPY_BACKEND, NUMPY_BACKEND_MAX_FLOPS
+from .constants import NUMPY_BACKEND, NUMPY_BACKEND_MAX_FLOPS, NP_PRECISION
 from .cell import Cell
 from .cells.input_cell import InputCell
 from .cells.neuron import Neuron
+from .compiled_network import CompiledNetwork, NumpyCompiledNetwork
 from .gene import Gene
 from .persistence import EntityBase
 
@@ -77,6 +76,18 @@ class _Organism_Unused_Output_Name(EntityBase):
         self.name = name
 
 
+def _estimate_flops(cells) -> int:
+    """dim_C * total_in_fb for these cells, the size measure the numpy threshold uses."""
+    neurons = [c for c in cells if isinstance(c, Neuron)]
+    if not neurons:
+        return 0
+    dim_C = (sum(1 for c in cells if isinstance(c, InputCell))
+             + sum(n.feedback.shape[0] + 1 for n in neurons)
+             + sum(1 for n in neurons for p in range(n.input.shape[0]) if p not in n.bound_ports))
+    total_in_fb = sum(n.input.shape[0] + n.feedback.shape[0] for n in neurons)
+    return dim_C * total_in_fb
+
+
 class Organism(EntityBase):
     __tablename__ = "organism"
 
@@ -126,7 +137,7 @@ class Organism(EntityBase):
     def __init__(self, input_names={}, output_names={}, genotype: Gene = None):
         self.id = uuid.uuid4()
         self.created_date = datetime.now()
-        self._compiled_execution = None
+        self._compiled_network = None
         for name in input_names:
             self.inputs[name] = InputCell()
         self.unused_output_names.extend(output_names)
@@ -135,190 +146,57 @@ class Organism(EntityBase):
         if genotype:
             genotype.execute(self)
 
+    def network(self) -> Optional[CompiledNetwork]:
+        """The live CompiledNetwork, compiled on first use. None if there are no neurons."""
+        if getattr(self, "_compiled_network", None) is None:
+            self._compiled_network = self.compile()
+        return self._compiled_network
+
+    def compile(self) -> Optional[CompiledNetwork]:
+        """Build the network: torch by default, the numpy fast path for small organisms."""
+        if not any(isinstance(c, Neuron) for c in self.cells):
+            return None
+        if (NUMPY_BACKEND in ("on", "auto")
+                and NUMPY_BACKEND_MAX_FLOPS > 0
+                and _estimate_flops(self.cells) <= NUMPY_BACKEND_MAX_FLOPS):
+            return NumpyCompiledNetwork(self.cells)
+        return CompiledNetwork(self.cells)
+
     def set_input(self, input_label, input_value):
         input_cell: InputCell = self.inputs[input_label]
         input_cell.set_output(input_value)
-        compiled = getattr(self, "_compiled_execution", None)
-        if compiled is not None and input_cell in compiled["input_cells_map"]:
-            idx = compiled["input_cells_map"][input_cell]
-            compiled["C"][0, idx] = input_value
+        network = self.network()
+        if network is not None:
+            network.set_input(input_cell, input_value)
 
     # TODO: Make output a @property, and maybe input and cells
     def get_output(self, output_label) -> NP_PRECISION:
-        return self.outputs[output_label].get_output()
+        neuron = self.outputs[output_label]
+        network = self.network()
+        if network is not None:
+            value = network.get_output(neuron)
+            if value is not None:
+                return value
+        return neuron.get_output()
 
     def sync_neuron_inputs(self):
-        compiled = getattr(self, "_compiled_execution", None)
-        if compiled is not None:
-            if compiled.get("backend") == "numpy":
-                np.matmul(compiled["C"], compiled["P_input"], out=compiled["all_inputs"])
-            else:
-                torch.matmul(compiled["C"], compiled["P_input"], out=compiled["all_inputs"])
+        network = self.network()
+        if network is not None:
+            network.sync_neuron_inputs()
+
+    def commit_state(self):
+        """Sync the live compiled state (if any) back into the plain neuron arrays."""
+        network = getattr(self, "_compiled_network", None)
+        if network is not None:
+            network.commit_state()
 
     def update(self, sync_neuron_inputs: bool = True):
-        compiled = getattr(self, "_compiled_execution", None)
-
-        if compiled is None:
-            neurons = [cell for cell in self.cells if isinstance(cell, Neuron)]
-            if not neurons:
-                return
-
-            input_cells = [c for c in self.cells if isinstance(c, InputCell)]
-            num_inputs = len(input_cells)
-            rec_len = sum(n.feedback.shape[0] + 1 for n in neurons)
-
-            unconnected_ports = []
-            for n in neurons:
-                for p in range(n.input.shape[0]):
-                    if p not in n.bound_ports:
-                        unconnected_ports.append((n, p))
-            total_unconnected = len(unconnected_ports)
-            dim_C = num_inputs + rec_len + total_unconnected
-
-            cell_to_idx = {ic: i for i, ic in enumerate(input_cells)}
-            rec_pos = num_inputs
-            for n in neurons:
-                rec_pos += n.feedback.shape[0]
-                cell_to_idx[n] = rec_pos
-                rec_pos += 1
-
-            total_in_fb = sum(n.input.shape[0] + n.feedback.shape[0] for n in neurons)
-            dtype = neurons[0].input.dtype
-            device = neurons[0].input.device
-
-            P_route = torch.zeros(dim_C, total_in_fb, dtype=dtype, device=device)
-            in_fb_pos = 0
-            rec_fb_pos = num_inputs
-            unconn_pos = num_inputs + rec_len
-
-            for n in neurons:
-                for p in range(n.input.shape[0]):
-                    if p in n.bound_ports:
-                        P_route[cell_to_idx[n.bound_ports[p]], in_fb_pos + p] = 1.0
-                    else:
-                        P_route[unconn_pos, in_fb_pos + p] = 1.0
-                        unconn_pos += 1
-                in_fb_pos += n.input.shape[0]
-                for fb_i in range(n.feedback.shape[0]):
-                    P_route[rec_fb_pos + fb_i, in_fb_pos + fb_i] = 1.0
-                rec_fb_pos += n.feedback.shape[0] + 1
-                in_fb_pos += n.feedback.shape[0]
-
-            w1_list = [torch.cat([n.input_hidden, n.feedback_hidden], dim=0) for n in neurons]
-            w2_list = [torch.cat([n.hidden_feedback, n.hidden_output], dim=1) for n in neurons]
-            w1 = torch.block_diag(*w1_list)
-            w2 = torch.block_diag(*w2_list)
-            W_eff1 = P_route @ w1
-
-            total_ports = sum(n.input.shape[0] for n in neurons)
-            P_input = torch.zeros(dim_C, total_ports, dtype=dtype, device=device)
-            port_pos = 0
-            unconn_pos = num_inputs + rec_len
-            for n in neurons:
-                for p in range(n.input.shape[0]):
-                    if p in n.bound_ports:
-                        P_input[cell_to_idx[n.bound_ports[p]], port_pos + p] = 1.0
-                    else:
-                        P_input[unconn_pos, port_pos + p] = 1.0
-                        unconn_pos += 1
-                port_pos += n.input.shape[0]
-
-            C = torch.zeros(1, dim_C, dtype=dtype, device=device)
-            for i, ic in enumerate(input_cells):
-                val = ic.get_output()
-                if val is not None:
-                    C[0, i] = torch.tensor(val, dtype=dtype, device=device)
-            rec_pos = num_inputs
-            for n in neurons:
-                fb_len = n.feedback.shape[0]
-                C[0, rec_pos:rec_pos + fb_len] = n.feedback
-                rec_pos += fb_len
-                C[0, rec_pos:rec_pos + 1] = n.output
-                rec_pos += 1
-
-            unconn_idx = num_inputs + rec_len
-            for n, p in unconnected_ports:
-                C[0, unconn_idx] = n.input[p]
-                unconn_idx += 1
-
-            all_inputs = torch.zeros(1, total_ports, dtype=dtype, device=device)
-            rec_pos = num_inputs
-            port_pos = 0
-            for n in neurons:
-                fb_len = n.feedback.shape[0]
-                n.feedback = C[0, rec_pos:rec_pos + fb_len]
-                rec_pos += fb_len
-                n.output = C[0, rec_pos:rec_pos + 1]
-                rec_pos += 1
-
-                in_len = n.input.shape[0]
-                n.input = all_inputs[0, port_pos:port_pos + in_len]
-                port_pos += in_len
-
-            input_cells_map = {ic: i for i, ic in enumerate(input_cells)}
-
-            compiled = {
-                "id": self.id,
-                "W_eff1": W_eff1,
-                "w2": w2,
-                "P_input": P_input,
-                "all_inputs": all_inputs,
-                "C": C,
-                "num_inputs": num_inputs,
-                "rec_len": rec_len,
-                "input_cells_map": input_cells_map,
-            }
-            self._compiled_execution = compiled
-
-            if (NUMPY_BACKEND in ("on", "auto")
-                    and NUMPY_BACKEND_MAX_FLOPS > 0
-                    and dim_C * total_in_fb <= NUMPY_BACKEND_MAX_FLOPS):
-                # fp32 numpy working copy; rebind the state views to it so
-                # set_input/get_output/sync all operate on numpy state.
-                def _np32(t):
-                    return t.detach().cpu().numpy().astype(np.float32)
-
-                C_np = _np32(C)
-                all_inputs_np = _np32(all_inputs)
-                rec_pos = num_inputs
-                port_pos = 0
-                for n in neurons:
-                    fb_len = n.feedback.shape[0]
-                    n.feedback = C_np[0, rec_pos:rec_pos + fb_len]
-                    rec_pos += fb_len
-                    n.output = C_np[0, rec_pos:rec_pos + 1]
-                    rec_pos += 1
-                    in_len = n.input.shape[0]
-                    n.input = all_inputs_np[0, port_pos:port_pos + in_len]
-                    port_pos += in_len
-
-                compiled["backend"] = "numpy"
-                compiled["W_eff1"] = _np32(W_eff1)
-                compiled["w2"] = _np32(w2)
-                compiled["P_input"] = _np32(P_input)
-                compiled["C"] = C_np
-                compiled["all_inputs"] = all_inputs_np
-
-        C = compiled["C"]
-        W_eff1 = compiled["W_eff1"]
-        w2 = compiled["w2"]
-        num_inputs = compiled["num_inputs"]
-        rec_len = compiled["rec_len"]
-
-        if compiled.get("backend") == "numpy":
-            hidden = np.tanh(np.matmul(C, W_eff1))
-            if sync_neuron_inputs:
-                np.matmul(C, compiled["P_input"], out=compiled["all_inputs"])
-            C[:, num_inputs:num_inputs + rec_len] = np.tanh(np.matmul(hidden, w2))
-            return
-
-        hidden = torch.tanh(torch.matmul(C, W_eff1))
-        if sync_neuron_inputs:
-            torch.matmul(C, compiled["P_input"], out=compiled["all_inputs"])
-        torch.tanh(torch.matmul(hidden, w2), out=C[:, num_inputs:num_inputs + rec_len])
+        network = self.network()
+        if network is not None:
+            network.update(sync_neuron_inputs)
 
     def addNeuron(self, neuron: Neuron):
-        self._compiled_execution = None
+        self._compiled_network = None
         self.cells.insert(0, neuron)
         if self.unused_output_names:
             new_output_name = self.unused_output_names.pop()
@@ -326,3 +204,11 @@ class Organism(EntityBase):
 
     def __str__(self):
         return f"O-{str(self.id)[-7:]}"
+
+
+@event.listens_for(Session, "before_flush")
+def _commit_compiled_state(session, flush_context, instances):
+    """Never let the flush serialize stale plain arrays while a CompiledNetwork is live."""
+    for obj in itertools.chain(session.new, session.dirty):
+        if isinstance(obj, Organism):
+            obj.commit_state()

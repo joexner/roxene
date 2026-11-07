@@ -1,17 +1,16 @@
+import numpy as np
+
 from numpy import ndarray
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from typing import Dict
 
-import torch
 import uuid
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship, attribute_keyed_dict
 
 from ..cell import Cell
-from ..constants import DEVICE, NP_PRECISION, TORCH_PRECISION
-from ..persistence import WrappedTensor, EntityBase
-
-activation_func = torch.tanh
+from ..constants import NP_PRECISION
+from ..persistence import FloatArrayType, EntityBase
 
 
 class Neuron(Cell):
@@ -20,13 +19,13 @@ class Neuron(Cell):
 
     id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cell.id"), primary_key=True)
 
-    input: Mapped[torch.Tensor] = mapped_column(WrappedTensor)
-    feedback: Mapped[torch.Tensor] = mapped_column(WrappedTensor)
-    output: Mapped[torch.Tensor] = mapped_column(WrappedTensor)
-    input_hidden: Mapped[torch.Tensor] = mapped_column(WrappedTensor)
-    hidden_feedback: Mapped[torch.Tensor] = mapped_column(WrappedTensor)
-    feedback_hidden: Mapped[torch.Tensor] = mapped_column(WrappedTensor)
-    hidden_output: Mapped[torch.Tensor] = mapped_column(WrappedTensor)
+    input: Mapped[ndarray] = mapped_column(FloatArrayType)
+    feedback: Mapped[ndarray] = mapped_column(FloatArrayType)
+    output: Mapped[ndarray] = mapped_column(FloatArrayType)
+    input_hidden: Mapped[ndarray] = mapped_column(FloatArrayType)
+    hidden_feedback: Mapped[ndarray] = mapped_column(FloatArrayType)
+    feedback_hidden: Mapped[ndarray] = mapped_column(FloatArrayType)
+    hidden_output: Mapped[ndarray] = mapped_column(FloatArrayType)
 
     _ports_map: Mapped[Dict[int, "_Neuron_Input"]] = relationship(
         back_populates="listener_neuron",
@@ -54,18 +53,18 @@ class Neuron(Cell):
             that call this c'tor, or else you could build a Neuron that asplodes at runtime
         '''
         self.id = uuid.uuid4()
-        self.input = torch.tensor(input, dtype=TORCH_PRECISION, device=DEVICE)
-        self.feedback = torch.tensor(feedback, dtype=TORCH_PRECISION, device=DEVICE)
-        self.output = torch.tensor(output, dtype=TORCH_PRECISION, device=DEVICE)
+        self.input = np.array(input, dtype=NP_PRECISION, copy=True)
+        self.feedback = np.array(feedback, dtype=NP_PRECISION, copy=True)
+        self.output = np.array(output, dtype=NP_PRECISION, copy=True)
 
-        self.input_hidden = torch.tensor(input_hidden, dtype=TORCH_PRECISION, device=DEVICE)
-        self.hidden_feedback = torch.tensor(hidden_feedback, dtype=TORCH_PRECISION, device=DEVICE)
-        self.feedback_hidden = torch.tensor(feedback_hidden, dtype=TORCH_PRECISION, device=DEVICE)
-        self.hidden_output = torch.tensor(hidden_output, dtype=TORCH_PRECISION, device=DEVICE)
+        self.input_hidden = np.array(input_hidden, dtype=NP_PRECISION, copy=True)
+        self.hidden_feedback = np.array(hidden_feedback, dtype=NP_PRECISION, copy=True)
+        self.feedback_hidden = np.array(feedback_hidden, dtype=NP_PRECISION, copy=True)
+        self.hidden_output = np.array(hidden_output, dtype=NP_PRECISION, copy=True)
         self.bound_ports = {}
 
     def get_output(self) -> NP_PRECISION:
-        return NP_PRECISION(self.output.item())
+        return NP_PRECISION(float(self.output[0]))
 
     def add_input_connection(self, tx_cell: Cell, req_port: int):
         num_ports = self.input.shape[0]

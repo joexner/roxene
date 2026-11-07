@@ -1,30 +1,28 @@
-import torch
-from sqlalchemy import PickleType, Float, Integer
+from numpy import asarray, ndarray
+from sqlalchemy import JSON, Float, Integer
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.types import TypeDecorator
 
-from .constants import DEVICE
+from .constants import NP_PRECISION
 
 
 class EntityBase(DeclarativeBase):
     pass
 
 
-class WrappedTensor(TypeDecorator):
-    impl = PickleType
+class FloatArrayType(TypeDecorator):
+    """Numpy float vector in memory; JSON list of numbers on the wire."""
+
+    impl = JSON
     cache_ok = True
 
-    def process_bind_param(self, value, dialect) -> torch.Tensor:
+    def process_bind_param(self, value: ndarray, dialect):
         if value is None:
             return None
-        t = value.tensor if hasattr(value, "tensor") else value
-        if not isinstance(t, torch.Tensor):
-            # numpy state from the fp32 fast path
-            t = torch.as_tensor(t)
-        return t.detach().cpu()
+        return asarray(value, dtype=NP_PRECISION).tolist()
 
-    def process_result_value(self, value: torch.Tensor, dialect):
-        return value.to(DEVICE) if value is not None else None
+    def process_result_value(self, value, dialect) -> ndarray:
+        return asarray(value, dtype=NP_PRECISION) if value is not None else None
 
 
 class NumpySafeFloat(TypeDecorator):

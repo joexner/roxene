@@ -140,6 +140,12 @@ class Environment(object):
             return trial
 
     def complete_trial(self, trial: Trial):
+        # merge() copies the (detached) participants into a fresh session, so the
+        # live compiled state must already be written back to the plain arrays.
+        for player in trial.participants:
+            organism = getattr(player, "organism", None)
+            if organism is not None:
+                organism.commit_state()
         with self.sessionmaker.begin() as session:
             session.merge(trial)
 

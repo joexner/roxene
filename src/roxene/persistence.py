@@ -3,10 +3,13 @@ from operator import getitem
 import numpy as np
 import sqlalchemy.types
 import torch
-from sqlalchemy import PickleType, Float, Integer
+from sqlalchemy import JSON, Float, Integer
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.mutable import Mutable
 from sqlalchemy.types import TypeDecorator
+
+from .constants import TORCH_PRECISION
 
 
 class EntityBase(DeclarativeBase):
@@ -75,14 +78,15 @@ class TrackedTensor(Mutable):
 
 
 class WrappedTensor(TypeDecorator):
-    impl = PickleType
+    # JSON list of floats, so state is inspectable in SQL and survives upgrades.
+    impl = JSON().with_variant(JSONB(), "postgresql")
     cache_ok = True
 
-    def process_bind_param(self, value: TrackedTensor, dialect) -> torch.Tensor:
-        return value.tensor
+    def process_bind_param(self, value: TrackedTensor, dialect) -> list | None:
+        return value.tensor.tolist() if value is not None else None
 
-    def process_result_value(self, value: torch.Tensor, dialect):
-        return TrackedTensor(value) if value is not None else None
+    def process_result_value(self, value, dialect) -> TrackedTensor | None:
+        return TrackedTensor(torch.tensor(value, dtype=TORCH_PRECISION)) if value is not None else None
 
 class NumpySafeFloat(TypeDecorator):
     impl = Float

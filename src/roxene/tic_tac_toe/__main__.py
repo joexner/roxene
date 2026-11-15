@@ -40,14 +40,14 @@ parser.add_argument("--db_timeout", type=float, default=300.0,          help="Se
 
 def make_engine(db_url: str | None, num_threads: int) -> Engine:
     if not db_url:
-        admin_url = "postgresql+psycopg2://postgres:postgres@localhost:5432/postgres"
+        admin_url = "postgresql+pg8000://postgres:postgres@localhost:5432/postgres"
         db_name = f"roxene_{int(time.time())}"
         logger.info(f"Creating database {db_name}")
         admin_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
         with admin_engine.connect() as conn:
             conn.execute(text(f"CREATE DATABASE \"{db_name}\""))
         admin_engine.dispose()
-        db_url = f"postgresql+psycopg2://postgres:postgres@localhost:5432/{db_name}"
+        db_url = f"postgresql+pg8000://postgres:postgres@localhost:5432/{db_name}"
     return create_engine(db_url, pool_size=num_threads)
 
 

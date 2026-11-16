@@ -87,9 +87,9 @@ spec:
           resources:
             requests:
               cpu: 50m
-              memory: 64Mi
-            limits:
               memory: 256Mi
+            limits:
+              memory: 1Gi
           volumeMounts:
             # Mount only the ini file. Mounting the whole ConfigMap at
             # /etc/pgbouncer makes that directory read-only, and the image's

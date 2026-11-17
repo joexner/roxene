@@ -141,6 +141,7 @@ class Environment(object):
 
     def complete_trial(self, trial: Trial):
         with self.sessionmaker.begin() as session:
+            trial.end_date = datetime.now()
             session.merge(trial)
 
     def cull(self, num_to_compare: int = 10) -> bool:

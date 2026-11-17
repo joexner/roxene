@@ -85,7 +85,5 @@ class Trial(EntityBase):
 
             self.moves.append(this_move)
 
-        self.end_date = datetime.now()
-
     def __str__(self):
         return f"T-{str(self.id)[-7:]}"

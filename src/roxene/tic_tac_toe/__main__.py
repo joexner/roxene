@@ -103,6 +103,7 @@ def run_worker(
         set_rng(worker_rng)
         iteration = 0
         while not stop_event.is_set() and (worker_trials is None or iteration < worker_trials):
+            trial: Trial | None = None
             try:
                 logger.info("Building trial")
                 trial = env.start_trial()
@@ -130,8 +131,14 @@ def run_worker(
                             logger.info(f"Breed {'succeeded' if bred else 'skipped (no moves), retrying...'}")
                             if bred:
                                 metrics.record_breed()
-            except Exception as e:
-                logger.exception("Exception while running worker, continuing...", e)
+            except Exception:
+                logger.exception("Exception while running worker, cleaning up trial...")
+                if trial is not None and trial.end_date is None:
+                    try:
+                        env.complete_trial(trial)
+                        logger.warning(f"Released abandoned trial {trial}")
+                    except Exception:
+                        logger.exception("Could not release abandoned trial %s", trial)
 
             iteration += 1
 

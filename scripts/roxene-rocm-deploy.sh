@@ -55,14 +55,14 @@ export TMPDIR=~/tmp
 podman save docker.io/library/roxene:latest | minikube image load -
 rm ~/tmp/*"
 
-#echo "==> building and loading the ROCm training image"
-#ssh -o BatchMode=yes "$REMOTE" "set -euo pipefail
-#cd ~/${REMOTE_DIR}
-#podman build --target training-rocm -t docker.io/library/roxene-rocm:latest .
-#mkdir -p ~/tmp
-#export TMPDIR=~/tmp
-#podman save docker.io/library/roxene-rocm:latest | minikube image load -
-#rm ~/tmp/*"
+echo "==> building and loading the ROCm training image"
+ssh -o BatchMode=yes "$REMOTE" "set -euo pipefail
+cd ~/${REMOTE_DIR}
+podman build -f k8s/overlays/enzo.local/Dockerfile.rocm -t docker.io/library/roxene-rocm:latest .
+mkdir -p ~/tmp
+export TMPDIR=~/tmp
+podman save docker.io/library/roxene-rocm:latest | minikube image load -
+rm ~/tmp/*"
 
 #echo "==> building and loading the Jupyter notebook image"
 #ssh -o BatchMode=yes "$REMOTE" "set -euo pipefail
@@ -92,11 +92,14 @@ mv "${KUBE_DIR}/config.new" "${KUBE_DIR}/config"
 export KUBECONFIG="${KUBE_DIR}/config"
 kubectl config use-context "${PROFILE}" >/dev/null
 
+# The worker's nodeSelector (worker-rocm-patch.yaml) needs this label; idempotent.
+kubectl label node "$(kubectl get node -o jsonpath='{.items[0].metadata.name}')" \
+  roxene.rocm/gpu=true --overwrite >/dev/null
+
 kubectl apply -k "${LOCAL_SRC}/k8s/overlays/enzo.local"
 
 # The tag is unchanged, so apply alone won't swap in the rebuilt image.
 kubectl -n roxene rollout restart statefulset/worker
-# statefulset/worker-cpu
 # deployment/notebook
 
 kubectl -n roxene rollout status statefulset/worker --timeout=600s

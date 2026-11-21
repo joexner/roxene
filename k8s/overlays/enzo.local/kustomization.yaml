@@ -7,7 +7,5 @@ resources:
 
 patches:
   - path: worker-memory-patch.yaml
-
-replicas:
-  - name: worker
-    count: 2
+  # Run the worker on enzo.local's RX 7600 XT with the rocm image; 1 replica.
+  - path: worker-rocm-patch.yaml

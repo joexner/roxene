@@ -1,0 +1,43 @@
+# Local overlay: run the worker on enzo.local's RX 7600 XT (gfx1102) with the
+# rocm image, in place of the CPU torch build.
+# No-device-plugin path: hostPath device mounts + relaxed security, like
+# podman's `--device /dev/kfd --device /dev/dri`.
+# Schedules only on nodes labelled roxene.rocm/gpu=true (the deploy script labels it).
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: worker
+  namespace: roxene
+spec:
+  replicas: 1
+  template:
+    spec:
+      nodeSelector:
+        roxene.rocm/gpu: "true"
+      containers:
+        - name: worker
+          image: roxene-rocm:latest
+          env:
+            # HSA_OVERRIDE_GFX_VERSION / ROCR / HIP are baked into the rocm image.
+            - name: ROXENE_DEVICE
+              value: cuda
+          securityContext:
+            capabilities:
+              add:
+                - SYS_PTRACE
+            seccompProfile:
+              type: Unconfined
+          volumeMounts:
+            - name: dev-kfd
+              mountPath: /dev/kfd
+            - name: dev-dri
+              mountPath: /dev/dri
+      volumes:
+        - name: dev-kfd
+          hostPath:
+            path: /dev/kfd
+            type: CharDevice
+        - name: dev-dri
+          hostPath:
+            path: /dev/dri
+            type: Directory

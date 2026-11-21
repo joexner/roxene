@@ -1,0 +1,33 @@
+# syntax=docker/dockerfile:1
+# ROCm build of the training image, for enzo.local's RX 7600 XT (gfx1102).
+# Lives beside the enzo.local overlay since only that cluster has a GPU;
+# build it from the repo root (see scripts/roxene-rocm-deploy.sh).
+# Free-threaded CPython 3.14t + torch 2.15.0+rocm10.0 (cp314t wheel).
+FROM debian:bookworm-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    HSA_OVERRIDE_GFX_VERSION=11.0.2 \
+    ROCR_VISIBLE_DEVICES=0 \
+    HIP_VISIBLE_DEVICES=0
+
+# libnuma1/libgomp1 are runtime deps of the ROCm torch wheel.
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates libnuma1 libgomp1 \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:$PATH"
+
+# uv manages the interpreter; 3.14t is the free-threaded build (GIL disabled).
+RUN uv python install 3.14t && uv venv --python 3.14t /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Same torch version as the CPU stage; the +rocm cp314t wheel bundles its own ROCm userspace.
+RUN uv pip install --python /opt/venv/bin/python "torch==2.15.0+rocm10.0" \
+    --extra-index-url https://download.pytorch.org/whl/rocm10.0
+
+COPY pyproject.toml ./
+COPY src ./src
+RUN uv pip install --python /opt/venv/bin/python .
+
+# Default to a single worker process; the k8s manifests pass --role explicitly
+ENTRYPOINT ["python", "-m", "roxene.tic_tac_toe"]

@@ -9,7 +9,7 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.mutable import Mutable
 from sqlalchemy.types import TypeDecorator
 
-from .constants import TORCH_PRECISION
+from .constants import DEVICE, TORCH_PRECISION
 
 
 class EntityBase(DeclarativeBase):
@@ -41,7 +41,7 @@ class TrackedTensor(Mutable):
     def __setitem__(self, key, value):
         # Convert numpy values to tensors if needed
         if isinstance(value, (np.ndarray, np.generic)):
-            value = torch.tensor(value, dtype=self.tensor.dtype)
+            value = torch.tensor(value, dtype=self.tensor.dtype, device=self.tensor.device)
         self.tensor[key] = value
         self.changed()
 
@@ -86,7 +86,7 @@ class WrappedTensor(TypeDecorator):
         return value.tensor.tolist() if value is not None else None
 
     def process_result_value(self, value, dialect) -> TrackedTensor | None:
-        return TrackedTensor(torch.tensor(value, dtype=TORCH_PRECISION)) if value is not None else None
+        return TrackedTensor(torch.tensor(value, dtype=TORCH_PRECISION, device=DEVICE)) if value is not None else None
 
 class NumpySafeFloat(TypeDecorator):
     impl = Float

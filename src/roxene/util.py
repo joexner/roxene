@@ -1,10 +1,12 @@
 import threading
 from typing import Dict
 
-from numpy import ndarray, sign, exp, log
+from numpy import ndarray, sign, exp, log, clip, finfo
 from numpy.random import Generator
 
 from .constants import NP_PRECISION
+
+_PRECISION_LIMIT = float(finfo(NP_PRECISION).max)
 
 thread_local_data = threading.local()
 
@@ -22,6 +24,11 @@ def set_rng(rng: Generator) -> None:
 
 def get_rng() -> Generator:
     return thread_local_data.rng
+
+def clamp_to_precision(a) -> ndarray:
+    """Clip to the precision's finite range, then cast to it."""
+    return clip(a, -_PRECISION_LIMIT, _PRECISION_LIMIT).astype(NP_PRECISION)
+
 
 def random_slice(shape, rng: Generator = None) -> ndarray:
     """Generate a random array with values in [-1, 1]."""
@@ -50,4 +57,5 @@ def wiggle(x, log_wiggle, absolute_wiggle = None, rng: Generator = None):
     """
     rng = rng or get_rng()
     log_wiggled = sign(x) * exp(rng.normal(log(abs(x)), log_wiggle))
-    return rng.normal(log_wiggled, absolute_wiggle) if absolute_wiggle else log_wiggled
+    wiggled = rng.normal(log_wiggled, absolute_wiggle) if absolute_wiggle else log_wiggled
+    return clamp_to_precision(wiggled)
